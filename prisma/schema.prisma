@@ -1,0 +1,706 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String               @id @default(cuid())
+  email               String               @unique
+  phone               String               @unique
+  name                String
+  passwordHash        String
+  status              UserStatus           @default(PENDING)
+  role                UserRole             @default(GENERAL)
+  partnerStatus       PartnerStatus        @default(NOT_APPLIED)
+  points              Float                @default(0)
+  level               Int                  @default(0)
+  referralCode        String?
+  referralCodeConfirmed Boolean            @default(false)
+  finalPoints         Float                @default(0)
+  monthlyReferrals    Int                  @default(0)
+  totalReferrals      Int                  @default(0)
+  bankName            String?
+  bankAccount         String?
+  accountHolder       String?
+  settlementCycle     SettlementType?
+  profileImage        String?
+  birthDate           DateTime?
+  gender              Gender?
+  address             String?
+  addressDetail       String?
+  zipCode             String?
+  marketingAgreed     Boolean              @default(false)
+  marketingAgreedAt   DateTime?
+  agreeTerms          Boolean              @default(false)
+  agreeTermsAt        DateTime?
+  lastLoginAt         DateTime?
+  loginCount          Int                  @default(0)
+  isActive            Boolean              @default(true)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  deletedAt           DateTime?
+  activityLogs        ActivityLog[]
+  applications        Application[]
+  consultations       Consultation[]
+  notifications       Notification[]
+  partnerApplications PartnerApplication[]
+  payments            Payment[]
+  pointLedgers        PointLedger[]
+  questions           Question[]
+  settlements         Settlement[]
+  userLogs            UserLog[]
+  withdrawalRequests  WithdrawalRequest[]
+
+  @@index([email])
+  @@index([phone])
+  @@index([status])
+  @@index([role])
+  @@index([partnerStatus])
+  @@index([createdAt])
+  @@index([isActive])
+}
+
+model Consultation {
+  id            String             @id @default(cuid())
+  userId        String?
+  type          ConsultationType
+  status        ConsultationStatus @default(PENDING)
+  priority      Priority           @default(NORMAL)
+  title         String
+  description   String
+  category      String
+  tags          Json
+  contactName   String
+  contactPhone  String
+  contactEmail  String?
+  requestedDate DateTime?
+  scheduledDate DateTime?
+  completedDate DateTime?
+  assignedTo    String?
+  assignedAt    DateTime?
+  memo          String?
+  result        String?
+  rating        Int?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  applications  Application[]
+  user          User?              @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([type])
+  @@index([assignedTo])
+  @@index([createdAt])
+  @@index([scheduledDate])
+}
+
+model Application {
+  id                 String            @id @default(cuid())
+  userId             String
+  consultationId     String?
+  type               ApplicationType
+  status             ApplicationStatus @default(PENDING)
+  priority           Priority          @default(NORMAL)
+  productName        String
+  productCategory    String
+  productDetails     Json?
+  monthlyAmount      Float
+  totalAmount        Float
+  commissionRate     Float
+  expectedCommission Float
+  applicantName      String
+  applicantPhone     String
+  applicantEmail     String?
+  applicantAddress   String?
+  processedBy        String?
+  processedAt        DateTime?
+  approvedBy         String?
+  approvedAt         DateTime?
+  memo               String?
+  internalMemo       String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  consultation       Consultation?     @relation(fields: [consultationId], references: [id])
+  user               User              @relation(fields: [userId], references: [id])
+  payments           Payment[]
+
+  @@index([userId])
+  @@index([consultationId])
+  @@index([status])
+  @@index([type])
+  @@index([processedBy])
+  @@index([approvedBy])
+  @@index([createdAt])
+  @@index([monthlyAmount])
+  @@index([totalAmount])
+}
+
+model Payment {
+  id               String         @id @default(cuid())
+  userId           String?
+  applicationId    String?
+  contractId       String?
+  type             PaymentType
+  status           PaymentStatus  @default(PENDING)
+  amount           Float
+  commissionAmount Float
+  netAmount        Float
+  dueDate          DateTime
+  paidDate         DateTime?
+  paymentMethod    PaymentMethod?
+  transactionId    String?
+  receiptUrl       String?
+  processedBy      String?
+  processedAt      DateTime?
+  memo             String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  contract         Contract?      @relation(fields: [contractId], references: [id])
+  application      Application?   @relation(fields: [applicationId], references: [id])
+  user             User?          @relation(fields: [userId], references: [id])
+  settlements      Settlement[]
+
+  @@index([userId])
+  @@index([applicationId])
+  @@index([contractId])
+  @@index([status])
+  @@index([type])
+  @@index([dueDate])
+  @@index([paidDate])
+  @@index([processedBy])
+  @@index([createdAt])
+  @@index([amount])
+}
+
+model Settlement {
+  id               String                   @id @default(cuid())
+  userId           String
+  paymentId        String?
+  type             SettlementType
+  status           SettlementStatus         @default(PENDING)
+  totalAmount      Float
+  commissionAmount Float
+  netAmount        Float
+  taxAmount        Float                    @default(0)
+  finalAmount      Float
+  periodStart      DateTime
+  periodEnd        DateTime
+  settlementDate   DateTime?
+  paymentMethod    SettlementPaymentMethod?
+  bankAccount      String?
+  bankName         String?
+  accountHolder    String?
+  processedBy      String?
+  processedAt      DateTime?
+  approvedBy       String?
+  approvedAt       DateTime?
+  memo             String?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  payment          Payment?                 @relation(fields: [paymentId], references: [id])
+  user             User                     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([paymentId])
+  @@index([status])
+  @@index([type])
+  @@index([periodStart])
+  @@index([periodEnd])
+  @@index([settlementDate])
+  @@index([processedBy])
+  @@index([approvedBy])
+  @@index([createdAt])
+  @@index([totalAmount])
+}
+
+model PointLedger {
+  id          String          @id @default(cuid())
+  userId      String
+  kind        PointLedgerKind
+  amount      Float
+  periodMonth DateTime?
+  availableAt DateTime
+  memo        String?
+  createdAt   DateTime        @default(now())
+  user        User            @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([availableAt])
+}
+
+model WithdrawalRequest {
+  id          String           @id @default(cuid())
+  userId      String
+  amount      Float
+  status      WithdrawalStatus @default(REQUESTED)
+  requestedAt DateTime         @default(now())
+  paidAt      DateTime?
+  memo        String?
+  createdAt   DateTime         @default(now())
+  user        User             @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([requestedAt])
+}
+
+model UserLog {
+  id          String   @id @default(cuid())
+  userId      String
+  action      String
+  category    String
+  description String
+  ipAddress   String?
+  userAgent   String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([category])
+  @@index([createdAt])
+}
+
+model Notification {
+  id        String             @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  status    NotificationStatus @default(UNREAD)
+  linkUrl   String?
+  linkText  String?
+  readAt    DateTime?
+  createdAt DateTime           @default(now())
+  user      User               @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@index([readAt])
+}
+
+model SystemConfig {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  category    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([key])
+  @@index([category])
+  @@index([isActive])
+}
+
+model ExportLog {
+  id           String       @id @default(cuid())
+  type         ExportType
+  fileName     String
+  fileSize     Int?
+  fileUrl      String?
+  filters      Json?
+  requestedBy  String?
+  status       ExportStatus @default(PENDING)
+  progress     Int          @default(0)
+  completedAt  DateTime?
+  errorMessage String?
+  createdAt    DateTime     @default(now())
+
+  @@index([type])
+  @@index([requestedBy])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model PartnerApplication {
+  id             String                   @id @default(cuid())
+  userId         String
+  availableDate  String
+  availableTime  String
+  preferredTime  String?
+  area           String
+  referrer       String
+  additionalNote String?
+  status         PartnerApplicationStatus @default(PENDING)
+  processedBy    String?
+  processedAt    DateTime?
+  approvedBy     String?
+  approvedAt     DateTime?
+  completedAt    DateTime?
+  cancelledAt    DateTime?
+  cancelledBy    String?
+  cancelReason   String?
+  adminMemo      String?
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  user           User                     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([availableDate])
+  @@index([processedBy])
+  @@index([approvedBy])
+  @@index([createdAt])
+}
+
+model Question {
+  id         String         @id @default(cuid())
+  userId     String
+  title      String
+  content    String
+  answer     String?
+  status     QuestionStatus @default(PENDING)
+  createdAt  DateTime       @default(now())
+  answeredAt DateTime?
+  updatedAt  DateTime       @updatedAt
+  user       User           @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ProfitItem {
+  id               String           @id @default(cuid())
+  name             String
+  status           ProfitItemStatus @default(ACTIVE)
+  isDefault        Boolean          @default(false)
+  insurance        Float            @default(0)
+  telecom          Float            @default(0)
+  rental           Float            @default(0)
+  events           Float            @default(0)
+  insurancePercent Float            @default(30)
+  telecomPercent   Float            @default(30)
+  rentalPercent    Float            @default(40)
+  eventsPercent    Float            @default(100)
+  insuranceName    String           @default("보험료(월)")
+  telecomName      String           @default("통신비(월)")
+  rentalName       String           @default("렌탈료(월)")
+  eventsName       String           @default("이벤트(건)")
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([status])
+  @@index([isDefault])
+  @@index([createdAt])
+}
+
+model ItemSetting {
+  id           String       @id @default(cuid())
+  category     ItemCategory
+  provider     String
+  productName  String
+  paymentTerm  String
+  baseAmount   Float
+  expectedRate Float
+  pointRate    Float
+  pointAmount  Float
+  createdAt    DateTime     @default(now())
+  contracts    Contract[]
+
+  @@index([category])
+  @@index([createdAt])
+}
+
+model ActivityLog {
+  id          String       @id @default(cuid())
+  type        ActivityType
+  title       String
+  description String
+  userId      String?
+  metadata    String?
+  createdAt   DateTime     @default(now())
+  user        User?        @relation(fields: [userId], references: [id])
+
+  @@index([type])
+  @@index([createdAt])
+  @@index([userId])
+}
+
+model ActivityBackup {
+  id          String   @id @default(cuid())
+  backupDate  DateTime @default(now())
+  data        String
+  recordCount Int
+  createdAt   DateTime @default(now())
+
+  @@index([backupDate])
+}
+
+model Contract {
+  id               String         @id @default(cuid())
+  contractNumber   String         @unique
+  customerName     String
+  customerPhone    String
+  customerAddress  String?
+  itemCategory     ItemCategory
+  companyName      String?
+  insuredName      String?
+  insuredPhone     String?
+  decisionPoints   Int?
+  itemName         String
+  contractAmount   Int
+  commissionRate   Float
+  commissionAmount Int
+  expectedRate     Float?
+  pointRate        Float?
+  payoutRate       Float?
+  finalPoints      Int?
+  contractDate     DateTime
+  startDate        DateTime?
+  endDate          DateTime?
+  installationDate DateTime?
+  status           ContractStatus @default(ACTIVE)
+  notes            String?
+  createdBy        String
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  itemSettingId    String?
+  dynamicFields    String?
+  confirmedAt      DateTime?
+  itemSetting      ItemSetting?   @relation(fields: [itemSettingId], references: [id])
+  payments         Payment[]
+
+  @@index([contractNumber])
+  @@index([customerName])
+  @@index([contractDate])
+  @@index([status])
+  @@index([createdBy])
+  @@index([itemSettingId])
+}
+
+model CompanyInfo {
+  id                  String   @id @default(cuid())
+  companyName         String
+  companyLogo         String
+  bottomLogo          String?
+  businessNumber      String
+  representative      String
+  address             String
+  companyAddress      String?
+  phone               String
+  email               String
+  website             String?
+  description         String?
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  referralCodeDefault String?
+
+  @@index([isActive])
+  @@index([createdAt])
+}
+
+enum PointLedgerKind {
+  ACCRUAL
+  ADJUSTMENT
+}
+
+enum WithdrawalStatus {
+  REQUESTED
+  PAID
+  CANCELLED
+}
+
+enum ItemCategory {
+  INSURANCE
+  RENTAL
+  INTERNET_TV
+  FUNERAL
+  RENTAL_MALL
+  CUSTOM
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  STAFF
+  MEMBER
+  GENERAL
+}
+
+enum PartnerStatus {
+  NOT_APPLIED
+  PARTNER_APPLIED
+  APPROVED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum ConsultationType {
+  GENERAL
+  PRODUCT_INQUIRY
+  TECHNICAL_SUPPORT
+  COMPLAINT
+  PARTNERSHIP
+  OTHER
+}
+
+enum ConsultationStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  ON_HOLD
+}
+
+enum ApplicationType {
+  INSURANCE
+  TELECOM
+  RENTAL
+  FUNERAL
+  SHOPPING
+  OTHER
+}
+
+enum ApplicationStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  CANCELLED
+  ON_HOLD
+}
+
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum PaymentType {
+  MONTHLY
+  ONE_TIME
+  REFUND
+  ADJUSTMENT
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER
+  CREDIT_CARD
+  DEBIT_CARD
+  CASH
+  MOBILE_PAYMENT
+  OTHER
+}
+
+enum SettlementType {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  SPECIAL
+}
+
+enum SettlementStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  CANCELLED
+  ON_HOLD
+}
+
+enum SettlementPaymentMethod {
+  BANK_TRANSFER
+  CHECK
+  CASH
+  OTHER
+}
+
+enum NotificationType {
+  SYSTEM
+  PAYMENT
+  SETTLEMENT
+  APPLICATION
+  CONSULTATION
+  MARKETING
+}
+
+enum NotificationStatus {
+  UNREAD
+  READ
+  ARCHIVED
+}
+
+enum ExportType {
+  USERS
+  CONSULTATIONS
+  APPLICATIONS
+  PAYMENTS
+  SETTLEMENTS
+  REPORTS
+}
+
+enum ExportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum QuestionStatus {
+  PENDING
+  ANSWERED
+}
+
+enum ProfitItemStatus {
+  ACTIVE
+  PENDING
+  DELETED
+}
+
+enum PartnerApplicationStatus {
+  PENDING
+  ASSIGNED
+  APPROVED
+  REJECTED
+  CANCELLED
+  COMPLETED
+}
+
+enum ActivityType {
+  USER_REGISTRATION
+  PARTNER_APPLICATION
+  PARTNER_APPROVAL
+  QUESTION_SUBMITTED
+  SUGGESTION_SUBMITTED
+  CONTRACT_CREATED
+  PARTNER_APPLICATION_DELETED
+}
+
+enum ContractStatus {
+  ACTIVE
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  SUSPENDED
+}
