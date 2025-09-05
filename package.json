@@ -30,6 +30,7 @@
     "@neondatabase/serverless": "^1.0.1",
     "@prisma/client": "^6.15.0",
     "@stripe/stripe-js": "^7.6.1",
+    "@types/ws": "^8.18.1",
     "@upstash/redis": "^1.35.1",
     "bcryptjs": "^3.0.2",
     "framer-motion": "^12.23.9",
@@ -40,6 +41,7 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "stripe": "^18.3.0",
+    "ws": "^8.18.3",
     "xlsx": "^0.18.5",
     "zod": "^4.1.3"
   },

@@ -1,173 +1,288 @@
 'use client';
 
-import React, { useState } from 'react';
-import MobilePreviewFrame from '@/components/MobilePreviewFrame';
+import React, { useState, useRef, useEffect } from 'react';
+import { DeviceFrame } from '@/components/DeviceFrame';
+import { ResponsiveTestTool } from '@/components/ResponsiveTestTool';
+import { DevelopmentControls } from '@/components/DevelopmentControls';
+import { NativeAppDevTool } from '@/components/NativeAppDevTool';
+import { FileWatcher } from '@/components/FileWatcher';
+import { ApiMonitor } from '@/components/ApiMonitor';
+
+// 디바이스 프레임 정의
+const DEVICE_FRAMES = {
+  'iPhone 15 Pro': {
+    width: 393,
+    height: 852,
+    frame: 'iphone-15-pro',
+    screenWidth: 393,
+    screenHeight: 852,
+    notch: true,
+    homeIndicator: true,
+  },
+  'iPhone 15': {
+    width: 393,
+    height: 852,
+    frame: 'iphone-15',
+    screenWidth: 393,
+    screenHeight: 852,
+    notch: true,
+    homeIndicator: true,
+  },
+  'iPhone SE': {
+    width: 375,
+    height: 667,
+    frame: 'iphone-se',
+    screenWidth: 375,
+    screenHeight: 667,
+    notch: false,
+    homeIndicator: false,
+  },
+  'Galaxy S24': {
+    width: 384,
+    height: 854,
+    frame: 'galaxy-s24',
+    screenWidth: 384,
+    screenHeight: 854,
+    notch: false,
+    homeIndicator: false,
+  },
+  'Galaxy S24 Ultra': {
+    width: 412,
+    height: 915,
+    frame: 'galaxy-s24-ultra',
+    screenWidth: 412,
+    screenHeight: 915,
+    notch: false,
+    homeIndicator: false,
+  },
+  'Galaxy A54': {
+    width: 384,
+    height: 854,
+    frame: 'galaxy-a54',
+    screenWidth: 384,
+    screenHeight: 854,
+    notch: false,
+    homeIndicator: false,
+  },
+  'iPad': {
+    width: 768,
+    height: 1024,
+    frame: 'ipad',
+    screenWidth: 768,
+    screenHeight: 1024,
+    notch: false,
+    homeIndicator: false,
+  },
+  'iPad Pro': {
+    width: 834,
+    height: 1194,
+    frame: 'ipad-pro',
+    screenWidth: 834,
+    screenHeight: 1194,
+    notch: false,
+    homeIndicator: false,
+  },
+};
 
 export default function MemberAppPage() {
-  const [appSettings, setAppSettings] = useState({
-    theme: 'light',
-    primaryColor: '#3B82F6',
-    layout: 'default'
-  });
+  const [selectedDevice, setSelectedDevice] = useState<keyof typeof DEVICE_FRAMES>('iPhone 15 Pro');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [customUrl, setCustomUrl] = useState('/member');
+  const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
+  const [activeTab, setActiveTab] = useState<'preview' | 'native' | 'files' | 'api'>('preview');
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const currentDevice = DEVICE_FRAMES[selectedDevice];
+  const isTablet = selectedDevice.includes('iPad');
+
+  // 온라인 상태 확인
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // 실시간 새로고침
+  const handleRefresh = () => {
+    setIsLoading(true);
+    setRefreshKey(prev => prev + 1);
+    
+    // 로딩 애니메이션을 위한 딜레이
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+  };
+
+  // 디바이스 회전
+  const handleRotate = () => {
+    setOrientation(prev => prev === 'portrait' ? 'landscape' : 'portrait');
+  };
+
+  // iframe 로드 완료
+  const handleIframeLoad = () => {
+    setIsLoading(false);
+  };
+
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          {/* 헤더 */}
-          <div className="bg-gradient-to-r from-green-50 to-blue-50 px-6 py-4 border-b border-gray-200">
-            <h1 className="text-3xl font-bold text-gray-900">📱 회원페이지 앱 설정</h1>
-            <p className="text-gray-600 mt-2">회원페이지 모바일 앱 인터페이스 설정</p>
+      <div className="max-w-7xl mx-auto">
+        {/* 헤더 */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
+            <h1 className="text-3xl font-bold text-gray-900">📱 회원페이지 앱 개발 도구</h1>
+            <p className="text-gray-600 mt-2">네이티브 앱 개발을 위한 실시간 미리보기 및 테스트 도구</p>
           </div>
+        </div>
 
-          <div className="p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              
-              {/* 모바일 미리보기 */}
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200">
-                <div className="flex items-center mb-4">
-                  <div className="text-2xl mr-3">📱</div>
-                  <h2 className="text-xl font-semibold text-blue-900">모바일 미리보기</h2>
-                </div>
-                
-                <MobilePreviewFrame>
-                  <div className="bg-white min-h-screen">
-                    {/* 앱 바 */}
-                    <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 bg-white rounded-full mr-3"></div>
-                        <div>
-                          <div className="font-semibold">파트너 앱</div>
-                          <div className="text-xs opacity-90">환영합니다!</div>
-                        </div>
-                      </div>
-                      <div className="text-2xl">🔔</div>
-                    </div>
+        {/* 탭 네비게이션 */}
+        <div className="bg-white rounded-lg border border-gray-200 mb-6">
+          <div className="flex space-x-1 p-1">
+            {[
+              { id: 'preview', label: '웹 미리보기', icon: '🖥️' },
+              { id: 'native', label: '네이티브 앱', icon: '📱' },
+              { id: 'files', label: '파일 감지', icon: '📁' },
+              { id: 'api', label: 'API 모니터링', icon: '🌐' }
+            ].map(({ id, label, icon }) => (
+              <button
+                key={id}
+                onClick={() => setActiveTab(id as any)}
+                className={`flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  activeTab === id
+                    ? 'bg-blue-100 text-blue-700 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <span className="mr-2">{icon}</span>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
 
-                    {/* 메인 콘텐츠 */}
-                    <div className="p-4 space-y-4">
-                      {/* 요약 카드 */}
-                      <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="text-sm opacity-90">총 포인트</div>
-                          <div className="text-2xl font-bold">12,450</div>
-                        </div>
-                        <div className="text-xs opacity-90">이번 달 +2,340 포인트</div>
-                      </div>
+        {/* 웹 미리보기 탭 */}
+        {activeTab === 'preview' && (
+          <>
+            {/* 반응형 테스트 도구 */}
+            <ResponsiveTestTool 
+              onUrlChange={setCustomUrl}
+              currentUrl={customUrl}
+            />
 
-                      {/* 빠른 액션 */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-gray-50 p-3 rounded-lg text-center">
-                          <div className="text-2xl mb-1">📊</div>
-                          <div className="text-sm font-medium">통계</div>
-                        </div>
-                        <div className="bg-gray-50 p-3 rounded-lg text-center">
-                          <div className="text-2xl mb-1">🎁</div>
-                          <div className="text-sm font-medium">리워드</div>
-                        </div>
-                        <div className="bg-gray-50 p-3 rounded-lg text-center">
-                          <div className="text-2xl mb-1">👥</div>
-                          <div className="text-sm font-medium">팀</div>
-                        </div>
-                        <div className="bg-gray-50 p-3 rounded-lg text-center">
-                          <div className="text-2xl mb-1">⚙️</div>
-                          <div className="text-sm font-medium">설정</div>
-                        </div>
-                      </div>
-
-                      {/* 최근 활동 */}
-                      <div className="bg-white border border-gray-200 rounded-lg p-4">
-                        <div className="font-semibold mb-3">최근 활동</div>
-                        <div className="space-y-2">
-                          <div className="flex items-center text-sm">
-                            <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                            <span>새로운 추천인 등록</span>
-                            <span className="ml-auto text-gray-500">2시간 전</span>
-                          </div>
-                          <div className="flex items-center text-sm">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-                            <span>포인트 적립 완료</span>
-                            <span className="ml-auto text-gray-500">1일 전</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </MobilePreviewFrame>
-              </div>
-
-              {/* 앱 설정 */}
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-lg border border-green-200">
-                <div className="flex items-center mb-4">
-                  <div className="text-2xl mr-3">⚙️</div>
-                  <h2 className="text-xl font-semibold text-green-900">앱 설정</h2>
-                </div>
-                
-                <div className="space-y-4">
-                  {/* 테마 설정 */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      테마 설정
-                    </label>
-                    <select 
-                      value={appSettings.theme}
-                      onChange={(e) => setAppSettings(prev => ({ ...prev, theme: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                      title="앱 테마를 선택하세요"
-                      aria-label="앱 테마 선택"
-                    >
-                      <option value="light">라이트 모드</option>
-                      <option value="dark">다크 모드</option>
-                      <option value="auto">자동</option>
-                    </select>
-                  </div>
-
-                  {/* 주요 색상 */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      주요 색상
-                    </label>
-                    <input 
-                      type="color"
-                      value={appSettings.primaryColor}
-                      onChange={(e) => setAppSettings(prev => ({ ...prev, primaryColor: e.target.value }))}
-                      className="w-full h-10 border border-gray-300 rounded-md"
-                      title="주요 색상을 선택하세요"
-                      aria-label="주요 색상 선택"
-                    />
-                  </div>
-
-                  {/* 레이아웃 */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      레이아웃 스타일
-                    </label>
-                    <select 
-                      value={appSettings.layout}
-                      onChange={(e) => setAppSettings(prev => ({ ...prev, layout: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                      title="레이아웃 스타일을 선택하세요"
-                      aria-label="레이아웃 스타일 선택"
-                    >
-                      <option value="default">기본</option>
-                      <option value="compact">컴팩트</option>
-                      <option value="spacious">여유로운</option>
-                    </select>
-                  </div>
-
-                  {/* 저장 버튼 */}
-                  <button 
-                    className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors"
-                    title="앱 설정을 저장합니다"
-                    aria-label="앱 설정 저장"
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+          {/* 컨트롤 패널 */}
+          <div className="xl:col-span-1">
+            <DevelopmentControls
+              isLoading={isLoading}
+              isOnline={isOnline}
+              orientation={orientation}
+              onRefresh={handleRefresh}
+              onRotate={handleRotate}
+              onUrlChange={setCustomUrl}
+              currentUrl={customUrl}
+            />
+            
+            {/* 디바이스 선택 */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6 mt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">디바이스 프레임</h3>
+              <div className="space-y-2">
+                {Object.keys(DEVICE_FRAMES).map((device) => (
+                  <button
+                    key={device}
+                    onClick={() => setSelectedDevice(device as keyof typeof DEVICE_FRAMES)}
+                    className={`w-full px-3 py-2 text-sm rounded-md transition-colors ${
+                      selectedDevice === device
+                        ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                    }`}
                   >
-                    설정 저장
+                    {device}
                   </button>
+                ))}
+              </div>
+              
+              {/* 디바이스 정보 */}
+              <div className="mt-4 p-3 bg-gray-50 rounded-md">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">현재 디바이스</h4>
+                <div className="text-xs text-gray-600 space-y-1">
+                  <div>해상도: {currentDevice.screenWidth} × {currentDevice.screenHeight}</div>
+                  <div>프레임: {currentDevice.frame}</div>
+                  <div>노치: {currentDevice.notch ? '있음' : '없음'}</div>
+                  <div>홈 인디케이터: {currentDevice.homeIndicator ? '있음' : '없음'}</div>
                 </div>
               </div>
             </div>
           </div>
+
+          {/* 모바일 미리보기 */}
+          <div className="xl:col-span-3">
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">실시간 미리보기</h2>
+                <div className="flex items-center space-x-2">
+                  {isLoading && (
+                    <div className="flex items-center text-blue-600">
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      <span className="text-sm">로딩 중...</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 디바이스 프레임 */}
+              <div className="flex justify-center">
+                <DeviceFrame
+                  device={currentDevice}
+                  orientation={orientation}
+                  isTablet={isTablet}
+                >
+                  {/* iframe */}
+                  <iframe
+                    ref={iframeRef}
+                    key={refreshKey}
+                    src={customUrl}
+                    className="w-full h-full border-0"
+                    onLoad={handleIframeLoad}
+                    title="회원페이지 미리보기"
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                  />
+                </DeviceFrame>
+              </div>
+
+              {/* 디바이스 정보 */}
+              <div className="mt-6 text-center text-sm text-gray-600">
+                <p>{selectedDevice} - {orientation === 'portrait' ? '세로' : '가로'} 모드</p>
+                <p>해상도: {orientation === 'portrait' ? `${currentDevice.screenWidth} × ${currentDevice.screenHeight}` : `${currentDevice.screenHeight} × ${currentDevice.screenWidth}`}</p>
+              </div>
+            </div>
+          </div>
         </div>
+          </>
+        )}
+
+        {/* 네이티브 앱 탭 */}
+        {activeTab === 'native' && (
+          <NativeAppDevTool />
+        )}
+
+        {/* 파일 감지 탭 */}
+        {activeTab === 'files' && (
+          <FileWatcher />
+        )}
+
+        {/* API 모니터링 탭 */}
+        {activeTab === 'api' && (
+          <ApiMonitor />
+        )}
       </div>
     </div>
   );
