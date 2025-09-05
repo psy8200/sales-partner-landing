@@ -47,5 +47,6 @@ next-env.d.ts
 /src/generated/prisma
 
 # scripts 폴더 제외 (개발용 스크립트)
-scripts/
-scripts/**
+# scripts/
+# scripts/**
+# 백업 스크립트는 중요하므로 Git에 포함
