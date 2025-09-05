@@ -147,6 +147,8 @@ export const NativeAppDevTool: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<keyof typeof DEVICE_FRAMES>('iPhone 15 Pro');
   const [isControlling, setIsControlling] = useState(false);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(true);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   
   const wsRef = useRef<WebSocket | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -668,11 +670,11 @@ export const NativeAppDevTool: React.FC = () => {
                   <div className="flex justify-between items-center">
                     <span>Expo 서버:</span>
                     <div className="flex items-center space-x-2">
-                      <span className="font-mono">localhost:19006</span>
+                      <span className="font-mono">localhost:8081</span>
                       <button
-                        onClick={() => window.open('http://localhost:19006', '_blank')}
+                        onClick={() => window.open('http://localhost:8081', '_blank')}
                         className="p-1 text-blue-600 hover:text-blue-800"
-                        title="Expo 서버 열기"
+                        title="Metro Bundler 열기"
                       >
                         <Monitor className="w-3 h-3" />
                       </button>
@@ -716,19 +718,69 @@ export const NativeAppDevTool: React.FC = () => {
                       {/* 모바일 프레임 시뮬레이션 */}
                       <div className="bg-gray-900 rounded-[2.5rem] p-2 shadow-2xl">
                         <div 
-                          className="bg-white rounded-[2rem] overflow-hidden" 
+                          className="bg-white rounded-[2rem] overflow-hidden relative" 
                           style={{ 
                             width: `${DEVICE_FRAMES[selectedDevice].screenWidth * 0.8}px`, 
                             height: `${DEVICE_FRAMES[selectedDevice].screenHeight * 0.8}px` 
                           }}
                         >
+                          {/* 상태 표시 오버레이 */}
+                          <div className="absolute top-2 left-2 z-10">
+                            {expoStatus?.expo.status === 'running' ? (
+                              <div className="flex items-center space-x-1 bg-green-500 text-white px-2 py-1 rounded-full text-xs">
+                                <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                                <span>실행 중</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center space-x-1 bg-red-500 text-white px-2 py-1 rounded-full text-xs">
+                                <div className="w-2 h-2 bg-white rounded-full"></div>
+                                <span>중지됨</span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {isPreviewLoading && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                              <div className="text-center">
+                                <RefreshCw className="w-8 h-8 mx-auto mb-2 animate-spin text-blue-600" />
+                                <p className="text-sm text-gray-600">네이티브 앱 로딩 중...</p>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {previewError && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-red-50">
+                              <div className="text-center p-4">
+                                <AlertCircle className="w-8 h-8 mx-auto mb-2 text-red-600" />
+                                <p className="text-sm text-red-600 mb-2">미리보기 로드 실패</p>
+                                <p className="text-xs text-gray-600">{previewError}</p>
+                                <button
+                                  onClick={() => {
+                                    setPreviewError(null);
+                                    setIsPreviewLoading(true);
+                                  }}
+                                  className="mt-2 px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+                                >
+                                  다시 시도
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                          
                           <iframe
-                            src="http://localhost:19006"
+                            src="http://localhost:8081"
                             className="w-full h-full border-0"
                             title="네이티브 앱 미리보기"
-                            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+                            onLoad={() => {
+                              console.log('네이티브 앱 미리보기 로드됨 - 실제 앱 화면 표시 중');
+                              setIsPreviewLoading(false);
+                              setPreviewError(null);
+                            }}
                             onError={() => {
-                              console.log('Expo 서버가 실행되지 않았습니다. Expo 서버를 시작해주세요.');
+                              console.log('앱 번들 로드 실패');
+                              setIsPreviewLoading(false);
+                              setPreviewError('앱 번들을 로드할 수 없습니다. Metro Bundler가 실행 중인지 확인해주세요.');
                             }}
                           />
                         </div>
@@ -784,9 +836,15 @@ export const NativeAppDevTool: React.FC = () => {
                   <p>{selectedDevice} - 세로 모드</p>
                   <p>해상도: {DEVICE_FRAMES[selectedDevice].screenWidth} × {DEVICE_FRAMES[selectedDevice].screenHeight} (시뮬레이션)</p>
                   <p className="mt-2">
-                    💡 Expo 서버가 실행되지 않은 경우 "Expo 시작" 버튼을 클릭하세요.
+                    ✅ Metro Bundler가 실행 중입니다. 실제 네이티브 앱이 미리보기에 표시됩니다.
+                  </p>
+                  <p className="text-blue-600">
+                    🚀 웹 번들에서 직접 앱을 실행합니다.
                   </p>
                   <p>📱 모바일에서 테스트하려면 Expo Go 앱을 사용하세요.</p>
+                  <p className="mt-2 text-sm text-gray-500">
+                    🔄 코드를 수정하면 실시간으로 미리보기가 업데이트됩니다.
+                  </p>
                 </div>
               </div>
             </div>

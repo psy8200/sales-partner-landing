@@ -13,9 +13,9 @@ model User {
   phone                 String               @unique
   name                  String
   passwordHash          String
-  status                UserStatus           @default("PENDING")
-  role                  UserRole             @default("GENERAL")
-  partnerStatus         PartnerStatus        @default("NOT_APPLIED")
+  status                UserStatus           @default(PENDING)
+  role                  UserRole             @default(GENERAL)
+  partnerStatus         PartnerStatus        @default(NOT_APPLIED)
   points                Float                @default(0)
   level                 Int                  @default(0)
   referralCode          String?
@@ -68,8 +68,8 @@ model Consultation {
   id            String             @id @default(cuid())
   userId        String?
   type          ConsultationType
-  status        ConsultationStatus @default("PENDING")
-  priority      Priority           @default("NORMAL")
+  status        ConsultationStatus @default(PENDING)
+  priority      Priority           @default(NORMAL)
   title         String
   description   String
   category      String
@@ -103,8 +103,8 @@ model Application {
   userId             String
   consultationId     String?
   type               ApplicationType
-  status             ApplicationStatus @default("PENDING")
-  priority           Priority          @default("NORMAL")
+  status             ApplicationStatus @default(PENDING)
+  priority           Priority          @default(NORMAL)
   productName        String
   productCategory    String
   productDetails     Json?
@@ -145,7 +145,7 @@ model Payment {
   applicationId    String?
   contractId       String?
   type             PaymentType
-  status           PaymentStatus  @default("PENDING")
+  status           PaymentStatus  @default(PENDING)
   amount           Float
   commissionAmount Float
   netAmount        Float
@@ -181,7 +181,7 @@ model Settlement {
   userId           String
   paymentId        String?
   type             SettlementType
-  status           SettlementStatus         @default("PENDING")
+  status           SettlementStatus         @default(PENDING)
   totalAmount      Float
   commissionAmount Float
   netAmount        Float
@@ -236,7 +236,7 @@ model WithdrawalRequest {
   id          String           @id @default(cuid())
   userId      String
   amount      Float
-  status      WithdrawalStatus @default("REQUESTED")
+  status      WithdrawalStatus @default(REQUESTED)
   requestedAt DateTime         @default(now())
   paidAt      DateTime?
   memo        String?
@@ -272,7 +272,7 @@ model Notification {
   type      NotificationType
   title     String
   message   String
-  status    NotificationStatus @default("UNREAD")
+  status    NotificationStatus @default(UNREAD)
   linkUrl   String?
   linkText  String?
   readAt    DateTime?
@@ -309,7 +309,7 @@ model ExportLog {
   fileUrl      String?
   filters      Json?
   requestedBy  String?
-  status       ExportStatus @default("PENDING")
+  status       ExportStatus @default(PENDING)
   progress     Int          @default(0)
   completedAt  DateTime?
   errorMessage String?
@@ -330,7 +330,7 @@ model PartnerApplication {
   area           String
   referrer       String
   additionalNote String?
-  status         PartnerApplicationStatus @default("PENDING")
+  status         PartnerApplicationStatus @default(PENDING)
   processedBy    String?
   processedAt    DateTime?
   approvedBy     String?
@@ -358,7 +358,7 @@ model Question {
   title      String
   content    String
   answer     String?
-  status     QuestionStatus @default("PENDING")
+  status     QuestionStatus @default(PENDING)
   createdAt  DateTime       @default(now())
   answeredAt DateTime?
   updatedAt  DateTime       @updatedAt
@@ -372,7 +372,7 @@ model Question {
 model ProfitItem {
   id               String           @id @default(cuid())
   name             String
-  status           ProfitItemStatus @default("ACTIVE")
+  status           ProfitItemStatus @default(ACTIVE)
   isDefault        Boolean          @default(false)
   insurance        Float            @default(0)
   telecom          Float            @default(0)
@@ -456,7 +456,7 @@ model Contract {
   startDate        DateTime?
   endDate          DateTime?
   installationDate DateTime?
-  status           ContractStatus @default("ACTIVE")
+  status           ContractStatus @default(ACTIVE)
   notes            String?
   createdBy        String
   createdAt        DateTime       @default(now())
