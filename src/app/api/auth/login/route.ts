@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
           select: { id: true, email: true, phone: true }
         });
         
-        userByPhone = allUsers.find(user => {
+        userByPhone = allUsers.find((user: any) => {
           const cleanPhone = user.phone.replace(/[^0-9]/g, '');
           return cleanPhone.endsWith(id);
         }) as any || null;

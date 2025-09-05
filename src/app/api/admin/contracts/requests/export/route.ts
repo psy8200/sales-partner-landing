@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    const rows = items.map(it => ({
+    const rows = items.map((it: any) => ({
       ID: it.id,
       고객명: it.user?.name || '-',
       연락처: it.user?.phone || '-',

@@ -45,3 +45,7 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# scripts 폴더 제외 (개발용 스크립트)
+scripts/
+scripts/**
