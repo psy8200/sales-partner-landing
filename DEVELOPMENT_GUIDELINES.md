@@ -1,10 +1,15 @@
 # 개발 가이드 (Development Guidelines)
 
 ## 📋 프로젝트 개요
-- **프로젝트명**: Sales Partner Landing Page
-- **기술 스택**: Next.js 15, TypeScript, Tailwind CSS, Prisma ORM
+- **프로젝트명**: Sales Partner Landing Page + Native Mobile App
+- **기술 스택**: 
+  - **웹**: Next.js 15, TypeScript, Tailwind CSS, Prisma ORM
+  - **모바일**: React Native, Expo, TypeScript, Zustand
 - **데이터베이스**: SQLite (개발환경)
-- **주요 기능**: 파트너 상담 신청, 계약 관리, 회원 관리, 아이템 관리, 포인트 시스템, 정산 관리
+- **주요 기능**: 
+  - **웹**: 파트너 상담 신청, 계약 관리, 회원 관리, 아이템 관리, 포인트 시스템, 정산 관리
+  - **모바일**: 네이티브 앱 회원 대시보드, 실시간 통계, 포인트 관리, 활동 내역
+  - **개발 도구**: 어드민 네이티브 앱 개발 환경, 실시간 미리보기, 디바이스 프레임
 
 ## 🏗️ 시스템 아키텍처
 
@@ -33,6 +38,7 @@
 
 ### 디렉토리 구조
 ```
+# 웹 프로젝트 (sales-partner-landing)
 src/
 ├── app/
 │   ├── admin/           # 관리자 페이지
@@ -41,9 +47,11 @@ src/
 │   │   ├── members/     # 회원 관리
 │   │   ├── collections/ # 수금 관리
 │   │   ├── settlements/ # 정산 관리
-│   │   └── dev-guide/   # 개발 가이드
+│   │   └── dev-guide/   # 개발 가이드 (네이티브 앱 개발 도구 포함)
 │   ├── (member)/        # 회원 전용 페이지
 │   ├── api/             # API 라우트
+│   │   ├── expo/        # Expo 개발 도구 API
+│   │   └── ...          # 기타 API
 │   ├── login/           # 로그인
 │   ├── signup/          # 회원가입
 │   ├── mypage/          # 마이페이지
@@ -51,8 +59,30 @@ src/
 │   ├── support/         # 고객지원
 │   └── ...              # 기타 페이지
 ├── components/          # 재사용 컴포넌트
+│   ├── NativeAppDevTool.tsx  # 네이티브 앱 개발 도구
+│   ├── FileWatcher.tsx       # 파일 변경 감지
+│   ├── ApiMonitor.tsx        # API 모니터링
+│   └── ...                   # 기타 컴포넌트
 ├── lib/                # 유틸리티 함수
 └── types/              # TypeScript 타입 정의
+
+# 네이티브 앱 프로젝트 (sales-partner-mobile-app/SalesPartnerApp)
+├── src/
+│   ├── components/     # 네이티브 컴포넌트
+│   │   ├── common/     # 공통 컴포넌트
+│   │   └── business/   # 비즈니스 컴포넌트
+│   ├── screens/        # 화면 컴포넌트
+│   │   ├── auth/       # 인증 화면
+│   │   └── main/       # 메인 화면
+│   ├── navigation/     # 네비게이션
+│   ├── services/       # API 서비스
+│   ├── hooks/          # 커스텀 훅
+│   ├── types/          # 타입 정의
+│   ├── utils/          # 유틸리티
+│   └── styles/         # 스타일
+├── App.tsx             # 앱 진입점
+├── app.json            # Expo 설정
+└── package.json        # 의존성
 ```
 
 ## 🔧 주요 개발 작업 내역
@@ -273,17 +303,79 @@ npx prisma generate
 npm run dev
 ```
 
+### 10. React Native 네이티브 앱 개발 (2025년 9월 5일)
+- **앱 아키텍처**: 
+  - React Native + Expo 프레임워크
+  - TypeScript 완전 지원
+  - Zustand 상태 관리
+  - React Navigation (Bottom Tab + Stack)
+- **주요 화면**:
+  - HomeScreen: 대시보드 (SummaryCard, QuickActions, InfoCards, RecentActivity)
+  - LoginScreen: 인증 화면
+  - MainNavigator: 네비게이션 구조
+- **API 통합**: 기존 웹 API 엔드포인트 재사용
+- **네이티브 최적화**: 
+  - iOS Safe Area 지원
+  - Android Material Design 3
+  - Haptic Feedback
+  - 생체 인증 지원
+
+### 11. 어드민 네이티브 앱 개발 도구 (2025년 9월 5일)
+- **개발 환경 통합**:
+  - Expo 서버 상태 모니터링
+  - 실시간 Hot Reload 상태 표시
+  - 네이티브 앱 빌드 로그 실시간 표시
+  - 에러 발생 시 어드민에서 즉시 확인
+- **파일 관리**:
+  - 파일 탐색기 (네이티브 앱 소스 코드)
+  - 코드 편집기 (실시간 편집)
+  - 자동 새로고침 트리거
+- **디바이스 프레임**:
+  - iPhone 15 Pro, iPhone 15, iPhone SE
+  - Galaxy S24, Galaxy S24 Ultra, Galaxy A54
+  - iPad, iPad Pro
+  - 실제 스마트폰 해상도로 미리보기
+- **API 엔드포인트**:
+  - `/api/expo/status`: Expo 서버 상태 확인
+  - `/api/expo/control`: Expo 서버 제어 (시작/중지/재시작)
+  - `/api/expo/file-changes`: 파일 변경 감지
+  - `/api/expo/git-status`: Git 상태 확인
+  - `/api/expo/api-requests`: API 요청 모니터링
+  - `/api/expo/api-stats`: API 통계
+  - `/api/expo/files`: 파일 관리
+- **실시간 모니터링**:
+  - Metro Bundler 상태
+  - 연결된 디바이스 정보
+  - 성능 메트릭
+  - 네트워크 요청/응답 로그
+
+### 12. 백업 및 버전 관리 시스템 (2025년 9월 6일)
+- **전체 시스템 백업**:
+  - 웹 프로젝트 (sales-partner-landing) 완전 백업
+  - 네이티브 앱 프로젝트 (sales-partner-mobile-app) 완전 백업
+  - 데이터베이스 (Prisma 스키마, 마이그레이션, SQLite 파일)
+  - 설정 파일 (package.json, tsconfig.json, 환경변수)
+- **GitHub 푸시**:
+  - 브랜치: feature/member-home-dark
+  - 원격 저장소: https://github.com/psy8200/sales-partner-landing.git
+  - 커밋: 네이티브 앱 개발 및 어드민 도구 완성
+- **백업 통계**:
+  - 총 파일 수: 51,251개
+  - 백업 위치: C:\home\backup-2025-09-06_00-43-33\
+  - 압축 파일: backup-2025-09-06_00-43-33.zip
+
 ## 🚧 현재 개발 중인 기능
-- **ESLint 문제 해결**: 53개 경고/오류 수정
-- **타입 안전성 강화**: any 타입 제거 및 구체적 타입 정의
-- **코드 정리**: 사용하지 않는 변수/함수 제거
-- **성능 최적화**: React Hooks 의존성 배열 수정
+- **네이티브 앱 테스트**: 실제 디바이스에서 앱 테스트
+- **성능 최적화**: 네이티브 앱 성능 튜닝
+- **UI/UX 개선**: 네이티브 앱 사용자 경험 향상
+- **API 통합**: 웹과 네이티브 앱 간 데이터 동기화
 
 ## 📞 지원 및 문의
 - **개발자**: AI Assistant
-- **최종 업데이트**: 2025년 9월 3일
-- **버전**: 1.1.0
-- **백업 상태**: ✅ 완료 (2025-09-03T17-03-43-708Z)
+- **최종 업데이트**: 2025년 9월 6일
+- **버전**: 2.0.0 (네이티브 앱 포함)
+- **백업 상태**: ✅ 완료 (2025-09-06T00-43-33)
+- **GitHub 상태**: ✅ 푸시 완료 (feature/member-home-dark)
 
 ---
 
