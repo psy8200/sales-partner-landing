@@ -6,7 +6,6 @@ import HeroSection from '@/components/HeroSection';
 import BenefitSection from '@/components/BenefitSection';
 import RewardSection from '@/components/RewardSection';
 import CTASection from '@/components/CTASection';
-import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 import Footer from '@/components/Footer';
 
 // 수익구조 스타일별 컴포넌트들
@@ -22,7 +21,6 @@ export default function Home() {
       <RewardSection />
       <CTASection />
       <Footer />
-      <ServiceWorkerRegistration />
     </main>
   );
 }

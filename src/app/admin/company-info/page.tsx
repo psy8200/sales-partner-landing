@@ -14,6 +14,9 @@ interface CompanyInfo {
   website?: string;
   description?: string;
   referralCodeDefault?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function CompanyInfoPage() {
@@ -23,26 +26,26 @@ export default function CompanyInfoPage() {
   const [message, setMessage] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [originalInfo, setOriginalInfo] = useState({
-    companyName: '주식회사 세일즈파트너스',
-    businessNumber: '367-87-02260',
-    representative: '박수용',
-    address: '서울특별시 금천구 디지털로9길 68 대륭포스트타워5차 232호',
-    phone: '1600-5360',
-    email: 'psy777@naver.com',
-    website: 'https://salespartner.com',
-    description: '평생 연금을 만들어보세요. 행복한 노후보장 ~!!',
+    companyName: '',
+    businessNumber: '',
+    representative: '',
+    address: '',
+    phone: '',
+    email: '',
+    website: '',
+    description: '',
     referralCodeDefault: ''
   });
 
   const [formData, setFormData] = useState({
-    companyName: '주식회사 세일즈파트너스',
-    businessNumber: '367-87-02260',
-    representative: '박수용',
-    address: '서울특별시 금천구 디지털로9길 68 대륭포스트타워5차 232호',
-    phone: '1600-5360',
-    email: 'psy777@naver.com',
-    website: 'https://salespartner.com',
-    description: '평생 연금을 만들어보세요. 행복한 노후보장 ~!!',
+    companyName: '',
+    businessNumber: '',
+    representative: '',
+    address: '',
+    phone: '',
+    email: '',
+    website: '',
+    description: '',
     referralCodeDefault: ''
   });
 
@@ -66,30 +69,34 @@ export default function CompanyInfoPage() {
             description: data.data.description || '',
             referralCodeDefault: data.data.referralCodeDefault || ''
           });
+        } else {
+          // 데이터가 없을 때는 빈 폼으로 설정
+          setFormData({
+            companyName: '',
+            businessNumber: '',
+            representative: '',
+            address: '',
+            phone: '',
+            email: '',
+            website: '',
+            description: '',
+            referralCodeDefault: ''
+          });
         }
-        
-        // 로컬 스토리지에서 추천인코드 복원 (임시 해결책)
-        const savedReferralCode = localStorage.getItem('companyReferralCode');
-        if (savedReferralCode) {
-          setFormData(prev => ({
-            ...prev,
-            referralCodeDefault: savedReferralCode
-          }));
-        }
-        
-        // 실패하거나 데이터가 없어도 기본값은 이미 설정되어 있음
       } catch (error) {
         console.error('회사정보 로드 오류:', error);
-        // 오류 시에도 기본값은 이미 설정되어 있음
-        
-        // 로컬 스토리지에서 추천인코드 복원
-        const savedReferralCode = localStorage.getItem('companyReferralCode');
-        if (savedReferralCode) {
-          setFormData(prev => ({
-            ...prev,
-            referralCodeDefault: savedReferralCode
-          }));
-        }
+        // 오류 시에도 빈 폼으로 설정
+        setFormData({
+          companyName: '',
+          businessNumber: '',
+          representative: '',
+          address: '',
+          phone: '',
+          email: '',
+          website: '',
+          description: '',
+          referralCodeDefault: ''
+        });
       }
     };
 
@@ -136,12 +143,10 @@ export default function CompanyInfoPage() {
 
       if (data.success) {
         setMessage('회사정보가 성공적으로 저장되었습니다!');
-        setIsEditing(false);
-        setOriginalInfo({ ...formData });
         
         // 저장된 데이터를 즉시 반영 (새로고침 없이)
-        setCompanyInfo({
-          id: 'current',
+        const savedData = {
+          id: data.data.id,
           companyName: formData.companyName,
           businessNumber: formData.businessNumber,
           representative: formData.representative,
@@ -150,13 +155,17 @@ export default function CompanyInfoPage() {
           email: formData.email,
           website: formData.website,
           description: formData.description,
-          referralCodeDefault: formData.referralCodeDefault
-        });
+          referralCodeDefault: formData.referralCodeDefault,
+          isActive: true,
+          createdAt: data.data.createdAt,
+          updatedAt: data.data.updatedAt
+        };
         
-        // 로컬 스토리지에 추천인코드 저장 (임시 해결책)
-        if (formData.referralCodeDefault) {
-          localStorage.setItem('companyReferralCode', formData.referralCodeDefault);
-        }
+        setCompanyInfo(savedData);
+        setOriginalInfo({ ...formData });
+        
+        // 편집 모드는 유지하여 사용자가 저장된 값을 확인하고 추가 수정할 수 있도록 함
+        // setIsEditing(false); // 이 줄을 제거하여 편집 모드 유지
       } else {
         setMessage(data.message || '저장 중 오류가 발생했습니다.');
       }
@@ -225,7 +234,7 @@ export default function CompanyInfoPage() {
                     onClick={() => document.getElementById('companyForm')?.dispatchEvent(new Event('submit', { bubbles: true }))}
                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                   >
-                    수정반영하기
+                    {saving ? '저장 중...' : '저장하기'}
                   </button>
                 </div>
               )}
@@ -252,9 +261,10 @@ export default function CompanyInfoPage() {
                 />
               </div>
 
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  대표자명 *
+                  최고관리자 *
                 </label>
                 <input
                   type="text"
@@ -263,7 +273,7 @@ export default function CompanyInfoPage() {
                   onChange={handleInputChange}
                   required
                   disabled={!isEditing}
-                  placeholder="대표자명을 입력하세요"
+                  placeholder="최고관리자명을 입력하세요"
                   className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                     !isEditing ? 'bg-gray-100 cursor-not-allowed' : ''
                   }`}
@@ -341,6 +351,7 @@ export default function CompanyInfoPage() {
                 />
               </div>
 
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   기본 추천인코드
@@ -361,7 +372,7 @@ export default function CompanyInfoPage() {
                 </p>
               </div>
 
-              <div className="lg:col-span-2">
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   회사주소 *
                 </label>
@@ -378,6 +389,7 @@ export default function CompanyInfoPage() {
                   }`}
                 />
               </div>
+
 
               <div className="lg:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -399,14 +411,21 @@ export default function CompanyInfoPage() {
 
             {/* 저장 버튼 - 편집 모드에서만 표시 */}
             {isEditing && (
-              <div className="mt-8 flex justify-end">
+              <div className="mt-8 flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={cancelEditing}
+                  className="px-6 py-2 text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                >
+                  편집 종료
+                </button>
                 <button
                   type="submit"
                   form="companyForm"
                   disabled={saving}
                   className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {saving ? '저장 중...' : '수정반영하기'}
+                  {saving ? '저장 중...' : '저장하기'}
                 </button>
               </div>
             )}
@@ -419,6 +438,8 @@ export default function CompanyInfoPage() {
               <li>• 회사정보는 랜딩페이지 Footer에 표시됩니다.</li>
               <li>• 로고는 고정 파일로 설정되어 있습니다.</li>
               <li>• 수정된 정보는 즉시 랜딩페이지에 반영됩니다.</li>
+              <li>• 저장 후에도 편집 모드가 유지되어 저장된 값을 확인하고 추가 수정할 수 있습니다.</li>
+              <li>• "편집 종료" 버튼을 클릭하면 읽기 전용 모드로 전환됩니다.</li>
             </ul>
           </div>
         </motion.div>

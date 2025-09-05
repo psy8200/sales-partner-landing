@@ -219,6 +219,60 @@ src/
 - **모니터링**: 에러 추적 및 성능 모니터링
 - **버전 관리**: Git을 통한 코드 버전 관리
 
+## 🌏 한글 인코딩 문제 해결
+
+### 🚨 문제 상황
+- API 응답에서 한글이 `???` 또는 깨진 문자로 표시
+- 데이터베이스에는 정상 저장되지만 웹에서 표시 안됨
+- PowerShell에서 API 호출 시 한글 깨짐
+
+### ✅ 해결 방법
+API 엔드포인트에서 Content-Type 헤더에 charset=utf-8 명시:
+
+```typescript
+// ❌ 문제가 있는 코드
+return NextResponse.json({
+  success: true,
+  data: companyInfo
+});
+
+// ✅ 해결된 코드
+return NextResponse.json({
+  success: true,
+  data: companyInfo
+}, {
+  headers: {
+    'Content-Type': 'application/json; charset=utf-8'
+  }
+});
+```
+
+### 📁 적용 대상
+- 모든 API 엔드포인트 (GET, POST, PUT, DELETE)
+- 한글 데이터를 다루는 모든 응답
+
+### 🎯 예방 방법
+- 새로운 API 생성 시 항상 Content-Type 헤더 포함
+- 한글 데이터 처리 시 charset=utf-8 설정 필수
+
+### 🔧 긴급 복구 절차
+```powershell
+# 1. 모든 Node.js 프로세스 종료
+taskkill /f /im node.exe
+
+# 2. Prisma 캐시 삭제
+Remove-Item -Recurse -Force "node_modules\.prisma" -ErrorAction SilentlyContinue
+
+# 3. 데이터베이스 리셋
+npx prisma migrate reset --force
+
+# 4. Prisma 클라이언트 재생성
+npx prisma generate
+
+# 5. 서버 시작
+npm run dev
+```
+
 ## 🚧 현재 개발 중인 기능
 - **ESLint 문제 해결**: 53개 경고/오류 수정
 - **타입 안전성 강화**: any 타입 제거 및 구체적 타입 정의

@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { ActivityLogger } from '@/lib/activityLogger';
+import { createSuccessResponse, createErrorResponse, createBadRequestResponse } from '@/lib/apiResponse';
 
 // 회원가입 데이터 검증 스키마
 const signupSchema = z.object({
@@ -34,10 +35,7 @@ export async function POST(request: NextRequest) {
     });
     
     if (existingUser) {
-      return NextResponse.json(
-        { error: '이미 등록된 이메일입니다.' },
-        { status: 400 }
-      );
+      return createBadRequestResponse('이미 등록된 이메일입니다.');
     }
     
     // 전화번호 중복 확인
@@ -46,10 +44,7 @@ export async function POST(request: NextRequest) {
     });
     
     if (existingPhone) {
-      return NextResponse.json(
-        { error: '이미 등록된 전화번호입니다.' },
-        { status: 400 }
-      );
+      return createBadRequestResponse('이미 등록된 전화번호입니다.');
     }
     
     // 비밀번호 해시화
@@ -108,9 +103,7 @@ export async function POST(request: NextRequest) {
       },
     });
     
-    return NextResponse.json({
-      success: true,
-      message: '회원가입이 완료되었습니다.',
+    return createSuccessResponse({
       user: {
         id: user.id,
         name: user.name,
@@ -119,21 +112,15 @@ export async function POST(request: NextRequest) {
         role: user.role,
         partnerStatus: user.partnerStatus,
       },
-    });
+    }, '회원가입이 완료되었습니다.');
     
   } catch (error) {
     console.error('회원가입 오류:', error);
     
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: '입력 데이터가 올바르지 않습니다.', details: (error as any).errors },
-        { status: 400 }
-      );
+      return createBadRequestResponse('입력 데이터가 올바르지 않습니다.');
     }
     
-    return NextResponse.json(
-      { error: '회원가입 중 오류가 발생했습니다.' },
-      { status: 500 }
-    );
+    return createErrorResponse('회원가입 중 오류가 발생했습니다.');
   }
 }

@@ -1,0 +1,16 @@
+{
+  "notifications": [
+    {
+      "id": "cmf6rb6i10007arz8oj06tnh8",
+      "userId": "cmf6rb6h10001arz8n1ay5k8i",
+      "type": "SYSTEM",
+      "title": "회원가입 완료",
+      "message": "회원가입이 완료되었습니다. 파트너 등록을 진행하실 수 있습니다.",
+      "status": "UNREAD",
+      "linkUrl": null,
+      "linkText": null,
+      "readAt": null,
+      "createdAt": "2025-09-05T11:33:33.481Z"
+    }
+  ]
+}

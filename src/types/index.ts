@@ -199,8 +199,6 @@ export interface ExportParams {
 export interface CompanyInfo {
   id: string;
   companyName: string;
-  companyLogo: string;
-  bottomLogo?: string;
   businessNumber: string;
   representative: string;
   address: string;
@@ -208,6 +206,7 @@ export interface CompanyInfo {
   email: string;
   website?: string;
   description?: string;
+  referralCodeDefault?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
 import { ActivityLogger } from '@/lib/activityLogger';
+import { createSuccessResponse, createErrorResponse, createBadRequestResponse, createUnauthorizedResponse, createNotFoundResponse } from '@/lib/apiResponse';
 
 const inquirySchema = z.object({
   title: z.string().min(1, '제목을 입력해주세요.'),
@@ -18,10 +19,7 @@ export async function POST(request: NextRequest) {
     const authToken = request.cookies.get('authToken')?.value;
     
     if (!authToken) {
-      return NextResponse.json(
-        { error: '로그인이 필요합니다.' },
-        { status: 401 }
-      );
+      return createUnauthorizedResponse('로그인이 필요합니다.');
     }
 
     const userId = authToken;
@@ -33,10 +31,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: '사용자 정보를 찾을 수 없습니다.' },
-        { status: 404 }
-      );
+      return createNotFoundResponse('사용자 정보를 찾을 수 없습니다.');
     }
 
     // 문의/건의 생성
@@ -56,30 +51,22 @@ export async function POST(request: NextRequest) {
       await ActivityLogger.logSuggestion(user.id, user.name, validatedData.title);
     }
 
-    return NextResponse.json({
-      success: true,
-      message: '문의가 성공적으로 접수되었습니다.',
+    return createSuccessResponse({
       question: {
         id: question.id,
         title: question.title,
         status: question.status,
         createdAt: question.createdAt,
       },
-    });
+    }, '문의가 성공적으로 접수되었습니다.');
   } catch (error) {
     console.error('문의 접수 오류:', error);
     
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: '입력 데이터가 올바르지 않습니다.', details: (error as any).errors },
-        { status: 400 }
-      );
+      return createBadRequestResponse('입력 데이터가 올바르지 않습니다.');
     }
     
-    return NextResponse.json(
-      { error: '문의 접수 중 오류가 발생했습니다.' },
-      { status: 500 }
-    );
+    return createErrorResponse('문의 접수 중 오류가 발생했습니다.');
   }
 }
 
@@ -90,13 +77,7 @@ export async function GET(request: NextRequest) {
     const authToken = request.cookies.get('authToken')?.value;
     
     if (!authToken) {
-      return NextResponse.json(
-        { 
-          success: false,
-          error: "로그인이 필요합니다." 
-        },
-        { status: 401 }
-      );
+      return createUnauthorizedResponse('로그인이 필요합니다.');
     }
 
     const userId = authToken;
@@ -117,8 +98,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({
-      success: true,
+    return createSuccessResponse({
       inquiries: inquiries.map(inquiry => ({
         id: inquiry.id,
         title: inquiry.title,
@@ -132,12 +112,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('문의글 조회 API 오류:', error);
-    return NextResponse.json(
-      { 
-        success: false,
-        error: "문의글 목록을 불러오지 못했습니다." 
-      },
-      { status: 500 }
-    );
+    return createErrorResponse('문의글 목록을 불러오지 못했습니다.');
   }
 }

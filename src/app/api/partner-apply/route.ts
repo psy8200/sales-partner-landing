@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
+import { createSuccessResponse, createErrorResponse, createBadRequestResponse, createUnauthorizedResponse, createNotFoundResponse } from '@/lib/apiResponse';
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,7 +10,7 @@ export async function POST(req: NextRequest) {
     // 사용자 인증 확인
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
-      return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
+      return createUnauthorizedResponse('인증이 필요합니다.');
     }
 
     // 사용자 ID 추출 (실제로는 JWT 토큰에서 추출해야 함)
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: '사용자를 찾을 수 없습니다.' }, { status: 404 });
+      return createNotFoundResponse('사용자를 찾을 수 없습니다.');
     }
 
     // 이미 파트너신청이 있는지 확인
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (existingApplication) {
-      return NextResponse.json({ error: '이미 파트너신청이 존재합니다.' }, { status: 400 });
+      return createBadRequestResponse('이미 파트너신청이 존재합니다.');
     }
 
     // 추천인코드 자동 설정 (회원가입시 입력값 우선, 없으면 기본값)
@@ -95,17 +96,13 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    return NextResponse.json({
-      success: true,
-      message: '파트너신청이 성공적으로 접수되었습니다.',
-      data: partnerApplication
-    });
+    return createSuccessResponse(
+      partnerApplication,
+      '파트너신청이 성공적으로 접수되었습니다.'
+    );
 
   } catch (error) {
     console.error('파트너신청 실패:', error);
-    return NextResponse.json({
-      error: '파트너신청에 실패했습니다.',
-      details: error instanceof Error ? error.message : String(error)
-    }, { status: 500 });
+    return createErrorResponse('파트너신청에 실패했습니다.');
   }
 }

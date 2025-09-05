@@ -481,20 +481,17 @@ model Contract {
 model CompanyInfo {
   id                  String   @id @default(cuid())
   companyName         String
-  companyLogo         String
-  bottomLogo          String?
   businessNumber      String
   representative      String
   address             String
-  companyAddress      String?
   phone               String
   email               String
   website             String?
   description         String?
+  referralCodeDefault String?
   isActive            Boolean  @default(true)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
-  referralCodeDefault String?
 
   @@index([isActive])
   @@index([createdAt])

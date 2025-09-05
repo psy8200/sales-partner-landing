@@ -1,0 +1,110 @@
+{
+  "users": [
+    {
+      "id": "cmf6rb6h10001arz8n1ay5k8i",
+      "email": "test@example.com",
+      "phone": "010-1234-5678",
+      "name": "김철수",
+      "passwordHash": "$2b$12$RP89puc9NM4u3usGrG/dku5zjITnubkmWargbHQ1ODmJk/e2oXKIq",
+      "status": "ACTIVE",
+      "role": "GENERAL",
+      "partnerStatus": "NOT_APPLIED",
+      "points": 0,
+      "level": 0,
+      "referralCode": null,
+      "referralCodeConfirmed": false,
+      "finalPoints": 0,
+      "monthlyReferrals": 0,
+      "totalReferrals": 0,
+      "bankName": null,
+      "bankAccount": null,
+      "accountHolder": null,
+      "settlementCycle": null,
+      "profileImage": null,
+      "birthDate": null,
+      "gender": null,
+      "address": null,
+      "addressDetail": null,
+      "zipCode": null,
+      "marketingAgreed": false,
+      "marketingAgreedAt": null,
+      "agreeTerms": true,
+      "agreeTermsAt": "2025-09-05T11:33:33.442Z",
+      "lastLoginAt": null,
+      "loginCount": 0,
+      "isActive": true,
+      "createdAt": "2025-09-05T11:33:33.444Z",
+      "updatedAt": "2025-09-05T11:33:33.444Z",
+      "deletedAt": null
+    }
+  ],
+  "contracts": [],
+  "items": [],
+  "partner-applications": [],
+  "questions": [],
+  "activity-logs": [
+    {
+      "id": "cmf6rb6hp0003arz89j2yipsc",
+      "type": "USER_REGISTRATION",
+      "title": "새로운 회원이 가입했습니다",
+      "description": "김철수님이 회원으로 가입했습니다.",
+      "userId": "cmf6rb6h10001arz8n1ay5k8i",
+      "metadata": "{\"userName\":\"김철수\"}",
+      "createdAt": "2025-09-05T11:33:33.469Z"
+    }
+  ],
+  "company-info": [
+    {
+      "id": "cmf6oy28p0000arz8fkqkp9p2",
+      "companyName": "주식회사 세일즈파트너스",
+      "businessNumber": "367-87-02260",
+      "representative": "박수용",
+      "address": "서울특별시 금천구 디지털로9길 68 대륭포스트타워5차 232호",
+      "phone": "1600-5360",
+      "email": "psy777@naver.com",
+      "website": "https://salespartner.com",
+      "description": "평생 연금을 만들어보세요. 행복한 노후보장 ~!!",
+      "referralCodeDefault": "000001",
+      "isActive": true,
+      "createdAt": "2025-09-05T10:27:22.202Z",
+      "updatedAt": "2025-09-05T10:27:22.202Z"
+    }
+  ],
+  "consultations": [],
+  "applications": [],
+  "payments": [],
+  "settlements": [],
+  "point-ledgers": [],
+  "withdrawal-requests": [],
+  "user-logs": [
+    {
+      "id": "cmf6rb6hw0005arz82r3wx0ow",
+      "userId": "cmf6rb6h10001arz8n1ay5k8i",
+      "action": "SIGNUP",
+      "category": "AUTH",
+      "description": "회원가입 완료 (예비파트너)",
+      "ipAddress": "::1",
+      "userAgent": "node",
+      "metadata": null,
+      "createdAt": "2025-09-05T11:33:33.475Z"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "cmf6rb6i10007arz8oj06tnh8",
+      "userId": "cmf6rb6h10001arz8n1ay5k8i",
+      "type": "SYSTEM",
+      "title": "회원가입 완료",
+      "message": "회원가입이 완료되었습니다. 파트너 등록을 진행하실 수 있습니다.",
+      "status": "UNREAD",
+      "linkUrl": null,
+      "linkText": null,
+      "readAt": null,
+      "createdAt": "2025-09-05T11:33:33.481Z"
+    }
+  ],
+  "system-configs": [],
+  "export-logs": [],
+  "profit-items": [],
+  "activity-backups": []
+}

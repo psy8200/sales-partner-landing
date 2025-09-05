@@ -6,8 +6,6 @@ import Image from 'next/image';
 interface CompanyInfo {
   id: string;
   companyName: string;
-  companyLogo: string;
-  bottomLogo?: string;
   businessNumber: string;
   representative: string;
   address: string;
@@ -15,6 +13,10 @@ interface CompanyInfo {
   email: string;
   website?: string;
   description?: string;
+  referralCodeDefault?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const Footer = () => {
@@ -97,7 +99,7 @@ const Footer = () => {
               <h4 className="text-sm font-semibold text-gray-300 mb-3">회사 정보</h4>
               <div className="space-y-2 text-sm text-gray-400">
                 <div>
-                  <span className="font-medium">대표자:</span> 박수용
+                  <span className="font-medium">최고관리자:</span> 박수용
                 </div>
                 <div>
                   <span className="font-medium">사업자등록번호:</span> 367-87-02260
@@ -154,7 +156,7 @@ const Footer = () => {
               <h4 className="text-sm font-semibold text-gray-300 mb-3">회사 정보</h4>
               <div className="space-y-2 text-sm text-gray-400">
                 <div>
-                  <span className="font-medium">대표자:</span> 박수용
+                  <span className="font-medium">최고관리자:</span> 박수용
                 </div>
                 <div>
                   <span className="font-medium">사업자등록번호:</span> 367-87-02260
@@ -177,7 +179,7 @@ const Footer = () => {
           {/* 회사 정보 */}
           <div className="lg:col-span-2">
             <div className="flex items-center mb-4">
-              {renderLogo(companyInfo.bottomLogo)}
+              {renderLogo()}
               <div>
                 <h3 className="text-lg font-bold text-white">{companyInfo.companyName}</h3>
                 {companyInfo.description && (
@@ -222,7 +224,7 @@ const Footer = () => {
             <h4 className="text-sm font-semibold text-gray-300 mb-3">회사 정보</h4>
             <div className="space-y-2 text-sm text-gray-400">
               <div>
-                <span className="font-medium">대표자:</span> {companyInfo.representative}
+                <span className="font-medium">최고관리자:</span> {companyInfo.representative}
               </div>
               <div>
                 <span className="font-medium">사업자등록번호:</span> {companyInfo.businessNumber}

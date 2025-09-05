@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
+import { createSuccessResponse, createErrorResponse, createBadRequestResponse } from '@/lib/apiResponse';
 
 export const runtime = 'nodejs';
 
@@ -53,9 +54,7 @@ export async function POST(request: NextRequest) {
 
     // 필수 필드 검증
     if (!customerName || !customerPhone || !itemCategory || !itemName || !contractAmount || !contractDate) {
-      return NextResponse.json({ 
-        error: '필수 입력 항목이 누락되었습니다.' 
-      }, { status: 400 });
+      return createBadRequestResponse('필수 입력 항목이 누락되었습니다.');
     }
 
     // 날짜 유효성 검증
@@ -63,9 +62,7 @@ export async function POST(request: NextRequest) {
     const parsedEndDate = safeDateParse(endDate);
 
     if (!parsedContractDate) {
-      return NextResponse.json({ 
-        error: '계약일자가 유효하지 않습니다.' 
-      }, { status: 400 });
+      return createBadRequestResponse('계약일자가 유효하지 않습니다.');
     }
 
     // 계약번호 생성
@@ -97,17 +94,14 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ 
-      success: true, 
-      contract,
-      message: '계약이 성공적으로 입력되었습니다.' 
-    });
+    return createSuccessResponse(
+      { contract },
+      '계약이 성공적으로 입력되었습니다.'
+    );
 
   } catch (error) {
     console.error('계약 입력 오류:', error);
-    return NextResponse.json({ 
-      error: '계약 입력 중 오류가 발생했습니다.' 
-    }, { status: 500 });
+    return createErrorResponse('계약 입력 중 오류가 발생했습니다.');
   }
 }
 
@@ -137,7 +131,7 @@ export async function GET(request: NextRequest) {
     // 전체 개수 조회
     const total = await prisma.contract.count({ where });
 
-    return NextResponse.json({
+    return createSuccessResponse({
       contracts,
       pagination: {
         page,
@@ -149,8 +143,6 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('계약 목록 조회 오류:', error);
-    return NextResponse.json({ 
-      error: '계약 목록 조회 중 오류가 발생했습니다.' 
-    }, { status: 500 });
+    return createErrorResponse('계약 목록 조회 중 오류가 발생했습니다.');
   }
 }

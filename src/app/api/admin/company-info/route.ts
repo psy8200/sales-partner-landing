@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
+import { createSuccessResponse, createErrorResponse, createNotFoundResponse } from '@/lib/apiResponse';
 
 // 회사정보 조회
 export async function GET() {
@@ -10,22 +11,13 @@ export async function GET() {
     });
 
     if (!companyInfo) {
-      return NextResponse.json({
-        success: false,
-        error: '회사정보가 설정되지 않았습니다.'
-      }, { status: 404 });
+      return createNotFoundResponse('회사정보가 설정되지 않았습니다.');
     }
 
-    return NextResponse.json({
-      success: true,
-      data: companyInfo
-    });
+    return createSuccessResponse(companyInfo);
   } catch (error) {
     console.error('회사정보 조회 오류:', error);
-    return NextResponse.json(
-      { success: false, error: '회사정보를 가져오는 중 오류가 발생했습니다.' },
-      { status: 500 }
-    );
+    return createErrorResponse('회사정보를 가져오는 중 오류가 발생했습니다.');
   }
 }
 
@@ -36,7 +28,6 @@ export async function POST(request: NextRequest) {
     
     const {
       companyName,
-      companyLogo,
       businessNumber,
       representative,
       address,
@@ -68,7 +59,6 @@ export async function POST(request: NextRequest) {
         where: { id: existingCompany.id },
         data: {
           companyName,
-          companyLogo: companyLogo || '',
           businessNumber,
           representative,
           address,
@@ -85,7 +75,6 @@ export async function POST(request: NextRequest) {
       companyInfo = await prisma.companyInfo.create({
         data: {
           companyName,
-          companyLogo: companyLogo || '',
           businessNumber,
           representative,
           address,
@@ -99,11 +88,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({
-      success: true,
-      data: companyInfo,
-      message: '회사정보가 성공적으로 저장되었습니다.'
-    });
+    return createSuccessResponse(
+      companyInfo,
+      '회사정보가 성공적으로 저장되었습니다.'
+    );
   } catch (error) {
     console.error('회사정보 저장 오류:', error);
     
@@ -112,9 +100,6 @@ export async function POST(request: NextRequest) {
       errorMessage += ` (${error.message})`;
     }
     
-    return NextResponse.json(
-      { success: false, error: errorMessage },
-      { status: 500 }
-    );
+    return createErrorResponse(errorMessage);
   }
 }

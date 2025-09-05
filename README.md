@@ -29,6 +29,12 @@ npm run prisma:reset
 npm run prisma:sync
 ```
 
+##### **3. 한글 인코딩 문제 해결**
+```bash
+# 한글 인코딩 문제 자동 해결
+npm run fix:encoding
+```
+
 ##### **3. 개선된 Prisma 클라이언트 관리**
 - **싱글톤 패턴**: 메모리 효율성 및 연결 안정성
 - **자동 연결 테스트**: 클라이언트 생성 시 연결 상태 확인

@@ -1,9 +1,65 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 
+interface BackupInfo {
+  manual: {
+    status: string;
+    lastBackup?: string;
+    backupDate?: string;
+    backupCount?: number;
+    totalSize?: number;
+    backupData?: {
+      users: number;
+      contracts: number;
+      items: number;
+      partnerApplications: number;
+      activityLogs: number;
+    };
+    message?: string;
+  };
+  git: {
+    status: string;
+    currentBranch?: string;
+    lastCommit?: string;
+    modifiedFiles?: number;
+    untrackedFiles?: number;
+    totalChanges?: number;
+    message?: string;
+  };
+  github: {
+    status: string;
+    remoteUrl?: string;
+    isUpToDate?: boolean;
+    hasUnpushedCommits?: boolean;
+    hasUnpulledCommits?: boolean;
+    lastPushTime?: string;
+    syncStatus?: string;
+    message?: string;
+  };
+}
+
 export default function DevGuidePage() {
+  const [backupInfo, setBackupInfo] = useState<BackupInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchBackupInfo();
+  }, []);
+
+  const fetchBackupInfo = async () => {
+    try {
+      const response = await fetch('/api/admin/backup-info');
+      const data = await response.json();
+      setBackupInfo(data);
+    } catch (error) {
+      console.error('백업 정보 로드 실패:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto">
@@ -151,18 +207,95 @@ export default function DevGuidePage() {
               </div>
             </div>
 
-            {/* 백업 정보 */}
-            <div className="mt-8 bg-blue-50 p-6 rounded-lg border border-blue-200">
-              <div className="flex items-center mb-4">
-                <div className="text-lg mr-2">💾</div>
-                <h3 className="text-lg font-semibold text-blue-900">백업 정보</h3>
+            {/* 백업 정보 섹션 */}
+            <div className="mt-8">
+              <div className="flex items-center mb-6">
+                <div className="text-2xl mr-3">💾</div>
+                <h2 className="text-2xl font-semibold text-gray-900">백업 시스템 현황</h2>
+                <button 
+                  onClick={fetchBackupInfo}
+                  className="ml-4 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+                >
+                  새로고침
+                </button>
               </div>
-              <div className="space-y-2 text-sm text-blue-800">
-                <div>• <strong>최근 백업:</strong> 2025-09-03 21:23:02 (한국시간)</div>
-                <div>• <strong>백업 위치:</strong> /auto-backups/2025-09-03T12-23-02-638Z/</div>
-                <div>• <strong>백업 크기:</strong> 22KB (압축됨)</div>
-                <div>• <strong>백업 상태:</strong> ✅ 완료</div>
-                <div>• <strong>백업 내용:</strong> 사용자 4명, 계약 7건, 상품 17개, 활동로그 9건</div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* 수동 백업 정보 */}
+                <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                  <div className="flex items-center mb-4">
+                    <div className="text-lg mr-2">📁</div>
+                    <h3 className="text-lg font-semibold text-blue-900">수동 백업</h3>
+                  </div>
+                  {loading ? (
+                    <div className="text-sm text-blue-700">로딩 중...</div>
+                  ) : backupInfo?.manual.status === 'success' ? (
+                    <div className="space-y-2 text-sm text-blue-800">
+                      <div>• <strong>최근 백업:</strong> {backupInfo.manual.lastBackup}</div>
+                      <div>• <strong>백업 일시:</strong> {backupInfo.manual.backupDate ? new Date(backupInfo.manual.backupDate).toLocaleString('ko-KR') : 'N/A'}</div>
+                      <div>• <strong>백업 개수:</strong> {backupInfo.manual.backupCount}개</div>
+                      <div>• <strong>백업 크기:</strong> {backupInfo.manual.totalSize}KB</div>
+                      <div>• <strong>백업 상태:</strong> ✅ 완료</div>
+                      {backupInfo.manual.backupData && (
+                        <div>• <strong>백업 내용:</strong> 사용자 {backupInfo.manual.backupData.users}명, 계약 {backupInfo.manual.backupData.contracts}건, 상품 {backupInfo.manual.backupData.items}개</div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-red-600">
+                      ❌ {backupInfo?.manual.message || '백업 정보를 가져올 수 없습니다.'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Git 백업 정보 */}
+                <div className="bg-green-50 p-6 rounded-lg border border-green-200">
+                  <div className="flex items-center mb-4">
+                    <div className="text-lg mr-2">🌿</div>
+                    <h3 className="text-lg font-semibold text-green-900">Git 백업</h3>
+                  </div>
+                  {loading ? (
+                    <div className="text-sm text-green-700">로딩 중...</div>
+                  ) : backupInfo?.git.status === 'success' ? (
+                    <div className="space-y-2 text-sm text-green-800">
+                      <div>• <strong>현재 브랜치:</strong> {backupInfo.git.currentBranch}</div>
+                      <div>• <strong>마지막 커밋:</strong> {backupInfo.git.lastCommit}</div>
+                      <div>• <strong>수정된 파일:</strong> {backupInfo.git.modifiedFiles}개</div>
+                      <div>• <strong>추적되지 않은 파일:</strong> {backupInfo.git.untrackedFiles}개</div>
+                      <div>• <strong>총 변경사항:</strong> {backupInfo.git.totalChanges}개</div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-red-600">
+                      ❌ {backupInfo?.git.message || 'Git 정보를 가져올 수 없습니다.'}
+                    </div>
+                  )}
+                </div>
+
+                {/* GitHub 백업 정보 */}
+                <div className="bg-purple-50 p-6 rounded-lg border border-purple-200">
+                  <div className="flex items-center mb-4">
+                    <div className="text-lg mr-2">☁️</div>
+                    <h3 className="text-lg font-semibold text-purple-900">GitHub 백업</h3>
+                  </div>
+                  {loading ? (
+                    <div className="text-sm text-purple-700">로딩 중...</div>
+                  ) : backupInfo?.github.status === 'success' ? (
+                    <div className="space-y-2 text-sm text-purple-800">
+                      <div>• <strong>원격 저장소:</strong> {backupInfo.github.remoteUrl}</div>
+                      <div>• <strong>동기화 상태:</strong> {
+                        backupInfo.github.syncStatus === 'up_to_date' ? '✅ 최신' :
+                        backupInfo.github.syncStatus === 'ahead' ? '⬆️ 앞서감' :
+                        backupInfo.github.syncStatus === 'behind' ? '⬇️ 뒤처짐' : '❓ 알 수 없음'
+                      }</div>
+                      <div>• <strong>마지막 푸시:</strong> {backupInfo.github.lastPushTime || 'N/A'}</div>
+                      <div>• <strong>푸시 대기:</strong> {backupInfo.github.hasUnpushedCommits ? '⚠️ 있음' : '✅ 없음'}</div>
+                      <div>• <strong>풀 대기:</strong> {backupInfo.github.hasUnpulledCommits ? '⚠️ 있음' : '✅ 없음'}</div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-red-600">
+                      ❌ {backupInfo?.github.message || 'GitHub 정보를 가져올 수 없습니다.'}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
