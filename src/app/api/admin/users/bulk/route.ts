@@ -3,16 +3,84 @@ import { prisma } from '@/lib/db';
 
 export async function DELETE(request: NextRequest) {
   try {
+    // 어드민 세션 쿠키에서 토큰 가져오기
+    const adminSessionToken = request.cookies.get('adminSession')?.value;
+    
+    if (!adminSessionToken) {
+      return NextResponse.json({ error: '어드민 로그인이 필요합니다.' }, { status: 401 });
+    }
+
+    // 토큰 디코딩
+    function decodeAdminSessionToken(token: string) {
+      try {
+        const decoded = Buffer.from(token, 'base64url').toString();
+        return JSON.parse(decoded);
+      } catch {
+        return null;
+      }
+    }
+
+    const tokenData = decodeAdminSessionToken(adminSessionToken);
+    if (!tokenData || !tokenData.userId || !tokenData.isAdmin) {
+      return NextResponse.json({ error: '유효하지 않은 어드민 세션입니다.' }, { status: 401 });
+    }
+
     const { ids } = await request.json();
     if (!Array.isArray(ids) || ids.length === 0) {
       return NextResponse.json({ error: 'ids 배열이 필요합니다.' }, { status: 400 });
     }
 
-    const result = await prisma.user.deleteMany({ where: { id: { in: ids } } });
-    return NextResponse.json({ success: true, deleted: result.count });
+    // 삭제할 사용자들 확인 (최고관리자는 삭제 불가)
+    const usersToDelete = await prisma.user.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        referralCode: true
+      }
+    });
+
+    // 최고관리자 체크
+    const superAdmins = usersToDelete.filter(user => user.referralCode === 'SUPER_ADMIN');
+    if (superAdmins.length > 0) {
+      return NextResponse.json({ 
+        error: '최고관리자는 삭제할 수 없습니다.',
+        superAdmins: superAdmins.map(u => u.name)
+      }, { status: 403 });
+    }
+
+    // 관리자만 삭제 가능
+    const nonAdmins = usersToDelete.filter(user => user.role !== 'ADMIN');
+    if (nonAdmins.length > 0) {
+      return NextResponse.json({ 
+        error: '관리자만 삭제할 수 있습니다.',
+        nonAdmins: nonAdmins.map(u => u.name)
+      }, { status: 403 });
+    }
+
+    const result = await prisma.user.deleteMany({ 
+      where: { 
+        id: { in: ids },
+        role: 'ADMIN', // 관리자만 삭제
+        referralCode: { not: 'SUPER_ADMIN' } // 최고관리자 제외
+      } 
+    });
+
+    console.log(`관리자 일괄 삭제 완료: ${result.count}명`);
+
+    return NextResponse.json({ 
+      success: true, 
+      deleted: result.count,
+      message: `${result.count}명의 관리자가 삭제되었습니다.`
+    });
   } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: '삭제 중 오류가 발생했습니다.' }, { status: 500 });
+    console.error('관리자 일괄 삭제 오류:', e);
+    return NextResponse.json({ 
+      error: '삭제 중 오류가 발생했습니다.',
+      details: e instanceof Error ? e.message : String(e)
+    }, { status: 500 });
   }
 }
 

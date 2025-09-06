@@ -56,17 +56,23 @@ export const LoginScreen: React.FC = () => {
 
         <Card style={styles.formCard} shadow="lg">
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>전화번호 (8자리)</Text>
+            <Text style={styles.label}>전화번호 (뒤 8자리로 로그인)</Text>
             <TextInput
               style={styles.input}
               value={phone}
-              onChangeText={setPhone}
-              placeholder="예: 12345678"
-              keyboardType="numeric"
-              maxLength={8}
+              onChangeText={(value) => {
+                // 숫자와 하이픈만 허용
+                const cleanValue = value.replace(/[^0-9-]/g, '');
+                setPhone(cleanValue);
+              }}
+              placeholder="010-0000-0000 또는 00000000"
+              keyboardType="phone-pad"
               autoCapitalize="none"
               autoCorrect={false}
             />
+            <Text style={styles.helperText}>
+              전체 전화번호 또는 뒤 8자리 모두 입력 가능합니다
+            </Text>
           </View>
 
           <View style={styles.inputGroup}>

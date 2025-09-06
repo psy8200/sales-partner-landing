@@ -8,6 +8,11 @@ export interface User {
   points: number;
   totalReferrals: number;
   monthlyReferrals: number;
+  role?: string;
+  referralCode?: string;
+  status?: string;
+  partnerStatus?: string;
+  createdAt?: string;
   levelInfo: {
     level: number;
     name: string;

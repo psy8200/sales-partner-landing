@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
           status: 'ACTIVE',
           isActive: true,
           name: masterName,
+          referralCode: isAdmin ? 'SUPER_ADMIN' : undefined, // 최고관리자 설정
         },
         create: {
           email: masterEmail,
@@ -35,14 +36,16 @@ export async function POST(request: NextRequest) {
           status: 'ACTIVE',
           isActive: true,
           marketingAgreed: false,
+          referralCode: isAdmin ? 'SUPER_ADMIN' : undefined, // 최고관리자 설정
         },
-        select: { id: true, name: true, email: true, role: true },
+        select: { id: true, name: true, email: true, role: true, referralCode: true },
       });
 
       const token = createSessionToken({
         userId: user.id,
         role: user.role,
         isMaster: true,
+        isAdmin: isAdmin,
         iat: Date.now(),
       });
 
@@ -64,6 +67,25 @@ export async function POST(request: NextRequest) {
         maxAge: NINETY_DAYS,
         expires: new Date(Date.now() + NINETY_DAYS * 1000),
       });
+
+      // 관리자인 경우 adminSession 쿠키도 설정
+      if (isAdmin) {
+        res.cookies.set('adminSession', token, {
+          httpOnly: true,
+          path: '/',
+          sameSite: 'lax',
+          maxAge: NINETY_DAYS,
+          expires: new Date(Date.now() + NINETY_DAYS * 1000),
+        });
+        res.cookies.set('adminAuthToken', user.id, {
+          httpOnly: true,
+          path: '/',
+          sameSite: 'lax',
+          maxAge: NINETY_DAYS,
+          expires: new Date(Date.now() + NINETY_DAYS * 1000),
+        });
+      }
+
       return res;
     }
 
@@ -137,8 +159,51 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '활성화되지 않은 계정입니다.' }, { status: 403 });
     }
 
-    const token = createSessionToken({ userId: user.id, role: user.role, iat: Date.now() });
-    const res = NextResponse.json({ success: true, user: { id: user.id, email: user.email, role: user.role } });
+    // 세션 ID 생성
+    const sessionId = `session_${user.id}_${Date.now()}`;
+    
+    // 로그인 시간 및 접속 상태 업데이트
+    const now = new Date();
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        lastLoginAt: now,
+        isOnline: true,
+        currentSessionId: sessionId,
+        lastActivityAt: now,
+        loginCount: { increment: 1 }
+      }
+    });
+
+    // 관리자 로그인 로그 기록
+    if (user.role === 'ADMIN') {
+      await prisma.adminLoginLog.create({
+        data: {
+          userId: user.id,
+          email: user.email,
+          name: user.name,
+          action: 'LOGIN',
+          ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+          userAgent: request.headers.get('user-agent') || 'unknown',
+          sessionId: sessionId,
+          loginAt: now
+        }
+      });
+    }
+
+    const token = createSessionToken({ 
+      userId: user.id, 
+      role: user.role, 
+      sessionId: sessionId,
+      isAdmin: user.role === 'ADMIN',
+      iat: Date.now() 
+    });
+    
+    const res = NextResponse.json({ 
+      success: true, 
+      user: { id: user.id, email: user.email, role: user.role, sessionId } 
+    });
+    
     // 개발 중 세션 장기 유지 (90일)
     const NINETY_DAYS = 60 * 60 * 24 * 90;
     res.cookies.set('session', token, {
@@ -156,6 +221,25 @@ export async function POST(request: NextRequest) {
       maxAge: NINETY_DAYS,
       expires: new Date(Date.now() + NINETY_DAYS * 1000),
     });
+
+    // 관리자인 경우 adminSession 쿠키도 설정
+    if (user.role === 'ADMIN') {
+      res.cookies.set('adminSession', token, {
+        httpOnly: true,
+        path: '/',
+        sameSite: 'lax',
+        maxAge: NINETY_DAYS,
+        expires: new Date(Date.now() + NINETY_DAYS * 1000),
+      });
+      res.cookies.set('adminAuthToken', user.id, {
+        httpOnly: true,
+        path: '/',
+        sameSite: 'lax',
+        maxAge: NINETY_DAYS,
+        expires: new Date(Date.now() + NINETY_DAYS * 1000),
+      });
+    }
+
     return res;
   } catch (e) {
     console.error('Login error:', e);

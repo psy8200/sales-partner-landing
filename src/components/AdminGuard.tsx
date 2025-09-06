@@ -23,6 +23,9 @@ const AdminGuard: React.FC<AdminGuardProps> = ({ children }) => {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
+  // 로그인 페이지는 보호하지 않음
+  const isLoginPage = typeof window !== 'undefined' && window.location.pathname === '/admin/login';
+
   useEffect(() => {
     let isMounted = true;
     
@@ -32,6 +35,23 @@ const AdminGuard: React.FC<AdminGuardProps> = ({ children }) => {
       try {
         setLoading(true);
         console.log('🔍 AdminGuard: 인증 확인 시작');
+        
+        // 개발 환경에서는 강제로 관리자 권한 부여
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔧 AdminGuard: 개발 환경 - 강제 관리자 권한 부여');
+          const devAdminUser = {
+            id: 'admin-dev-001',
+            name: '개발자 어드민',
+            email: 'admin@example.com',
+            phone: '010-0000-0000',
+            role: 'ADMIN',
+            status: 'ACTIVE',
+            isActive: true,
+          };
+          setUser(devAdminUser);
+          setLoading(false);
+          return;
+        }
         
         // 어드민 전용 인증 API 사용
         const response = await fetch('/api/admin/auth/me');
@@ -89,7 +109,7 @@ const AdminGuard: React.FC<AdminGuardProps> = ({ children }) => {
         // 개발 환경에서는 에러를 표시하되 리다이렉트하지 않음
         if (process.env.NODE_ENV !== 'development') {
           setTimeout(() => {
-            router.push('/login');
+            router.push('/admin-login');
           }, 2000);
         }
       } finally {

@@ -38,8 +38,12 @@ model User {
   agreeTerms            Boolean              @default(false)
   agreeTermsAt          DateTime?
   lastLoginAt           DateTime?
+  lastLogoutAt          DateTime?
   loginCount            Int                  @default(0)
   isActive              Boolean              @default(true)
+  isOnline              Boolean              @default(false)
+  currentSessionId      String?
+  lastActivityAt        DateTime?
   createdAt             DateTime             @default(now())
   updatedAt             DateTime             @updatedAt
   deletedAt             DateTime?
@@ -497,6 +501,56 @@ model CompanyInfo {
   @@index([createdAt])
 }
 
+model AdminLoginLog {
+  id          String   @id @default(cuid())
+  adminId     String   // Admin 테이블의 ID를 참조
+  email       String
+  name        String
+  action      LoginAction
+  ipAddress   String?
+  userAgent   String?
+  sessionId   String?
+  loginAt     DateTime @default(now())
+  logoutAt    DateTime?
+  duration    Int?     // 로그인 지속 시간 (초)
+  admin       Admin    @relation(fields: [adminId], references: [id])
+
+  @@index([adminId])
+  @@index([email])
+  @@index([action])
+  @@index([loginAt])
+  @@index([logoutAt])
+  @@index([sessionId])
+}
+
+// 관리자 전용 테이블
+model Admin {
+  id                String    @id @default(cuid())
+  name              String
+  email             String    @unique
+  phone             String    @unique
+  passwordHash      String
+  role              AdminRole @default(ADMIN)
+  status            AdminStatus @default(ACTIVE)
+  joinDate          DateTime
+  lastLoginAt       DateTime?
+  lastLogoutAt      DateTime?
+  isOnline          Boolean   @default(false)
+  currentSessionId  String?
+  lastActivityAt    DateTime?
+  loginCount        Int       @default(0)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  adminLoginLogs    AdminLoginLog[]
+
+  @@index([email])
+  @@index([phone])
+  @@index([role])
+  @@index([status])
+  @@index([joinDate])
+  @@index([isOnline])
+}
+
 enum PointLedgerKind {
   ACCRUAL
   ADJUSTMENT
@@ -699,5 +753,23 @@ enum ContractStatus {
   CONFIRMED
   COMPLETED
   CANCELLED
+  SUSPENDED
+}
+
+enum LoginAction {
+  LOGIN
+  LOGOUT
+  SESSION_EXPIRED
+  FORCED_LOGOUT
+}
+
+enum AdminRole {
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum AdminStatus {
+  ACTIVE
+  INACTIVE
   SUSPENDED
 }

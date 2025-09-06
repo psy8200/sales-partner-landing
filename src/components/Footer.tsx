@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
+import AdminLoginModal from './AdminLoginModal';
 
 interface CompanyInfo {
   id: string;
@@ -22,15 +23,33 @@ interface CompanyInfo {
 const Footer = () => {
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
 
   useEffect(() => {
     const loadCompanyInfo = async () => {
       try {
         const response = await fetch('/api/admin/company-info');
-        const data = await response.json();
         
-        if (data.success && data.data) {
-          setCompanyInfo(data.data);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.companyInfo) {
+            setCompanyInfo(data.companyInfo);
+          }
+        } else {
+          console.log('회사정보 API 응답 오류:', response.status);
+          // 기본값 설정
+          setCompanyInfo({
+            companyName: '세일즈 파트너',
+            businessNumber: '123-45-67890',
+            representative: '대표이사',
+            address: '서울특별시 강남구 테헤란로 123',
+            phone: '02-1234-5678',
+            email: 'info@salespartner.com',
+            website: 'https://salespartner.com',
+            description: '최고의 세일즈 파트너 서비스를 제공합니다.',
+            referralCodeDefault: 'SP2024',
+            isActive: true
+          });
         }
       } catch (error) {
         console.error('회사정보 로드 오류:', error);
@@ -61,6 +80,7 @@ const Footer = () => {
   // 로딩 중일 때 기본 정보 표시
   if (loading) {
     return (
+      <>
       <footer className="bg-gray-900 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -111,13 +131,33 @@ const Footer = () => {
             </div>
           </div>
         </div>
+        
+        {/* 관리자 로그인 링크 */}
+        <div className="border-t border-gray-800 pt-4 mt-6">
+          <div className="text-center">
+            <button
+              onClick={() => setShowAdminLogin(true)}
+              className="text-xs text-gray-400 hover:text-gray-300 transition-colors underline"
+            >
+              관리자로그인
+            </button>
+          </div>
+        </div>
       </footer>
-    );
+      
+      {/* 관리자 로그인 모달 */}
+      <AdminLoginModal
+        isOpen={showAdminLogin}
+        onClose={() => setShowAdminLogin(false)}
+      />
+    </>
+  );
   }
 
   // 회사정보가 없을 때 기본 정보 표시
   if (!companyInfo) {
     return (
+      <>
       <footer className="bg-gray-900 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -168,11 +208,31 @@ const Footer = () => {
             </div>
           </div>
         </div>
+        
+        {/* 관리자 로그인 링크 */}
+        <div className="border-t border-gray-800 pt-4 mt-6">
+          <div className="text-center">
+            <button
+              onClick={() => setShowAdminLogin(true)}
+              className="text-xs text-gray-400 hover:text-gray-300 transition-colors underline"
+            >
+              관리자로그인
+            </button>
+          </div>
+        </div>
       </footer>
-    );
+      
+      {/* 관리자 로그인 모달 */}
+      <AdminLoginModal
+        isOpen={showAdminLogin}
+        onClose={() => setShowAdminLogin(false)}
+      />
+    </>
+  );
   }
 
   return (
+    <>
     <footer className="bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -235,8 +295,27 @@ const Footer = () => {
             </div>
           </div>
         </div>
+        
+        {/* 관리자 로그인 링크 */}
+        <div className="border-t border-gray-800 pt-4 mt-6">
+          <div className="text-center">
+            <button
+              onClick={() => setShowAdminLogin(true)}
+              className="text-xs text-gray-400 hover:text-gray-300 transition-colors underline"
+            >
+              관리자로그인
+            </button>
+          </div>
+        </div>
       </div>
-    </footer>
+      </footer>
+      
+      {/* 관리자 로그인 모달 */}
+      <AdminLoginModal
+        isOpen={showAdminLogin}
+        onClose={() => setShowAdminLogin(false)}
+      />
+    </>
   );
 };
 

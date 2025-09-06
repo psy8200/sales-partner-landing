@@ -125,7 +125,8 @@ export async function PUT(
         accountHolder: body.accountHolder,
         bankAccount: body.bankAccount,
         role: body.role, // 역할 업데이트
-        partnerStatus: body.partnerStatus, // 파트너 상태 업데이트
+        // 입사일/가입일 업데이트 (joinDate가 있으면 createdAt 업데이트)
+        ...(body.joinDate && { createdAt: new Date(body.joinDate) }),
       },
       select: { id: true },
     });
@@ -145,6 +146,86 @@ export async function PUT(
     console.error('사용자 정보 수정 실패:', e);
     return NextResponse.json({ 
       error: 'Failed to update',
+      details: e instanceof Error ? e.message : String(e)
+    }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    // 어드민 세션 쿠키에서 토큰 가져오기
+    const adminSessionToken = request.cookies.get('adminSession')?.value;
+    
+    if (!adminSessionToken) {
+      return NextResponse.json({ error: '어드민 로그인이 필요합니다.' }, { status: 401 });
+    }
+
+    // 토큰 디코딩
+    function decodeAdminSessionToken(token: string) {
+      try {
+        const decoded = Buffer.from(token, 'base64url').toString();
+        return JSON.parse(decoded);
+      } catch {
+        return null;
+      }
+    }
+
+    const tokenData = decodeAdminSessionToken(adminSessionToken);
+    if (!tokenData || !tokenData.userId || !tokenData.isAdmin) {
+      return NextResponse.json({ error: '유효하지 않은 어드민 세션입니다.' }, { status: 401 });
+    }
+
+    const { id } = await params;
+
+    // 삭제할 사용자 정보 확인
+    const userToDelete = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        referralCode: true
+      }
+    });
+
+    if (!userToDelete) {
+      return NextResponse.json({ error: '사용자를 찾을 수 없습니다.' }, { status: 404 });
+    }
+
+    // 최고관리자는 삭제할 수 없음
+    if (userToDelete.referralCode === 'SUPER_ADMIN') {
+      return NextResponse.json({ error: '최고관리자는 삭제할 수 없습니다.' }, { status: 403 });
+    }
+
+    // 관리자만 삭제 가능 (일반 사용자는 삭제 불가)
+    if (userToDelete.role !== 'ADMIN') {
+      return NextResponse.json({ error: '관리자만 삭제할 수 있습니다.' }, { status: 403 });
+    }
+
+    // 사용자 삭제
+    await prisma.user.delete({
+      where: { id }
+    });
+
+    console.log(`관리자 삭제 완료: ${userToDelete.name} (${userToDelete.email})`);
+
+    return NextResponse.json({ 
+      success: true, 
+      message: '관리자가 성공적으로 삭제되었습니다.',
+      deletedUser: {
+        name: userToDelete.name,
+        email: userToDelete.email
+      }
+    });
+
+  } catch (e) {
+    console.error('관리자 삭제 오류:', e);
+    return NextResponse.json({ 
+      error: '관리자 삭제 중 오류가 발생했습니다.',
       details: e instanceof Error ? e.message : String(e)
     }, { status: 500 });
   }

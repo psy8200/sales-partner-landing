@@ -8,6 +8,10 @@
   --background: #ffffff;
   --foreground: #171717;
   
+  /* 디바이스 프레임 크기 변수 */
+  --device-width: 314px; /* 기본값 */
+  --device-height: 682px; /* 기본값 */
+  
   /* 라이트 모드 CSS 변수 */
   --bg: #F7F8FA;
   --card: #FFFFFF;
@@ -182,4 +186,19 @@ html, body {
 
 .mobile-content::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+/* 디바이스 프레임 스타일 */
+.device-frame {
+  width: var(--device-width);
+  height: var(--device-height);
+}
+
+/* 동적 크기 설정을 위한 CSS */
+.device-frame[data-device-width] {
+  width: attr(data-device-width px);
+}
+
+.device-frame[data-device-height] {
+  height: attr(data-device-height px);
 }

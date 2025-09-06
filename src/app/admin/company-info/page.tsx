@@ -56,18 +56,18 @@ export default function CompanyInfoPage() {
         const response = await fetch('/api/admin/company-info');
         const data = await response.json();
         
-        if (data.success && data.data) {
-          setCompanyInfo(data.data);
+        if (data.success && data.companyInfo) {
+          setCompanyInfo(data.companyInfo);
           setFormData({
-            companyName: data.data.companyName || '',
-            businessNumber: data.data.businessNumber || '',
-            representative: data.data.representative || '',
-            address: data.data.address || '',
-            phone: data.data.phone || '',
-            email: data.data.email || '',
-            website: data.data.website || '',
-            description: data.data.description || '',
-            referralCodeDefault: data.data.referralCodeDefault || ''
+            companyName: data.companyInfo.companyName || '',
+            businessNumber: data.companyInfo.businessNumber || '',
+            representative: data.companyInfo.representative || '',
+            address: data.companyInfo.address || '',
+            phone: data.companyInfo.phone || '',
+            email: data.companyInfo.email || '',
+            website: data.companyInfo.website || '',
+            description: data.companyInfo.description || '',
+            referralCodeDefault: data.companyInfo.referralCodeDefault || ''
           });
         } else {
           // 데이터가 없을 때는 빈 폼으로 설정
@@ -132,7 +132,7 @@ export default function CompanyInfoPage() {
 
     try {
       const response = await fetch('/api/admin/company-info', {
-        method: 'POST',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -142,23 +142,23 @@ export default function CompanyInfoPage() {
       const data = await response.json();
 
       if (data.success) {
-        setMessage('회사정보가 성공적으로 저장되었습니다!');
+        setMessage(data.message || '회사정보가 성공적으로 저장되었습니다!');
         
         // 저장된 데이터를 즉시 반영 (새로고침 없이)
         const savedData = {
-          id: data.data.id,
-          companyName: formData.companyName,
-          businessNumber: formData.businessNumber,
-          representative: formData.representative,
-          address: formData.address,
-          phone: formData.phone,
-          email: formData.email,
-          website: formData.website,
-          description: formData.description,
-          referralCodeDefault: formData.referralCodeDefault,
-          isActive: true,
-          createdAt: data.data.createdAt,
-          updatedAt: data.data.updatedAt
+          id: data.companyInfo.id,
+          companyName: data.companyInfo.companyName,
+          businessNumber: data.companyInfo.businessNumber,
+          representative: data.companyInfo.representative,
+          address: data.companyInfo.address,
+          phone: data.companyInfo.phone,
+          email: data.companyInfo.email,
+          website: data.companyInfo.website,
+          description: data.companyInfo.description,
+          referralCodeDefault: data.companyInfo.referralCodeDefault,
+          isActive: data.companyInfo.isActive,
+          createdAt: data.companyInfo.createdAt,
+          updatedAt: data.companyInfo.updatedAt
         };
         
         setCompanyInfo(savedData);

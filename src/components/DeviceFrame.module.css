@@ -1,0 +1,9 @@
+.frame {
+  width: var(--frame-width);
+  height: var(--frame-height);
+}
+
+.screen {
+  width: 100%;
+  height: 100%;
+}

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { User } from '@/types';
 import { safeJsonParse } from '@/lib/safeJson';
 
@@ -41,12 +42,13 @@ const safeDateFormat = (dateString: string | null | undefined): string => {
 
 const MembersPage = () => {
   const pathname = usePathname();
-  const mode: 'ALL' | 'GENERAL' | 'MEMBER' | 'ADMIN' = pathname.endsWith('/general')
+  const { user, isSuperAdmin, canCreateAdmin, canDeleteAdmin } = useAdminAuth();
+  
+  
+  const mode: 'ALL' | 'GENERAL' | 'MEMBER' = pathname.endsWith('/general')
     ? 'GENERAL'
     : pathname.endsWith('/partners')
     ? 'MEMBER'
-    : pathname.endsWith('/admins')
-    ? 'ADMIN'
     : 'ALL';
   const [searchTerm, setSearchTerm] = useState('');
   const [status, setStatus] = useState<string>('');
@@ -86,6 +88,7 @@ const MembersPage = () => {
       console.log('Current pathname:', pathname);
       console.log('Pathname includes /partners:', pathname.includes('/partners'));
 
+      // 회원 전용 API 사용
       const res = await fetch(`/api/admin/users?${params.toString()}`);
       console.log('API response status:', res.status);
       
@@ -181,8 +184,6 @@ const MembersPage = () => {
         params.set('page', String(page));
         params.set('limit', String(limit));
         if (searchTerm) params.set('q', searchTerm);
-        if (status) params.set('status', status);
-        if (role) params.set('role', role);
         if (mode === 'GENERAL') params.set('role', 'GENERAL');
         if (mode === 'MEMBER') params.set('role', 'MEMBER');
         if (mode === 'ADMIN') params.set('role', 'ADMIN');
@@ -198,12 +199,13 @@ const MembersPage = () => {
         }
         
         const data = await res.json();
+        console.log('API response data:', data);
         
+        // 회원 데이터 처리
         if (!data || !data.items) {
           console.error('Invalid data structure:', data);
           throw new Error('데이터 구조가 올바르지 않습니다.');
         }
-        
         setRows(data.items);
         setTotal(data.total);
       } catch (e: unknown) {
@@ -264,7 +266,12 @@ const MembersPage = () => {
     }
   };
 
-  const roleLabel = (r: string) => {
+  const roleLabel = (r: string, referralCode?: string) => {
+    // 최고관리자 구분 (referralCode가 'SUPER_ADMIN'인 경우)
+    if (r === 'ADMIN' && referralCode === 'SUPER_ADMIN') {
+      return '최고관리자';
+    }
+    
     switch (r) {
       case 'GENERAL': return '예비파트너';
       case 'MEMBER': return '파트너';
@@ -570,33 +577,6 @@ const MembersPage = () => {
                    className="flex-1 px-3 sm:px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                  />
                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                   <select
-                     value={status}
-                     onChange={(e) => setStatus(e.target.value)}
-                     className="px-2 sm:px-3 py-2 border border-gray-300 rounded-md text-xs sm:text-sm"
-                     aria-label="상태 필터"
-                     title="상태 필터"
-                   >
-                     <option key="all-status" value="">전체 상태</option>
-                     <option key="ACTIVE" value="ACTIVE">가입완료</option>
-                     <option key="PENDING" value="PENDING">대기중</option>
-                     <option key="SUSPENDED" value="SUSPENDED">정지중</option>
-                     <option key="DELETED" value="DELETED">삭제</option>
-                   </select>
-                   <select
-                     value={role}
-                     onChange={(e) => setRole(e.target.value)}
-                     className="px-2 sm:px-3 py-2 border border-gray-300 rounded-md text-xs sm:text-sm"
-                     aria-label="역할 필터"
-                     title="역할 필터"
-                   >
-                     <option key="all-role" value="">전체 역할</option>
-                     <option key="GENERAL" value="GENERAL">예비파트너</option>
-                     <option key="MEMBER" value="MEMBER">파트너</option>
-                     <option key="ADMIN" value="ADMIN">관리자</option>
-                   </select>
-                 </div>
-                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                    <button
                      onClick={() => { setPage(1); fetchUsers(); }}
                      className="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs sm:text-sm"
@@ -605,15 +585,15 @@ const MembersPage = () => {
                    </button>
                    <button
                      onClick={bulkDelete}
-                     className="px-3 sm:px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-xs sm:text-sm"
+                     disabled={!canDeleteAdmin}
+                     className={`px-3 sm:px-4 py-2 rounded-md transition-colors text-xs sm:text-sm ${
+                       canDeleteAdmin 
+                         ? 'bg-red-600 text-white hover:bg-red-700' 
+                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                     }`}
+                     title={canDeleteAdmin ? '선택된 회원 삭제' : '최고관리자만 사용 가능'}
                    >
                      삭제하기
-                   </button>
-                   <button
-                     onClick={exportExcel}
-                     className="px-3 sm:px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs sm:text-sm"
-                   >
-                     {selectedIds.length > 0 ? '선택 다운로드' : '엑셀 다운로드'}
                    </button>
                  </div>
                </div>
@@ -640,19 +620,18 @@ const MembersPage = () => {
                    {pathname.includes('/partners') && (
                      <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">결정포인트</th>
                    )}
-                   <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
+                   <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">접속여부</th>
                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">역할</th>
-                   <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">파트너상태</th>
                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">수정</th>
                  </tr>
                </thead>
                <tbody className="bg-white divide-y divide-gray-200">
                  {loading ? (
-                   <tr><td className="p-3 sm:p-6" colSpan={pathname.includes('/partners') ? 10 : 9}>불러오는 중...</td></tr>
+                   <tr><td className="p-3 sm:p-6" colSpan={pathname.includes('/partners') ? 7 : 6}>불러오는 중...</td></tr>
                  ) : error ? (
-                   <tr><td className="p-3 sm:p-6 text-red-600 text-xs sm:text-sm" colSpan={pathname.includes('/partners') ? 10 : 9}>{error}</td></tr>
+                   <tr><td className="p-3 sm:p-6 text-red-600 text-xs sm:text-sm" colSpan={pathname.includes('/partners') ? 7 : 6}>{error}</td></tr>
                  ) : rows.length === 0 ? (
-                   <tr><td className="p-3 sm:p-6 text-xs sm:text-sm" colSpan={pathname.includes('/partners') ? 10 : 9}>데이터가 없습니다.</td></tr>
+                   <tr><td className="p-3 sm:p-6 text-xs sm:text-sm" colSpan={pathname.includes('/partners') ? 7 : 6}>데이터가 없습니다.</td></tr>
                  ) : (
                    rows.map((member) => (
                      <tr key={member.id} className="hover:bg-gray-50">
@@ -671,21 +650,27 @@ const MembersPage = () => {
                        )}
                        <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                           member.status === 'ACTIVE' 
-                             ? 'bg-green-100 text-green-800' 
-                             : member.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                           member.isOnline 
+                             ? 'bg-green-100 text-green-800' // 접속중: 초록색
+                             : 'bg-gray-100 text-gray-800'   // 대기중: 회색
                          }`}>
-                           {statusLabel(member.status)}
+                           {member.isOnline ? '접속중' : '대기중'}
                          </span>
+                         {member.lastLoginAt && (
+                           <div className="text-xs text-gray-500 mt-1">
+                             {new Date(member.lastLoginAt).toLocaleString('ko-KR')}
+                           </div>
+                         )}
                        </td>
-                       <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{roleLabel(member.role)}</td>
                        <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                           member.partnerStatus === 'NOT_APPLIED' ? 'bg-gray-100 text-gray-800' :
-                           member.partnerStatus === 'PARTNER_APPLIED' ? 'bg-yellow-100 text-yellow-800' :
-                           member.partnerStatus === 'APPROVED' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                           member.role === 'ADMIN' && member.referralCode === 'SUPER_ADMIN'
+                             ? 'bg-red-100 text-red-800' // 최고관리자: 빨간색
+                             : member.role === 'ADMIN' 
+                             ? 'bg-purple-100 text-purple-800' // 일반관리자: 보라색
+                             : member.role === 'MEMBER' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
                          }`}>
-                           {partnerStatusLabel(member.partnerStatus)}
+                           {roleLabel(member.role, member.referralCode)}
                          </span>
                        </td>
                        <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm">
@@ -728,6 +713,7 @@ const MembersPage = () => {
            </div>
          </div>
        )}
+
     </div>
   );
 };

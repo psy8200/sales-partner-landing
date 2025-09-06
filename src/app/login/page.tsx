@@ -69,20 +69,26 @@ const LoginPage = () => {
           <div>
             <div className="flex justify-between items-center mb-2">
               <label htmlFor="id" className="block text-sm font-medium text-gray-700">
-                아이디
+                아이디 (전화번호 뒤 8자리로 로그인)
               </label>
-              <span className="text-xs text-gray-500">전화번호뒤8자리</span>
             </div>
             <input
               type="text"
               id="id"
               name="id"
               value={formData.id}
-              onChange={handleChange}
+              onChange={(e) => {
+                // 숫자와 하이픈만 허용
+                const value = e.target.value.replace(/[^0-9-]/g, '');
+                handleChange(e, value);
+              }}
               required
               className="w-full px-5 py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-lg"
-              placeholder="이메일 또는 전화번호 8자리"
+              placeholder="010-0000-0000 또는 00000000"
             />
+            <p className="mt-1 text-xs text-gray-500">
+              전체 전화번호 또는 뒤 8자리 모두 입력 가능합니다
+            </p>
           </div>
 
           <div>

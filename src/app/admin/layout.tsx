@@ -6,56 +6,40 @@ import Link from 'next/link';
 // import Image from 'next/image'; // 미사용 import 제거
 import { usePathname } from 'next/navigation';
 import AdminGuard from '@/components/AdminGuard';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 // import NotificationBell from '@/components/NotificationBell';
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const [user, setUser] = useState<User | null>(null);
   const pathname = usePathname();
+  const { user, loading } = useAdminAuth();
 
-  // 상단 메뉴 항목들
-  const mainMenu = [
-    { name: '개발가이드', href: '/admin/dev-guide', icon: '📘' },
-    { name: '회원관리', href: '/admin/members', icon: '👥' },
-    { name: '상담/계약관리', href: '/admin/contracts', icon: '📝' },
-    { name: '수금관리', href: '/admin/collections/all-contracts', icon: '💳' },
-    { name: '정산관리', href: '/admin/settlements', icon: '💼' },
-    { name: '아이템관리', href: '/admin/items', icon: '🧩' },
+  // 상단 메뉴 항목들 (권한에 따라 필터링)
+  const allMenuItems = [
+    { name: '개발가이드', href: '/admin/dev-guide', icon: '📘', requiredRole: null },
+    { name: '회원관리', href: '/admin/members', icon: '👥', requiredRole: null },
+    { name: '관리자관리', href: '/admin/admins', icon: '🛡️', requiredRole: 'SUPER_ADMIN' },
+    { name: '상담/계약관리', href: '/admin/contracts', icon: '📝', requiredRole: null },
+    { name: '수금관리', href: '/admin/collections/all-contracts', icon: '💳', requiredRole: null },
+    { name: '정산관리', href: '/admin/settlements', icon: '💼', requiredRole: null },
+    { name: '아이템관리', href: '/admin/items', icon: '🧩', requiredRole: null },
   ];
 
-  // AdminGuard에서 이미 인증과 사용자 정보를 처리하므로 여기서는 제거
-  // useEffect(() => {
-  //   const fetchUser = async () => {
-  //     try {
-  //       const response = await fetch('/api/admin/auth/me');
-  //       if (response.ok) {
-  //         const data = await response.json();
-  //         setUser(data.user);
-  //       }
-  //     } catch (error) {
-  //       console.error('어드민 사용자 정보 가져오기 실패:', error);
-  //     }
-  //   };
-
-  //   fetchUser();
-  // }, []);
+  // 권한에 따라 메뉴 필터링
+  const mainMenu = allMenuItems.filter(item => {
+    if (!item.requiredRole) return true; // 권한 제한 없는 메뉴
+    if (!user) return false; // 사용자 정보가 없으면 숨김
+    return user.role === item.requiredRole; // 권한이 일치하는 경우만 표시
+  });
 
   // 로그아웃 함수
+  const { logout } = useAdminAuth();
+
   const handleLogout = async () => {
-    try {
-      // 어드민 전용 로그아웃 API 사용
-      await fetch('/api/admin/auth/logout', { method: 'POST' });
-    } catch (error) {
-      console.error('어드민 로그아웃 오류:', error);
-    } finally {
-      // 클라이언트 정리
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('adminAuthToken');
-        sessionStorage.removeItem('adminAuthToken');
-        // 어드민 페이지로 리다이렉트 (로그인 페이지가 아님)
-        window.location.href = '/admin';
-      }
+    await logout();
+    // 랜딩페이지로 리다이렉트
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
     }
   };
 
@@ -72,7 +56,10 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
       { name: '회원관리', href: '/admin/members', icon: '📊' },
       { name: '일반회원', href: '/admin/members/general', icon: '👤' },
       { name: '파트너회원', href: '/admin/members/partners', icon: '🤝' },
-      { name: '관리자', href: '/admin/members/admins', icon: '🛡️' },
+    ],
+    '관리자관리': [
+      { name: '관리자목록', href: '/admin/admins', icon: '👥' },
+      { name: '접속로그', href: '/admin/admins/logs', icon: '📋' },
     ],
     '상담/계약관리': [
       { name: '상담신청관리', href: '/admin/contracts/requests', icon: '📥' },
@@ -111,6 +98,23 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   }
 
   const sidebarItems = getSidebarItems();
+
+  // 로딩 상태 처리
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-500">로딩 중...</div>
+      </div>
+    );
+  }
+
+  // 사용자 정보가 없으면 로그인 페이지로 리다이렉트
+  if (!user) {
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
+    return null;
+  }
 
   return (
     <AdminGuard>

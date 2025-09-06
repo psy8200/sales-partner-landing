@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import DuplicateErrorModal from '@/components/DuplicateErrorModal';
+import { useDuplicateError } from '@/hooks/useDuplicateError';
 
 const SignupPage = () => {
   const [formData, setFormData] = useState({
@@ -17,18 +19,27 @@ const SignupPage = () => {
 
   const [generatedReferralCode, setGeneratedReferralCode] = useState(''); // 자동생성된 추천인코드
   const [defaultReferralCode, setDefaultReferralCode] = useState(''); // 어드민 설정 기본 추천인코드
+  
+  // 중복 오류 처리 훅
+  const { errorState, showDuplicateError, closeModal, handleRetry, handleApiError } = useDuplicateError();
+  
+  // 폼 필드 참조 (포커스용)
+  const emailRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
 
   // 페이지 로드 시 기본 추천인코드 가져오기
   useEffect(() => {
-    const loadDefaultReferralCode = () => {
+    const loadDefaultReferralCode = async () => {
       try {
-        // localStorage에서 어드민이 설정한 기본추천인코드 가져오기
-        const savedReferralCode = localStorage.getItem('companyReferralCode');
-        if (savedReferralCode) {
-          console.log('localStorage에서 기본추천인코드 로드 성공:', savedReferralCode);
-          setDefaultReferralCode(savedReferralCode);
+        // API에서 회사정보의 기본추천인코드 가져오기
+        const response = await fetch('/api/admin/company-info');
+        const data = await response.json();
+        
+        if (data.success && data.companyInfo && data.companyInfo.referralCodeDefault) {
+          console.log('API에서 기본추천인코드 로드 성공:', data.companyInfo.referralCodeDefault);
+          setDefaultReferralCode(data.companyInfo.referralCodeDefault);
         } else {
-          console.log('localStorage에 기본추천인코드 없음');
+          console.log('API에서 기본추천인코드 없음');
           setDefaultReferralCode('');
         }
       } catch (error) {
@@ -56,6 +67,20 @@ const SignupPage = () => {
     }
   };
 
+  // 다시 입력하기 버튼 클릭 시 해당 필드에 포커스
+  const handleRetryInput = () => {
+    handleRetry(() => {
+      // 오류 타입에 따라 해당 필드에 포커스
+      if (errorState.errorType === 'email' && emailRef.current) {
+        emailRef.current.focus();
+        emailRef.current.select(); // 텍스트 선택
+      } else if (errorState.errorType === 'phone' && phoneRef.current) {
+        phoneRef.current.focus();
+        phoneRef.current.select(); // 텍스트 선택
+      }
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -76,36 +101,37 @@ const SignupPage = () => {
       
       const result = await response.json();
       
-             if (response.ok) {
-         // 가입 성공: 자동 로그인 시도 (전화번호 마지막 8자리 아이디 정책)
-         const digits = (formData.phone || '').replace(/\D/g, '');
-         const id8 = digits.slice(-8);
-         if (id8 && formData.password) {
-           try {
-             const loginRes = await fetch('/api/auth/login', {
-               method: 'POST',
-               headers: { 'Content-Type': 'application/json' },
-               body: JSON.stringify({ id: id8, password: formData.password }),
-             });
-             
-             if (loginRes.ok) {
-               const loginResult = await loginRes.json();
-               // 관리자나 파트너인 경우에만 어드민 페이지로 이동
-               if (loginResult.user && (loginResult.user.role === 'ADMIN' || loginResult.user.role === 'MEMBER')) {
-                 if (window.opener && !window.opener.closed) {
-                   try {
-                     window.opener.location.href = '/admin/members';
-                   } catch {}
-                 }
-               }
-             }
-           } catch {}
-         }
+      if (response.ok) {
+        // 가입 성공: 자동 로그인 시도 (전화번호 마지막 8자리 아이디 정책)
+        const digits = (formData.phone || '').replace(/\D/g, '');
+        const id8 = digits.slice(-8);
+        if (id8 && formData.password) {
+          try {
+            const loginRes = await fetch('/api/auth/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: id8, password: formData.password }),
+            });
+            
+            if (loginRes.ok) {
+              const loginResult = await loginRes.json();
+              // 관리자나 파트너인 경우에만 어드민 페이지로 이동
+              if (loginResult.user && (loginResult.user.role === 'ADMIN' || loginResult.user.role === 'MEMBER')) {
+                if (window.opener && !window.opener.closed) {
+                  try {
+                    window.opener.location.href = '/admin/members';
+                  } catch {}
+                }
+              }
+            }
+          } catch {}
+        }
 
         alert(result.message);
         window.close();
       } else {
-        alert(result.error || '회원가입 중 오류가 발생했습니다.');
+        // 중복 오류 처리 - 새로운 모달 사용
+        handleApiError(result, handleRetryInput);
       }
     } catch (error) {
       console.error('회원가입 오류:', error);
@@ -152,6 +178,7 @@ const SignupPage = () => {
               이메일 *
             </label>
             <input
+              ref={emailRef}
               type="email"
               id="email"
               name="email"
@@ -169,6 +196,7 @@ const SignupPage = () => {
               전화번호 * (로그인시 아이디는 전화번호뒤 8자리입니다)
             </label>
             <input
+              ref={phoneRef}
               type="tel"
               id="phone"
               name="phone"
@@ -297,6 +325,14 @@ const SignupPage = () => {
           </p>
         </div>
       </motion.div>
+      
+      {/* 중복 오류 모달 */}
+      <DuplicateErrorModal
+        isOpen={errorState.isOpen}
+        onClose={closeModal}
+        onRetry={handleRetryInput}
+        errorType={errorState.errorType || 'email'}
+      />
     </div>
   );
 };

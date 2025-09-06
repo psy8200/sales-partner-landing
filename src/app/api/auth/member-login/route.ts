@@ -11,44 +11,42 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: '전화번호와 비밀번호를 입력해주세요.' }, { status: 400 });
     }
     
-    // 전화번호 형식 검증 (8자리 숫자)
-    if (!/^[0-9]{8}$/.test(phone)) {
-      return NextResponse.json({ error: '전화번호는 8자리 숫자로 입력해주세요.' }, { status: 400 });
+    // 전화번호 8자리 추출 (뒤 8자리)
+    let phoneSuffix = '';
+    if (phone.length === 8 && /^[0-9]{8}$/.test(phone)) {
+      phoneSuffix = phone;
+    } else {
+      // 하이픈 제거 후 뒤 8자리 추출
+      const cleanPhone = phone.replace(/[^0-9]/g, '');
+      if (cleanPhone.length < 8) {
+        return NextResponse.json({ error: '전화번호는 최소 8자리 이상이어야 합니다.' }, { status: 400 });
+      }
+      phoneSuffix = cleanPhone.slice(-8);
     }
+    
+    console.log('📱 입력된 전화번호:', phone);
+    console.log('🔢 추출된 8자리:', phoneSuffix);
     
     // 비밀번호 길이 검증 (6자리 이상)
     if (password.length < 6) {
       return NextResponse.json({ error: '비밀번호는 6자리 이상 입력해주세요.' }, { status: 400 });
     }
 
-    // 전화번호로 사용자 조회
-    let user = await prisma.user.findFirst({
-      where: {
-        phone: phone
-      }
+    // 전화번호로 사용자 조회 (뒤 8자리로 매칭)
+    console.log('🔍 데이터베이스에서 사용자 조회 중...');
+    
+    // 모든 사용자 조회 후 뒤 8자리로 매칭
+    const allUsers = await prisma.user.findMany({
+      select: { id: true, email: true, phone: true, passwordHash: true, role: true, status: true, isActive: true }
     });
-
-    // 전체 전화번호로 찾지 못한 경우 suffix로 검색
-    if (!user) {
-      const hyphenSuffix = `${phone.slice(0, 4)}-${phone.slice(4)}`;
-      user = await prisma.user.findFirst({
-        where: {
-          phone: { endsWith: hyphenSuffix }
-        }
-      });
-    }
-
-    // 여전히 찾지 못한 경우, 전화번호에서 하이픈을 제거한 후 비교
-    if (!user) {
-      const allUsers = await prisma.user.findMany({
-        select: { id: true, email: true, phone: true, passwordHash: true, role: true, status: true, isActive: true }
-      });
-      
-      user = allUsers.find(u => {
-        const cleanPhone = u.phone.replace(/[^0-9]/g, '');
-        return cleanPhone.endsWith(phone);
-      }) as unknown as typeof user || null;
-    }
+    
+    // 뒤 8자리로 매칭되는 사용자 찾기
+    const user = allUsers.find(u => {
+      const cleanPhone = u.phone.replace(/[^0-9]/g, '');
+      return cleanPhone.endsWith(phoneSuffix);
+    }) as unknown as typeof user || null;
+    
+    console.log('📊 사용자 조회 결과:', user ? '사용자 발견' : '사용자 없음');
 
     if (!user) {
       return NextResponse.json({ error: '등록되지 않은 전화번호입니다.' }, { status: 404 });

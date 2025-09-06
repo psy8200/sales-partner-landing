@@ -1,0 +1,7 @@
+.chartContainer {
+  height: var(--chart-height);
+}
+
+.bar {
+  width: var(--bar-width);
+}

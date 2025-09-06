@@ -21,8 +21,8 @@ const Navigation = () => {
         const response = await fetch('/api/admin/company-info');
         const data = await response.json();
         
-        if (data.success && data.data) {
-          setCompanyInfo(data.data);
+        if (data.success && data.companyInfo) {
+          setCompanyInfo(data.companyInfo);
         }
       } catch (error) {
         console.error('회사정보 로드 오류:', error);
@@ -47,6 +47,7 @@ const Navigation = () => {
         alt={`${companyInfo?.companyName || '세일즈 파트너'} Logo`} 
         width={200} 
         height={50} 
+        priority
         className="h-10 w-auto sm:h-12 md:h-14 lg:h-16 xl:h-18 object-contain"
       />
     );

@@ -50,6 +50,26 @@ export async function POST(request: NextRequest) {
     // 비밀번호 해시화
     const hashedPassword = await bcrypt.hash(validatedData.password, 12);
     
+    // 추천인코드 처리: 입력하지 않았으면 기본추천인코드 사용
+    let finalReferralCode = validatedData.referralCode;
+    if (!finalReferralCode || finalReferralCode.trim() === '') {
+      // 회사정보에서 기본추천인코드 가져오기
+      const companyInfo = await prisma.companyInfo.findFirst({
+        where: { isActive: true },
+        orderBy: { createdAt: 'desc' }
+      });
+      
+      if (companyInfo && companyInfo.referralCodeDefault) {
+        finalReferralCode = companyInfo.referralCodeDefault;
+        console.log('✅ 기본추천인코드 적용:', finalReferralCode);
+      } else {
+        console.log('⚠️ 기본추천인코드 없음, 빈 값으로 저장');
+        finalReferralCode = null;
+      }
+    } else {
+      console.log('✅ 사용자 입력 추천인코드 사용:', finalReferralCode);
+    }
+    
     // 사용자 생성
     const user = await prisma.user.create({
       data: {
@@ -64,7 +84,7 @@ export async function POST(request: NextRequest) {
         role: 'GENERAL',
         status: 'ACTIVE',
         partnerStatus: 'NOT_APPLIED',
-        referralCode: validatedData.referralCode, // 추천인코드 처리
+        referralCode: finalReferralCode, // 최종 추천인코드 처리
       },
       select: {
         id: true,

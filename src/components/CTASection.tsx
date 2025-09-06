@@ -17,8 +17,8 @@ const CTASection = () => {
         
         {/* 섬세한 애니메이션 요소들 */}
         <div className="absolute top-0 left-0 w-80 h-80 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-r from-green-50 to-emerald-50 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute bottom-0 left-1/2 w-72 h-72 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }}></div>
+        <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-r from-green-50 to-emerald-50 rounded-full blur-3xl animate-pulse [animation-delay:2s]"></div>
+        <div className="absolute bottom-0 left-1/2 w-72 h-72 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-full blur-3xl animate-pulse [animation-delay:4s]"></div>
         
         {/* 미묘한 패턴 */}
         <div className="absolute inset-0 opacity-5">

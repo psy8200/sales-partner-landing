@@ -71,6 +71,8 @@ async function main() {
       availableTime: '14:00-15:00',
       preferredTime: '오후 (13:00-17:00)',
       additionalNote: '상담 가능한 시간에 연락 부탁드립니다.',
+      area: '서울시 강남구',
+      referrer: '기본추천인코드',
       status: 'PENDING',
     },
   });

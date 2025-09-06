@@ -415,37 +415,8 @@ export const NativeAppDevTool: React.FC = () => {
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6">
         <h2 className="text-xl font-semibold text-gray-900">🚀 네이티브 앱 개발 도구</h2>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setAutoRefresh(!autoRefresh)}
-            className={`px-3 py-1 text-sm rounded-md transition-colors ${
-              autoRefresh 
-                ? 'bg-green-100 text-green-700 border border-green-200' 
-                : 'bg-gray-100 text-gray-700 border border-gray-200'
-            }`}
-          >
-            <Activity className="w-4 h-4 mr-1 inline" />
-            자동 새로고침
-          </button>
-          <button
-            onClick={handleRefresh}
-            disabled={isLoading}
-            className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 mr-1 inline ${isLoading ? 'animate-spin' : ''}`} />
-            새로고침
-          </button>
-          <button
-            onClick={triggerHotReload}
-            disabled={isLoading}
-            className="px-3 py-1 text-sm bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 transition-colors disabled:opacity-50"
-          >
-            <Zap className="w-4 h-4 mr-1 inline" />
-            Hot Reload
-          </button>
-        </div>
       </div>
 
       {/* 탭 네비게이션 */}
@@ -701,6 +672,19 @@ export const NativeAppDevTool: React.FC = () => {
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-semibold text-gray-900">네이티브 앱 실시간 미리보기</h2>
                   <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => {
+                        setIsPreviewLoading(true);
+                        setPreviewError(null);
+                        // 미리보기 새로고침
+                        setTimeout(() => {
+                          setIsPreviewLoading(false);
+                        }, 1000);
+                      }}
+                      className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
+                    >
+                      [새로고침]
+                    </button>
                     {isLoading && (
                       <div className="flex items-center text-blue-600">
                         <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
@@ -718,11 +702,9 @@ export const NativeAppDevTool: React.FC = () => {
                       {/* 모바일 프레임 시뮬레이션 */}
                       <div className="bg-gray-900 rounded-[2.5rem] p-2 shadow-2xl">
                         <div 
-                          className="bg-white rounded-[2rem] overflow-hidden relative" 
-                          style={{ 
-                            width: `${DEVICE_FRAMES[selectedDevice].screenWidth * 0.8}px`, 
-                            height: `${DEVICE_FRAMES[selectedDevice].screenHeight * 0.8}px` 
-                          }}
+                          className="bg-white rounded-[2rem] overflow-hidden relative device-frame" 
+                          data-device-width={DEVICE_FRAMES[selectedDevice].screenWidth * 0.8}
+                          data-device-height={DEVICE_FRAMES[selectedDevice].screenHeight * 0.8}
                         >
                           {/* 상태 표시 오버레이 */}
                           <div className="absolute top-2 left-2 z-10">

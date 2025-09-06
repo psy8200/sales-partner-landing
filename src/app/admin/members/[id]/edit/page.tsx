@@ -22,7 +22,10 @@ const MemberEditPage = ({ params }: { params: Promise<{ id: string }> }) => {
     referralCode: '', // 기본추천코드 (회사정보관리에서 가져옴)
     bankName: '',
     accountHolder: '',
-    bankAccount: ''
+    bankAccount: '',
+    // 관리자 전용 필드
+    role: 'GENERAL' as 'GENERAL' | 'MEMBER' | 'ADMIN',
+    joinDate: ''
   });
 
   const [defaultReferralCode, setDefaultReferralCode] = useState(''); // 기본추천코드
@@ -68,7 +71,10 @@ const MemberEditPage = ({ params }: { params: Promise<{ id: string }> }) => {
           referralCode: data.referralCode || '', // API에서 받은 추천인코드만 사용
           bankName: data.bankName || '',
           accountHolder: data.accountHolder || '',
-          bankAccount: data.bankAccount || ''
+          bankAccount: data.bankAccount || '',
+          // 관리자 필드 추가
+          role: data.role || 'GENERAL',
+          joinDate: data.createdAt ? new Date(data.createdAt).toISOString().split('T')[0] : ''
         };
         
         console.log('🔄 formData 설정:', newFormData);
@@ -274,6 +280,32 @@ const MemberEditPage = ({ params }: { params: Promise<{ id: string }> }) => {
               aria-label="추천인코드 입력"
             />
 
+          </div>
+
+          {/* 관리자 전용 필드 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">역할</label>
+            <select
+              value={formData.role}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value as 'GENERAL' | 'MEMBER' | 'ADMIN' })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label="역할 선택"
+            >
+              <option value="GENERAL">예비파트너</option>
+              <option value="MEMBER">파트너</option>
+              <option value="ADMIN">관리자</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">입사일/가입일</label>
+            <input
+              type="date"
+              value={formData.joinDate}
+              onChange={(e) => setFormData({ ...formData, joinDate: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label="입사일/가입일 선택"
+            />
           </div>
 
           {/* 은행 정보 */}

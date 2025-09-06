@@ -19,7 +19,6 @@ import {
 
 import { getLevelIcon } from '@/lib/levelIcons';
 import { formatNumber } from '@/lib/utils';
-import MemberPWAInstaller from '@/components/MemberPWAInstaller';
 
 interface User {
   id: string;
@@ -636,8 +635,6 @@ export default function MyPage() {
         </div>
       </nav>
 
-      {/* PWA 설치 프롬프트 */}
-      <MemberPWAInstaller />
     </div>
   );
 }

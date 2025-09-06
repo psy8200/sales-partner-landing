@@ -1,0 +1,114 @@
+{
+  "users": [
+    {
+      "id": "cmf8lt64p0000arv4yuy3eqsu",
+      "email": "admin@dbkorea.com",
+      "phone": "010-0000-0001",
+      "name": "홍길동",
+      "passwordHash": "$2b$12$OdA8PWNfGwMhBLCh75pUweeYCSB39eQ/CHuyYo2xzH/894olxxK62",
+      "status": "ACTIVE",
+      "role": "GENERAL",
+      "partnerStatus": "NOT_APPLIED",
+      "points": 0,
+      "level": 0,
+      "referralCode": "00001111",
+      "referralCodeConfirmed": false,
+      "finalPoints": 0,
+      "monthlyReferrals": 0,
+      "totalReferrals": 0,
+      "bankName": null,
+      "bankAccount": null,
+      "accountHolder": null,
+      "settlementCycle": null,
+      "profileImage": null,
+      "birthDate": null,
+      "gender": null,
+      "address": null,
+      "addressDetail": null,
+      "zipCode": null,
+      "marketingAgreed": false,
+      "marketingAgreedAt": null,
+      "agreeTerms": true,
+      "agreeTermsAt": "2025-09-06T18:35:07.463Z",
+      "lastLoginAt": "2025-09-06T18:35:48.420Z",
+      "lastLogoutAt": null,
+      "loginCount": 2,
+      "isActive": true,
+      "isOnline": true,
+      "currentSessionId": "session_cmf8lt64p0000arv4yuy3eqsu_1757183748420",
+      "lastActivityAt": "2025-09-06T18:35:48.420Z",
+      "createdAt": "2025-09-06T18:35:07.466Z",
+      "updatedAt": "2025-09-06T18:35:48.421Z",
+      "deletedAt": null
+    }
+  ],
+  "contracts": [],
+  "items": [],
+  "partner-applications": [],
+  "questions": [],
+  "activity-logs": [
+    {
+      "id": "cmf8lt65l0002arv4zoo9mshz",
+      "type": "USER_REGISTRATION",
+      "title": "새로운 회원이 가입했습니다",
+      "description": "홍길동님이 회원으로 가입했습니다.",
+      "userId": "cmf8lt64p0000arv4yuy3eqsu",
+      "metadata": "{\"userName\":\"홍길동\"}",
+      "createdAt": "2025-09-06T18:35:07.497Z"
+    }
+  ],
+  "company-info": [
+    {
+      "id": "cmf8bxrmy001war9857nmbe1v",
+      "companyName": "주식회사 세일즈파트너스",
+      "businessNumber": "367-87-02260",
+      "representative": "박수용",
+      "address": "서울특별시 금천구 디지털로9길 68 대륭포스트타워5차 232호",
+      "phone": "1600-5360",
+      "email": "psy777@naver.com",
+      "website": "https://salespartners.kr",
+      "description": "국내 최초 매월 고정비용을 누적수익으로~!! 수익 자동화 플랫폼",
+      "referralCodeDefault": "00001111",
+      "isActive": true,
+      "createdAt": "2025-09-06T13:58:45.801Z",
+      "updatedAt": "2025-09-06T13:58:45.801Z"
+    }
+  ],
+  "consultations": [],
+  "applications": [],
+  "payments": [],
+  "settlements": [],
+  "point-ledgers": [],
+  "withdrawal-requests": [],
+  "user-logs": [
+    {
+      "id": "cmf8lt6610004arv4lxzjufm3",
+      "userId": "cmf8lt64p0000arv4yuy3eqsu",
+      "action": "SIGNUP",
+      "category": "AUTH",
+      "description": "회원가입 완료 (예비파트너)",
+      "ipAddress": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+      "metadata": null,
+      "createdAt": "2025-09-06T18:35:07.514Z"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "cmf8lt66h0006arv4c9y3c169",
+      "userId": "cmf8lt64p0000arv4yuy3eqsu",
+      "type": "SYSTEM",
+      "title": "회원가입 완료",
+      "message": "회원가입이 완료되었습니다. 파트너 등록을 진행하실 수 있습니다.",
+      "status": "UNREAD",
+      "linkUrl": null,
+      "linkText": null,
+      "readAt": null,
+      "createdAt": "2025-09-06T18:35:07.529Z"
+    }
+  ],
+  "system-configs": [],
+  "export-logs": [],
+  "profit-items": [],
+  "activity-backups": []
+}
