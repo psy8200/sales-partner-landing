@@ -40,16 +40,27 @@ export async function POST(req: Request) {
       select: { id: true, email: true, phone: true, passwordHash: true, role: true, status: true, isActive: true }
     });
     
+    console.log('📋 전체 사용자 목록:', allUsers.map(u => ({ 
+      id: u.id, 
+      email: u.email, 
+      phone: u.phone, 
+      cleanPhone: u.phone.replace(/[^0-9]/g, ''),
+      last8: u.phone.replace(/[^0-9]/g, '').slice(-8)
+    })));
+    
     // 뒤 8자리로 매칭되는 사용자 찾기
     const user = allUsers.find(u => {
       const cleanPhone = u.phone.replace(/[^0-9]/g, '');
-      return cleanPhone.endsWith(phoneSuffix);
+      const matches = cleanPhone.endsWith(phoneSuffix);
+      console.log(`🔍 매칭 시도: ${u.phone} -> ${cleanPhone} -> 끝 8자리: ${cleanPhone.slice(-8)} vs 입력: ${phoneSuffix} = ${matches ? '✅' : '❌'}`);
+      return matches;
     }) as unknown as typeof user || null;
     
     console.log('📊 사용자 조회 결과:', user ? '사용자 발견' : '사용자 없음');
 
     if (!user) {
-      return NextResponse.json({ error: '등록되지 않은 전화번호입니다.' }, { status: 404 });
+      console.log('❌ 사용자를 찾을 수 없음:', { phone, phoneSuffix });
+      return NextResponse.json({ error: '전화번호 8자리로 등록된 계정을 찾을 수 없습니다.' }, { status: 404 });
     }
 
     // 비밀번호 검증
@@ -63,11 +74,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: '활성화되지 않은 계정입니다.' }, { status: 403 });
     }
 
-    // 로그인 성공 - 세션 토큰 생성
+    // 로그인 성공 - PWA 전용 세션 토큰 생성
     const sessionToken = Buffer.from(JSON.stringify({
       userId: user.id,
       role: user.role,
       phone: user.phone,
+      platform: 'pwa', // PWA 플랫폼 식별
       iat: Date.now()
     })).toString('base64url');
 
@@ -76,28 +88,31 @@ export async function POST(req: Request) {
       user: { 
         id: user.id, 
         phone: user.phone, 
-        role: user.role 
+        role: user.role,
+        platform: 'pwa'
       } 
     });
 
-    // 세션 쿠키 설정 (90일)
+    // PWA 전용 세션 쿠키 설정 (90일, /pwa 경로)
     const NINETY_DAYS = 60 * 60 * 24 * 90;
-    res.cookies.set('session', sessionToken, {
+    res.cookies.set('pwaSession', sessionToken, {
       httpOnly: true,
-      path: '/',
+      path: '/pwa', // PWA 전용 경로
       sameSite: 'lax',
       maxAge: NINETY_DAYS,
       expires: new Date(Date.now() + NINETY_DAYS * 1000),
     });
 
-    // 사용자 ID 쿠키도 설정
-    res.cookies.set('authToken', user.id, {
+    // PWA 전용 사용자 ID 쿠키도 설정
+    res.cookies.set('pwaAuthToken', user.id, {
       httpOnly: true,
-      path: '/',
+      path: '/pwa', // PWA 전용 경로
       sameSite: 'lax',
       maxAge: NINETY_DAYS,
       expires: new Date(Date.now() + NINETY_DAYS * 1000),
     });
+
+    console.log('📱 [PWA 로그인] 로그인 성공:', { userId: user.id, platform: 'pwa' });
 
     return res;
 

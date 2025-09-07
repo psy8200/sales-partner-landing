@@ -1,0 +1,11 @@
+{
+  "lastBackup": "2025-09-07T14-20-18-588Z",
+  "backupDate": "2025-09-07",
+  "backupType": "TRIPLE_BACKUP",
+  "locations": {
+    "auto": "C:\\home\\sales-partner-landing\\auto-backups\\2025-09-07T14-20-18-588Z",
+    "manual": "C:\\home\\sales-partner-landing\\manual-backups\\2025-09-07-2025-09-07T14-20-18-588Z",
+    "final": "C:\\home\\sales-partner-landing\\final-backups\\2025-09-07-session-complete"
+  },
+  "sessionComplete": true
+}

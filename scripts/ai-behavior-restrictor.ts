@@ -115,3 +115,4 @@ export const aiBehaviorRestrictor = AIBehaviorRestrictor.getInstance();
 
 // 시스템 초기화
 aiBehaviorRestrictor.preventArbitraryActions();
+

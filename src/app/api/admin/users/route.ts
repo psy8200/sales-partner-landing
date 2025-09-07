@@ -101,12 +101,28 @@ export async function GET(req: NextRequest) {
     const limit = Number(searchParams.get("limit") ?? "20");
     const role = searchParams.get("role") || undefined;
     const partnerStatus = searchParams.get("partnerStatus") || undefined;
+    const referralCodeFilter = searchParams.get("referralCodeFilter") || undefined;
+    const searchQuery = searchParams.get("q") || undefined;
 
-    console.log('API /admin/users called with params:', { page, limit, role, partnerStatus });
+    console.log('API /admin/users called with params:', { page, limit, role, partnerStatus, referralCodeFilter, searchQuery });
 
     const where: Record<string, unknown> = {};
-          if (role) where.role = role;
-      if (partnerStatus) where.partnerStatus = partnerStatus;
+    if (role) where.role = role;
+    if (partnerStatus) where.partnerStatus = partnerStatus;
+    
+    // 검색 기능 추가 (SQLite 호환)
+    if (searchQuery) {
+      where.OR = [
+        { name: { contains: searchQuery } },
+        { email: { contains: searchQuery } },
+        { phone: { contains: searchQuery } }
+      ];
+    }
+    
+    // 추천인코드 필터 (실제 추천인코드 값으로)
+    if (referralCodeFilter && referralCodeFilter !== '') {
+      where.referralCode = referralCodeFilter;
+    }
     const skip = (page - 1) * limit;
 
     console.log('Prisma query where:', where);

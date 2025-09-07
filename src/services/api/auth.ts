@@ -2,13 +2,13 @@ import { apiClient } from './client';
 import { LoginRequest, LoginResponse, User, ApiResponse } from '../../types';
 
 export const authService = {
-  // 회원 로그인
+  // 회원 로그인 (PWA 전용)
   async login(credentials: LoginRequest): Promise<boolean> {
     try {
       const response = await apiClient.post<LoginResponse>('/auth/member-login', credentials);
       return response.success || false;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('PWA Login error:', error);
       return false;
     }
   },

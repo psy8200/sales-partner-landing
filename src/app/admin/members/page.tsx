@@ -53,6 +53,12 @@ const MembersPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [status, setStatus] = useState<string>('');
   const [role, setRole] = useState<string>('');
+  const [referralCodeFilter, setReferralCodeFilter] = useState<string>('');
+  const [filterOptions, setFilterOptions] = useState<{
+    referralCodes: Array<{value: string, label: string}>;
+  }>({
+    referralCodes: []
+  });
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
   const [loading, setLoading] = useState(false);
@@ -70,6 +76,19 @@ const MembersPage = () => {
   const allSelected = useMemo(() => rows.length > 0 && rows.every(r => selected[r.id]), [rows, selected]);
   const selectedIds = useMemo(() => rows.filter(r => selected[r.id]).map(r => r.id), [rows, selected]);
 
+  // 필터 옵션 가져오기
+  const fetchFilterOptions = async () => {
+    try {
+      const response = await fetch('/api/admin/users/filter-options');
+      const data = await response.json();
+      if (response.ok) {
+        setFilterOptions(data);
+      }
+    } catch (error) {
+      console.error('필터 옵션 로드 오류:', error);
+    }
+  };
+
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -80,6 +99,7 @@ const MembersPage = () => {
       if (searchTerm) params.set('q', searchTerm);
       if (status) params.set('status', status);
       if (role) params.set('role', role);
+      if (referralCodeFilter) params.set('referralCodeFilter', referralCodeFilter);
       if (mode === 'GENERAL') params.set('role', 'GENERAL');
       if (mode === 'MEMBER') params.set('role', 'MEMBER');
       if (mode === 'ADMIN') params.set('role', 'ADMIN');
@@ -254,6 +274,11 @@ const MembersPage = () => {
     }
   }, [page, limit, mode, searchTerm, status, role, questionSearch, questionPageSize]);
 
+  // 필터 옵션 로드
+  useEffect(() => {
+    fetchFilterOptions();
+  }, []);
+
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / limit)), [total, limit]);
 
   const statusLabel = (s: string) => {
@@ -318,20 +343,28 @@ const MembersPage = () => {
       return;
     }
     if (!confirm(`${selectedIds.length}명을 삭제하시겠습니까?`)) return;
-    const res = await fetch('/api/admin/users/bulk', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids: selectedIds }),
-    });
-    const j = await res.json();
-    if (!res.ok) {
-      alert(j.error || '삭제 실패');
-      return;
+    
+    try {
+      const res = await fetch('/api/admin/users/bulk-delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedIds }),
+      });
+      const j = await res.json();
+      if (!res.ok) {
+        alert(j.error || '삭제 실패');
+        return;
+      }
+      alert(`삭제됨: ${j.deleted}명`);
+      setSelected({});
+      fetchUsers();
+      if (mode === 'ALL') {
+        fetchStats();
+      }
+    } catch (error) {
+      console.error('삭제 오류:', error);
+      alert('삭제 중 오류가 발생했습니다.');
     }
-    alert(`삭제됨: ${j.deleted}`);
-    setSelected({});
-    fetchUsers();
-    fetchStats();
   };
 
   const handleAnswerQuestion = async (questionId: string, answer: string) => {
@@ -569,33 +602,49 @@ const MembersPage = () => {
                  {mode === 'GENERAL' ? '일반회원 목록' : mode === 'MEMBER' ? '파트너회원 목록' : '관리자 목록'}
                </h2>
                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                 <input
-                   type="text"
-                   placeholder="회원명 또는 이메일로 검색..."
-                   value={searchTerm}
-                   onChange={(e) => setSearchTerm(e.target.value)}
-                   className="flex-1 px-3 sm:px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                 />
+                 {/* 검색바와 검색버튼 그룹 */}
                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                   <input
+                     type="text"
+                     placeholder="회원명 또는 이메일로 검색..."
+                     value={searchTerm}
+                     onChange={(e) => setSearchTerm(e.target.value)}
+                     className="w-full sm:w-80 px-3 sm:px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                   />
                    <button
                      onClick={() => { setPage(1); fetchUsers(); }}
                      className="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs sm:text-sm"
                    >
                      검색
                    </button>
-                   <button
-                     onClick={bulkDelete}
-                     disabled={!canDeleteAdmin}
-                     className={`px-3 sm:px-4 py-2 rounded-md transition-colors text-xs sm:text-sm ${
-                       canDeleteAdmin 
-                         ? 'bg-red-600 text-white hover:bg-red-700' 
-                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                     }`}
-                     title={canDeleteAdmin ? '선택된 회원 삭제' : '최고관리자만 사용 가능'}
-                   >
-                     삭제하기
-                   </button>
                  </div>
+                 
+                 {/* 다운드롭바들 */}
+                 <select
+                   value={referralCodeFilter}
+                   onChange={(e) => {
+                     setReferralCodeFilter(e.target.value);
+                     setPage(1);
+                     fetchUsers();
+                   }}
+                   className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm w-full sm:w-auto"
+                 >
+                   <option value="">추천인코드 전체</option>
+                   {filterOptions.referralCodes.map((option) => (
+                     <option key={option.value} value={option.value}>
+                       {option.label}
+                     </option>
+                   ))}
+                 </select>
+                 
+                 {/* 삭제버튼 */}
+                 <button
+                   onClick={bulkDelete}
+                   className="px-3 sm:px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-xs sm:text-sm"
+                   title="선택된 회원 삭제"
+                 >
+                   삭제하기
+                 </button>
                </div>
              </div>
            </div>
@@ -616,6 +665,7 @@ const MembersPage = () => {
                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">연락처</th>
                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이메일주소</th>
+                   <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">추천인코드</th>
                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">가입일</th>
                    {pathname.includes('/partners') && (
                      <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">결정포인트</th>
@@ -627,11 +677,11 @@ const MembersPage = () => {
                </thead>
                <tbody className="bg-white divide-y divide-gray-200">
                  {loading ? (
-                   <tr><td className="p-3 sm:p-6" colSpan={pathname.includes('/partners') ? 7 : 6}>불러오는 중...</td></tr>
+                   <tr><td className="p-3 sm:p-6" colSpan={pathname.includes('/partners') ? 8 : 7}>불러오는 중...</td></tr>
                  ) : error ? (
-                   <tr><td className="p-3 sm:p-6 text-red-600 text-xs sm:text-sm" colSpan={pathname.includes('/partners') ? 7 : 6}>{error}</td></tr>
+                   <tr><td className="p-3 sm:p-6 text-red-600 text-xs sm:text-sm" colSpan={pathname.includes('/partners') ? 8 : 7}>{error}</td></tr>
                  ) : rows.length === 0 ? (
-                   <tr><td className="p-3 sm:p-6 text-xs sm:text-sm" colSpan={pathname.includes('/partners') ? 7 : 6}>데이터가 없습니다.</td></tr>
+                   <tr><td className="p-3 sm:p-6 text-xs sm:text-sm" colSpan={pathname.includes('/partners') ? 8 : 7}>데이터가 없습니다.</td></tr>
                  ) : (
                    rows.map((member) => (
                      <tr key={member.id} className="hover:bg-gray-50">
@@ -644,6 +694,9 @@ const MembersPage = () => {
                        <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{member.name}</td>
                        <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{member.phone}</td>
                        <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{member.email}</td>
+                       <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                         {member.referralCode || '-'}
+                       </td>
                        <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{safeDateFormat(member.createdAt)}</td>
                        {pathname.includes('/partners') && (
                          <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{safeNumberFormat(member.points)}P</td>

@@ -1,0 +1,114 @@
+{
+  "user-logs": [
+    {
+      "id": "cmf9q3dug001uarn0miq0lw0i",
+      "userId": "cmf9q3dtf001qarn0bl6ufiov",
+      "action": "SIGNUP",
+      "category": "AUTH",
+      "description": "회원가입 완료 (예비파트너)",
+      "ipAddress": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+      "metadata": null,
+      "createdAt": "2025-09-07T13:22:48.664Z"
+    },
+    {
+      "id": "cmf9q2mp9001narn0yrqepcim",
+      "userId": "cmf9q2moj001jarn0m705wypd",
+      "action": "SIGNUP",
+      "category": "AUTH",
+      "description": "회원가입 완료 (예비파트너)",
+      "ipAddress": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+      "metadata": null,
+      "createdAt": "2025-09-07T13:22:13.485Z"
+    },
+    {
+      "id": "cmf9q1afu001garn0v61o6gjf",
+      "userId": "cmf9q1aet001carn0m34t9aux",
+      "action": "SIGNUP",
+      "category": "AUTH",
+      "description": "회원가입 완료 (예비파트너)",
+      "ipAddress": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+      "metadata": null,
+      "createdAt": "2025-09-07T13:21:10.938Z"
+    },
+    {
+      "id": "cmf9q03wv0019arn0ac9iedvd",
+      "userId": "cmf9q03w90015arn0v6un0sjl",
+      "action": "SIGNUP",
+      "category": "AUTH",
+      "description": "회원가입 완료 (예비파트너)",
+      "ipAddress": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+      "metadata": null,
+      "createdAt": "2025-09-07T13:20:15.824Z"
+    },
+    {
+      "id": "cmf9pxwiv0010arn0a6i359p6",
+      "userId": "cmf9pxwhv000warn0rkzi8ypw",
+      "action": "SIGNUP",
+      "category": "AUTH",
+      "description": "회원가입 완료 (예비파트너)",
+      "ipAddress": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+      "metadata": null,
+      "createdAt": "2025-09-07T13:18:32.935Z"
+    },
+    {
+      "id": "cmf9pwz1q000tarn03s5qf9oa",
+      "userId": "cmf9pwz0o000parn09eips6w5",
+      "action": "SIGNUP",
+      "category": "AUTH",
+      "description": "회원가입 완료 (예비파트너)",
+      "ipAddress": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+      "metadata": null,
+      "createdAt": "2025-09-07T13:17:49.550Z"
+    },
+    {
+      "id": "cmf9op352000karn0u42icc3o",
+      "userId": "cmf9op341000garn0rbdiltd6",
+      "action": "SIGNUP",
+      "category": "AUTH",
+      "description": "회원가입 완료 (예비파트너)",
+      "ipAddress": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+      "metadata": null,
+      "createdAt": "2025-09-07T12:43:41.991Z"
+    },
+    {
+      "id": "cmf9obfzv000darn023hsbr4p",
+      "userId": "cmf9obfz60009arn0d9qddz7m",
+      "action": "SIGNUP",
+      "category": "AUTH",
+      "description": "회원가입 완료 (예비파트너)",
+      "ipAddress": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+      "metadata": null,
+      "createdAt": "2025-09-07T12:33:05.468Z"
+    },
+    {
+      "id": "cmf9o2gct0004arn0k3zvkk38",
+      "userId": "cmf9o2gb80000arn0bkcaibcm",
+      "action": "SIGNUP",
+      "category": "AUTH",
+      "description": "회원가입 완료 (예비파트너)",
+      "ipAddress": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+      "metadata": null,
+      "createdAt": "2025-09-07T12:26:06.029Z"
+    },
+    {
+      "id": "cmf8lt6610004arv4lxzjufm3",
+      "userId": "cmf8lt64p0000arv4yuy3eqsu",
+      "action": "SIGNUP",
+      "category": "AUTH",
+      "description": "회원가입 완료 (예비파트너)",
+      "ipAddress": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+      "metadata": null,
+      "createdAt": "2025-09-06T18:35:07.514Z"
+    }
+  ]
+}

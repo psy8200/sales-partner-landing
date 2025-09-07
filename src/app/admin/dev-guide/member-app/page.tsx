@@ -4,9 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { DeviceFrame } from '@/components/DeviceFrame';
 import { ResponsiveTestTool } from '@/components/ResponsiveTestTool';
 import { DevelopmentControls } from '@/components/DevelopmentControls';
-import { NativeAppDevTool } from '@/components/NativeAppDevTool';
-import { FileWatcher } from '@/components/FileWatcher';
-import { ApiMonitor } from '@/components/ApiMonitor';
+import { PwaAppManagement } from '@/components/PwaAppManagement';
 
 // 디바이스 프레임 정의
 const DEVICE_FRAMES = {
@@ -89,9 +87,9 @@ export default function MemberAppPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [customUrl, setCustomUrl] = useState('/member');
+  const [customUrl, setCustomUrl] = useState('/login');
   const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
-  const [activeTab, setActiveTab] = useState<'preview' | 'native' | 'files' | 'api'>('preview');
+  const [activeTab, setActiveTab] = useState<'preview' | 'pwa'>('preview');
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const currentDevice = DEVICE_FRAMES[selectedDevice];
@@ -140,7 +138,7 @@ export default function MemberAppPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
             <h1 className="text-3xl font-bold text-gray-900">📱 회원페이지 앱 개발 도구</h1>
-            <p className="text-gray-600 mt-2">네이티브 앱 개발을 위한 실시간 미리보기 및 테스트 도구</p>
+            <p className="text-gray-600 mt-2">웹 앱 개발을 위한 실시간 미리보기 및 테스트 도구</p>
           </div>
         </div>
 
@@ -149,9 +147,7 @@ export default function MemberAppPage() {
           <div className="flex space-x-1 p-1">
             {[
               { id: 'preview', label: '웹 미리보기', icon: '🖥️' },
-              { id: 'native', label: '네이티브 앱', icon: '📱' },
-              { id: 'files', label: '파일 감지', icon: '📁' },
-              { id: 'api', label: 'API 모니터링', icon: '🌐' }
+              { id: 'pwa', label: 'PWA 앱 관리', icon: '⚡' }
             ].map(({ id, label, icon }) => (
               <button
                 key={id}
@@ -269,19 +265,9 @@ export default function MemberAppPage() {
           </>
         )}
 
-        {/* 네이티브 앱 탭 */}
-        {activeTab === 'native' && (
-          <NativeAppDevTool />
-        )}
-
-        {/* 파일 감지 탭 */}
-        {activeTab === 'files' && (
-          <FileWatcher />
-        )}
-
-        {/* API 모니터링 탭 */}
-        {activeTab === 'api' && (
-          <ApiMonitor />
+        {/* PWA 앱 관리 탭 */}
+        {activeTab === 'pwa' && (
+          <PwaAppManagement />
         )}
       </div>
     </div>

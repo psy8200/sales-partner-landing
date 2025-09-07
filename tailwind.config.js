@@ -5,6 +5,10 @@ module.exports = {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  // TailwindCSS가 클라이언트에서 파일 시스템을 사용하지 않도록 설정
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
   darkMode: ['class'],
   theme: {
     extend: {

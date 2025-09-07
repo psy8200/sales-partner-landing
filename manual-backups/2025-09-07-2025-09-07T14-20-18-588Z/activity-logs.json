@@ -1,0 +1,94 @@
+{
+  "activity-logs": [
+    {
+      "id": "cmf9q3du3001sarn0gzvmavuz",
+      "type": "USER_REGISTRATION",
+      "title": "새로운 회원이 가입했습니다",
+      "description": "박수용님이 회원으로 가입했습니다.",
+      "userId": "cmf9q3dtf001qarn0bl6ufiov",
+      "metadata": "{\"userName\":\"박수용\"}",
+      "createdAt": "2025-09-07T13:22:48.651Z"
+    },
+    {
+      "id": "cmf9q2mox001larn0yff4v1cq",
+      "type": "USER_REGISTRATION",
+      "title": "새로운 회원이 가입했습니다",
+      "description": "박수용님이 회원으로 가입했습니다.",
+      "userId": "cmf9q2moj001jarn0m705wypd",
+      "metadata": "{\"userName\":\"박수용\"}",
+      "createdAt": "2025-09-07T13:22:13.473Z"
+    },
+    {
+      "id": "cmf9q1afh001earn0uu1vy3be",
+      "type": "USER_REGISTRATION",
+      "title": "새로운 회원이 가입했습니다",
+      "description": "박수용님이 회원으로 가입했습니다.",
+      "userId": "cmf9q1aet001carn0m34t9aux",
+      "metadata": "{\"userName\":\"박수용\"}",
+      "createdAt": "2025-09-07T13:21:10.925Z"
+    },
+    {
+      "id": "cmf9q03wm0017arn0jr0455ia",
+      "type": "USER_REGISTRATION",
+      "title": "새로운 회원이 가입했습니다",
+      "description": "박수용님이 회원으로 가입했습니다.",
+      "userId": "cmf9q03w90015arn0v6un0sjl",
+      "metadata": "{\"userName\":\"박수용\"}",
+      "createdAt": "2025-09-07T13:20:15.815Z"
+    },
+    {
+      "id": "cmf9pxwii000yarn0ajegzx0w",
+      "type": "USER_REGISTRATION",
+      "title": "새로운 회원이 가입했습니다",
+      "description": "박수용님이 회원으로 가입했습니다.",
+      "userId": "cmf9pxwhv000warn0rkzi8ypw",
+      "metadata": "{\"userName\":\"박수용\"}",
+      "createdAt": "2025-09-07T13:18:32.922Z"
+    },
+    {
+      "id": "cmf9pwz1c000rarn0vl6lt7st",
+      "type": "USER_REGISTRATION",
+      "title": "새로운 회원이 가입했습니다",
+      "description": "박수용님이 회원으로 가입했습니다.",
+      "userId": "cmf9pwz0o000parn09eips6w5",
+      "metadata": "{\"userName\":\"박수용\"}",
+      "createdAt": "2025-09-07T13:17:49.536Z"
+    },
+    {
+      "id": "cmf9op34p000iarn0t3fnj20w",
+      "type": "USER_REGISTRATION",
+      "title": "새로운 회원이 가입했습니다",
+      "description": "박수용님이 회원으로 가입했습니다.",
+      "userId": "cmf9op341000garn0rbdiltd6",
+      "metadata": "{\"userName\":\"박수용\"}",
+      "createdAt": "2025-09-07T12:43:41.977Z"
+    },
+    {
+      "id": "cmf9obfzk000barn0stfu1f1q",
+      "type": "USER_REGISTRATION",
+      "title": "새로운 회원이 가입했습니다",
+      "description": "박수용님이 회원으로 가입했습니다.",
+      "userId": "cmf9obfz60009arn0d9qddz7m",
+      "metadata": "{\"userName\":\"박수용\"}",
+      "createdAt": "2025-09-07T12:33:05.456Z"
+    },
+    {
+      "id": "cmf9o2gce0002arn0chystf8r",
+      "type": "USER_REGISTRATION",
+      "title": "새로운 회원이 가입했습니다",
+      "description": "박수용님이 회원으로 가입했습니다.",
+      "userId": "cmf9o2gb80000arn0bkcaibcm",
+      "metadata": "{\"userName\":\"박수용\"}",
+      "createdAt": "2025-09-07T12:26:06.014Z"
+    },
+    {
+      "id": "cmf8lt65l0002arv4zoo9mshz",
+      "type": "USER_REGISTRATION",
+      "title": "새로운 회원이 가입했습니다",
+      "description": "홍길동님이 회원으로 가입했습니다.",
+      "userId": "cmf8lt64p0000arv4yuy3eqsu",
+      "metadata": "{\"userName\":\"홍길동\"}",
+      "createdAt": "2025-09-06T18:35:07.497Z"
+    }
+  ]
+}

@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Image,
 } from 'react-native';
 import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
@@ -50,8 +51,15 @@ export const LoginScreen: React.FC = () => {
     >
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>Sales Partner</Text>
-          <Text style={styles.subtitle}>회원 로그인</Text>
+          {/* 회사 로고 */}
+          <View style={styles.logoContainer}>
+            <Image 
+              source={{ uri: '/logo.png' }}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          </View>
+          <Text style={styles.subtitle}>환영합니다. 행복하루 되세요!</Text>
         </View>
 
         <Card style={styles.formCard} shadow="lg">
@@ -65,14 +73,11 @@ export const LoginScreen: React.FC = () => {
                 const cleanValue = value.replace(/[^0-9-]/g, '');
                 setPhone(cleanValue);
               }}
-              placeholder="010-0000-0000 또는 00000000"
+              placeholder="12345678"
               keyboardType="phone-pad"
               autoCapitalize="none"
               autoCorrect={false}
             />
-            <Text style={styles.helperText}>
-              전체 전화번호 또는 뒤 8자리 모두 입력 가능합니다
-            </Text>
           </View>
 
           <View style={styles.inputGroup}>
@@ -121,11 +126,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: lightTheme.spacing.xxl,
   },
-  title: {
-    fontSize: lightTheme.typography.fontSize.xxxl,
-    fontWeight: lightTheme.typography.fontWeight.bold,
-    color: lightTheme.colors.primary,
-    marginBottom: lightTheme.spacing.sm,
+  logoContainer: {
+    marginBottom: lightTheme.spacing.md,
+  },
+  logo: {
+    width: 120,
+    height: 60,
   },
   subtitle: {
     fontSize: lightTheme.typography.fontSize.lg,
@@ -165,6 +171,7 @@ const styles = StyleSheet.create({
   },
   linkText: {
     color: lightTheme.colors.primary,
-    fontWeight: lightTheme.typography.fontWeight.medium,
+    fontWeight: lightTheme.typography.fontWeight.bold,
+    fontSize: lightTheme.typography.fontSize.lg,
   },
 });

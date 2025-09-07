@@ -265,16 +265,19 @@ export default function MyPage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-[color:var(--bg)] text-[color:var(--text)] pb-20">
+    <div className="min-h-screen bg-[color:var(--bg)] text-[color:var(--text)] pb-24">
+      {/* 상단 여백 추가 */}
+      <div className="h-4"></div>
+      
       {/* 앱바 */}
       <header className="bg-[color:var(--bg)] border-b border-slate-200/40">
-        <div className="h-20 px-4 flex items-center justify-between">
-          {/* 좌측: 환영 메시지 */}
-          <div>
-            <h1 className="text-[color:var(--text)] font-semibold text-base">
-              <span className="text-xl font-bold">{user?.name || '사용자'}</span>님 환영합니다.
+        <div className="px-4 py-4">
+          {/* 환영 메시지 */}
+          <div className="mb-3">
+            <h1 className="text-[color:var(--text)] font-semibold text-lg">
+              <span className="text-2xl font-bold">{user?.name || '사용자'}</span>님 환영합니다.
             </h1>
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 space-y-2 sm:space-y-0 mt-2">
               <p className="text-sm text-green-600 font-medium">
                 {user?.role === 'MEMBER' ? '파트너' : '일반회원'}
                 {user?.partnerStatus === 'APPROVED' && ' • 승인완료'}
@@ -282,7 +285,7 @@ export default function MyPage() {
               {user?.role === 'GENERAL' && (
                 <button
                   onClick={() => router.push('/partner-apply')}
-                  className="bg-[color:var(--primary)] text-[color:var(--primary-foreground)] text-xs px-2 py-1 rounded-[var(--radius-btn)] font-medium hover:opacity-90 transition-opacity"
+                  className="bg-[color:var(--primary)] text-[color:var(--primary-foreground)] text-sm px-4 py-2 rounded-[var(--radius-btn)] font-medium hover:opacity-90 transition-opacity w-full sm:w-auto"
                 >
                   파트너신청
                 </button>
@@ -290,17 +293,17 @@ export default function MyPage() {
             </div>
           </div>
 
-          {/* 우측: 결정포인트 정보 */}
-          <div className="text-right">
-                          <p className="text-[color:var(--text)] text-sm font-medium">
-                나의 기준포인트: <span className="text-lg font-bold">{formatNumber(user?.finalPoints || 0)}</span>P
-              </p>
+          {/* 결정포인트 정보 */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
+            <p className="text-[color:var(--text)] text-sm font-medium text-center">
+              나의 기준포인트: <span className="text-xl font-bold text-blue-600">{formatNumber(user?.finalPoints || 0)}</span>P
+            </p>
           </div>
         </div>
       </header>
 
       {/* 메인 콘텐츠 */}
-      <main className="px-4 py-6 space-y-6">
+      <main className="px-4 py-4 space-y-4">
 
         {/* 총 지급수수료 박스 */}
         {user?.role === 'MEMBER' && (
@@ -595,7 +598,7 @@ export default function MyPage() {
 
       {/* 하단 탭 */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[color:var(--card)] border-t border-slate-200/40 pb-safe">
-        <div className="flex items-center justify-around px-4 py-2">
+        <div className="flex items-center justify-around px-2 py-3">
           {[
             { id: 'home', label: '홈', icon: Home },
             { id: 'benefits', label: '혜택', icon: Gift },
