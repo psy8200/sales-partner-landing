@@ -38,7 +38,7 @@ const BenefitsPage = () => {
         router.push('/partner');
         break;
       case 'more':
-        router.push('/more');
+        router.push('/profile');
         break;
       default:
         console.log('알 수 없는 탭:', tabId);

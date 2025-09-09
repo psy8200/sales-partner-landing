@@ -56,17 +56,26 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // 사용자의 결정포인트 계산 (Contract 테이블의 finalPoints 합계)
+    // 사용자의 결정포인트 계산 (어드민 포인트 API와 동일한 로직)
     const contracts = await prisma.contract.findMany({
       where: {
-        customerName: user?.name
+        status: 'CONFIRMED', // 수금관리로 이동한 계약만
+        customerPhone: user?.phone // 전화번호로 정확한 매칭
       },
       select: {
-        finalPoints: true
+        finalPoints: true,
+        dynamicFields: true,
+        itemName: true
       }
     });
 
-    const totalFinalPoints = contracts.reduce((sum, contract) => sum + (contract.finalPoints || 0), 0);
+    // 어드민 포인트 API와 동일한 계산 로직
+    let totalFinalPoints = 0;
+    contracts.forEach(contract => {
+      if (contract.finalPoints) {
+        totalFinalPoints += contract.finalPoints;
+      }
+    });
 
     // 사용자의 추천인 수 계산 (실제 데이터 기반)
     const totalReferrals = await prisma.user.count({
@@ -121,7 +130,7 @@ export async function GET(request: NextRequest) {
         phone: user.phone,
         role: user.role,
         partnerStatus: user.partnerStatus,
-        points: user.points,
+        points: totalFinalPoints, // 실제 계산된 포인트 사용
         level: user.level,
         bankName: user.bankName,
         bankAccount: user.bankAccount,

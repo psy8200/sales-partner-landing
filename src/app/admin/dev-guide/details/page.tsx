@@ -6,7 +6,8 @@ export default function DevelopmentDetailsPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">개발 세부내용</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">🔧 개발 세부내용</h1>
+        <p className="text-gray-600 mb-8">현재 시스템의 상세한 기술 스펙 및 구현 현황 (2025년 9월 9일 기준)</p>
         
         <div className="space-y-8">
           {/* 시스템 개요 */}
@@ -20,17 +21,20 @@ export default function DevelopmentDetailsPage() {
                   <li>• <strong>Styling:</strong> Tailwind CSS</li>
                   <li>• <strong>Database:</strong> SQLite + Prisma ORM</li>
                   <li>• <strong>Authentication:</strong> Custom Session Management</li>
+                  <li>• <strong>Mobile:</strong> React Native + Expo</li>
+                  <li>• <strong>State Management:</strong> Zustand (Mobile)</li>
                   <li>• <strong>Deployment:</strong> Vercel (예정)</li>
                 </ul>
               </div>
               <div>
                 <h3 className="text-lg font-medium text-gray-700 mb-2">주요 기능</h3>
                 <ul className="space-y-1 text-sm text-gray-600">
-                  <li>• <strong>회원 관리:</strong> 일반회원, 파트너회원, 관리자</li>
-                  <li>• <strong>파트너 신청:</strong> 상담신청 및 승인 시스템</li>
-                  <li>• <strong>계약 관리:</strong> 렌탈, 상조, 보험 계약</li>
-                  <li>• <strong>포인트 시스템:</strong> 적립 및 사용</li>
-                  <li>• <strong>관리자 대시보드:</strong> 통계 및 관리 기능</li>
+                  <li>• <strong>회원 관리:</strong> 일반회원, 파트너회원, 관리자, 담당자</li>
+                  <li>• <strong>계약 관리:</strong> 계약입력, 수정, 삭제, 검색</li>
+                  <li>• <strong>아이템 관리:</strong> 동적 상품 생성, 제목 수정</li>
+                  <li>• <strong>담당자 관리:</strong> 담당자 배정 및 관리</li>
+                  <li>• <strong>PWA 지원:</strong> 웹과 모바일 통합</li>
+                  <li>• <strong>백업 시스템:</strong> 3중 백업 체계</li>
                 </ul>
               </div>
             </div>
@@ -38,72 +42,79 @@ export default function DevelopmentDetailsPage() {
 
           {/* 데이터베이스 스키마 */}
           <section className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">🗄️ 데이터베이스 스키마</h2>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">🗄️ 데이터베이스 스키마 (총 25개 모델)</h2>
             <div className="space-y-4">
               <div>
-                <h3 className="text-lg font-medium text-gray-700 mb-2">User 모델</h3>
-                <div className="bg-gray-50 p-4 rounded text-sm font-mono">
-                  <div>id: String @id @default(cuid)</div>
-                  <div>name: String</div>
-                  <div>email: String @unique</div>
-                  <div>phone: String</div>
-                  <div>password: String</div>
-                  <div>role: UserRole @default(GENERAL)</div>
-                  <div>level: Int @default(1)</div>
-                  <div>status: UserStatus @default(ACTIVE)</div>
-                  <div>partnerStatus: PartnerApplicationStatus?</div>
-                  <div>referralCode: String?</div>
-                  <div>points: Int @default(0)</div>
-                  <div>bankName: String?</div>
-                  <div>accountHolder: String?</div>
-                  <div>bankAccount: String?</div>
-                  <div>agreeTerms: Boolean @default(false)</div>
-                  <div>agreeTermsAt: DateTime?</div>
-                  <div>lastLoginAt: DateTime?</div>
-                  <div>loginCount: Int @default(0)</div>
-                  <div>createdAt: DateTime @default(now())</div>
-                  <div>updatedAt: DateTime @updatedAt</div>
+                <h3 className="text-lg font-medium text-gray-700 mb-2">핵심 모델들</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gray-50 p-4 rounded text-sm">
+                    <div className="font-semibold mb-2">User (회원)</div>
+                    <div>• role: ADMIN, MANAGER, STAFF, MEMBER, GENERAL</div>
+                    <div>• partnerStatus: NOT_APPLIED, PARTNER_APPLIED, APPROVED</div>
+                    <div>• points, referralCode, bankInfo 포함</div>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded text-sm">
+                    <div className="font-semibold mb-2">Contract (계약)</div>
+                    <div>• itemCategory: INSURANCE, RENTAL, INTERNET_TV, FUNERAL, RENTAL_MALL, SHOPPING_MALL, INSTANT_PARTNER</div>
+                    <div>• dynamicFields: JSON 형태로 확장 가능</div>
+                    <div>• 증권번호, 납입기간, 계약금액 등</div>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded text-sm">
+                    <div className="font-semibold mb-2">Admin (관리자)</div>
+                    <div>• role: ADMIN, SUPER_ADMIN</div>
+                    <div>• 세션 관리 및 로그인 추적</div>
+                    <div>• 독립적인 관리자 테이블</div>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded text-sm">
+                    <div className="font-semibold mb-2">Manager (담당자)</div>
+                    <div>• department: 담당자소속</div>
+                    <div>• name: 담당자이름</div>
+                    <div>• joinDate: 가입일</div>
+                  </div>
                 </div>
               </div>
               
               <div>
-                <h3 className="text-lg font-medium text-gray-700 mb-2">PartnerApplication 모델</h3>
-                <div className="bg-gray-50 p-4 rounded text-sm font-mono">
-                  <div>id: String @id @default(cuid)</div>
-                  <div>userId: String</div>
-                  <div>user: User @relation(fields: [userId], references: [id])</div>
-                  <div>consultationDate: DateTime?</div>
-                  <div>area: String</div>
-                  <div>consultationTime: String?</div>
-                  <div>referrer: String</div>
-                  <div>memo: String?</div>
-                  <div>status: PartnerApplicationStatus @default(NEW)</div>
-                  <div>cancelledAt: DateTime?</div>
-                  <div>cancelReason: String?</div>
-                  <div>cancelledBy: String?</div>
-                  <div>createdAt: DateTime @default(now())</div>
-                  <div>updatedAt: DateTime @updatedAt</div>
+                <h3 className="text-lg font-medium text-gray-700 mb-2">관리 시스템 모델들</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-blue-50 p-3 rounded text-sm">
+                    <div className="font-semibold">ItemSetting</div>
+                    <div>상품 설정 관리</div>
+                  </div>
+                  <div className="bg-blue-50 p-3 rounded text-sm">
+                    <div className="font-semibold">SidebarItem</div>
+                    <div>동적 사이드바 관리</div>
+                  </div>
+                  <div className="bg-blue-50 p-3 rounded text-sm">
+                    <div className="font-semibold">CompanyInfo</div>
+                    <div>회사 정보 관리</div>
+                  </div>
+                  <div className="bg-blue-50 p-3 rounded text-sm">
+                    <div className="font-semibold">PartnerApplication</div>
+                    <div>파트너 신청 관리</div>
+                  </div>
+                  <div className="bg-blue-50 p-3 rounded text-sm">
+                    <div className="font-semibold">ActivityLog</div>
+                    <div>활동 로그 추적</div>
+                  </div>
+                  <div className="bg-blue-50 p-3 rounded text-sm">
+                    <div className="font-semibold">SystemConfig</div>
+                    <div>시스템 설정</div>
+                  </div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-medium text-gray-700 mb-2">CompanyInfo 모델</h3>
-                <div className="bg-gray-50 p-4 rounded text-sm font-mono">
-                  <div>id: String @id @default(cuid)</div>
-                  <div>companyName: String</div>
-                  <div>companyLogo: String?</div>
-                  <div>bottomLogo: String?</div>
-                  <div>businessNumber: String?</div>
-                  <div>representative: String?</div>
-                  <div>address: String?</div>
-                  <div>phone: String?</div>
-                  <div>email: String?</div>
-                  <div>website: String?</div>
-                  <div>description: String?</div>
-                  <div>referralCodeDefault: String?</div>
-                  <div>isActive: Boolean @default(true)</div>
-                  <div>createdAt: DateTime @default(now())</div>
-                  <div>updatedAt: DateTime @updatedAt</div>
+                <h3 className="text-lg font-medium text-gray-700 mb-2">확장 모델들 (향후 개발)</h3>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                  <div className="bg-green-50 p-2 rounded text-xs">Payment</div>
+                  <div className="bg-green-50 p-2 rounded text-xs">Settlement</div>
+                  <div className="bg-green-50 p-2 rounded text-xs">PointLedger</div>
+                  <div className="bg-green-50 p-2 rounded text-xs">WithdrawalRequest</div>
+                  <div className="bg-green-50 p-2 rounded text-xs">Notification</div>
+                  <div className="bg-green-50 p-2 rounded text-xs">Question</div>
+                  <div className="bg-green-50 p-2 rounded text-xs">Consultation</div>
+                  <div className="bg-green-50 p-2 rounded text-xs">Application</div>
                 </div>
               </div>
             </div>
@@ -111,55 +122,106 @@ export default function DevelopmentDetailsPage() {
 
           {/* API 엔드포인트 */}
           <section className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">🔌 API 엔드포인트</h2>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">🔌 API 엔드포인트 (총 50+ 개)</h2>
             <div className="space-y-4">
               <div>
                 <h3 className="text-lg font-medium text-gray-700 mb-2">인증 관련</h3>
-                <div className="space-y-2 text-sm">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                   <div className="bg-blue-50 p-3 rounded">
                     <strong>POST /api/auth/signup</strong> - 회원가입
                   </div>
                   <div className="bg-blue-50 p-3 rounded">
-                    <strong>POST /api/auth/login</strong> - 로그인
+                    <strong>POST /api/auth/web-login</strong> - 웹 로그인
                   </div>
                   <div className="bg-blue-50 p-3 rounded">
-                    <strong>POST /api/auth/logout</strong> - 로그아웃
+                    <strong>POST /api/auth/member-login</strong> - PWA 로그인
+                  </div>
+                  <div className="bg-blue-50 p-3 rounded">
+                    <strong>POST /api/auth/app-login</strong> - 앱 로그인
                   </div>
                   <div className="bg-blue-50 p-3 rounded">
                     <strong>GET /api/admin/auth/me</strong> - 관리자 세션 확인
                   </div>
+                  <div className="bg-blue-50 p-3 rounded">
+                    <strong>POST /api/admin/auth/session-logout</strong> - 관리자 로그아웃
+                  </div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-medium text-gray-700 mb-2">관리자 API</h3>
-                <div className="space-y-2 text-sm">
+                <h3 className="text-lg font-medium text-gray-700 mb-2">계약 관리 API</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                   <div className="bg-green-50 p-3 rounded">
-                    <strong>GET /api/admin/users</strong> - 회원 목록 조회
+                    <strong>GET /api/admin/contracts/entries</strong> - 계약 목록 조회
                   </div>
                   <div className="bg-green-50 p-3 rounded">
-                    <strong>PUT /api/admin/users/[id]</strong> - 회원 정보 수정
+                    <strong>POST /api/admin/contracts/entries</strong> - 계약 생성
                   </div>
                   <div className="bg-green-50 p-3 rounded">
-                    <strong>GET /api/admin/company-info</strong> - 회사 정보 조회
+                    <strong>PUT /api/admin/contracts/entries/[id]</strong> - 계약 수정
                   </div>
                   <div className="bg-green-50 p-3 rounded">
-                    <strong>PUT /api/admin/company-info</strong> - 회사 정보 수정
+                    <strong>DELETE /api/admin/contracts/entries/[id]</strong> - 계약 삭제
                   </div>
                   <div className="bg-green-50 p-3 rounded">
                     <strong>GET /api/admin/contracts/requests</strong> - 상담신청 목록
                   </div>
+                  <div className="bg-green-50 p-3 rounded">
+                    <strong>PUT /api/admin/contracts/requests/[id]</strong> - 상담신청 처리
+                  </div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-medium text-gray-700 mb-2">파트너 신청</h3>
-                <div className="space-y-2 text-sm">
+                <h3 className="text-lg font-medium text-gray-700 mb-2">아이템 관리 API</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                  <div className="bg-purple-50 p-3 rounded">
+                    <strong>GET /api/admin/items/list</strong> - 아이템 목록
+                  </div>
+                  <div className="bg-purple-50 p-3 rounded">
+                    <strong>GET /api/admin/sidebar-items</strong> - 사이드바 아이템
+                  </div>
+                  <div className="bg-purple-50 p-3 rounded">
+                    <strong>PUT /api/admin/sidebar-items</strong> - 사이드바 수정
+                  </div>
+                  <div className="bg-purple-50 p-3 rounded">
+                    <strong>POST /api/admin/items/settings</strong> - 아이템 설정
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-medium text-gray-700 mb-2">담당자 관리 API</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                  <div className="bg-orange-50 p-3 rounded">
+                    <strong>GET /api/admin/managers</strong> - 담당자 목록
+                  </div>
+                  <div className="bg-orange-50 p-3 rounded">
+                    <strong>POST /api/admin/managers</strong> - 담당자 생성
+                  </div>
+                  <div className="bg-orange-50 p-3 rounded">
+                    <strong>PUT /api/admin/managers/[id]</strong> - 담당자 수정
+                  </div>
+                  <div className="bg-orange-50 p-3 rounded">
+                    <strong>DELETE /api/admin/managers/[id]</strong> - 담당자 삭제
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-medium text-gray-700 mb-2">회원 관리 API</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                   <div className="bg-yellow-50 p-3 rounded">
-                    <strong>POST /api/partner/apply</strong> - 파트너 신청
+                    <strong>GET /api/admin/users</strong> - 회원 목록
                   </div>
                   <div className="bg-yellow-50 p-3 rounded">
-                    <strong>DELETE /api/admin/contracts/requests/[id]</strong> - 상담신청 삭제
+                    <strong>PUT /api/admin/users/[id]</strong> - 회원 수정
+                  </div>
+                  <div className="bg-yellow-50 p-3 rounded">
+                    <strong>POST /api/admin/users/bulk-delete</strong> - 회원 일괄삭제
+                  </div>
+                  <div className="bg-yellow-50 p-3 rounded">
+                    <strong>GET /api/admin/members/search</strong> - 회원 검색
                   </div>
                 </div>
               </div>
@@ -174,41 +236,67 @@ export default function DevelopmentDetailsPage() {
               <div>
                 <h3 className="text-lg font-medium text-gray-700 mb-3">🔐 인증 시스템</h3>
                 <div className="space-y-2 text-sm text-gray-600">
+                  <div>• <strong>다중 로그인:</strong> 웹 로그인, PWA 로그인, 앱 로그인 분리</div>
                   <div>• <strong>세션 관리:</strong> HTTP-only 쿠키 기반 세션</div>
-                  <div>• <strong>자동 갱신:</strong> 세션 만료 시 자동 갱신</div>
-                  <div>• <strong>권한 관리:</strong> 역할 기반 접근 제어 (RBAC)</div>
+                  <div>• <strong>권한 관리:</strong> ADMIN, MANAGER, STAFF, MEMBER, GENERAL</div>
+                  <div>• <strong>관리자 시스템:</strong> 독립적인 Admin 테이블, SUPER_ADMIN 권한</div>
                   <div>• <strong>보안 필드:</strong> referralCode, points는 최고등급 관리자만 수정 가능</div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-medium text-gray-700 mb-3">👥 회원 관리</h3>
+                <h3 className="text-lg font-medium text-gray-700 mb-3">📋 계약 관리 시스템</h3>
                 <div className="space-y-2 text-sm text-gray-600">
-                  <div>• <strong>회원 등급:</strong> GENERAL, MEMBER, ADMIN</div>
-                  <div>• <strong>파트너 상태:</strong> 미신청, 신청중, 승인됨, 거절됨</div>
-                  <div>• <strong>추천인 코드:</strong> 회원가입 시 입력, 기본값은 회사정보에서 설정</div>
-                  <div>• <strong>포인트 시스템:</strong> 적립 및 사용 내역 관리</div>
-                  <div>• <strong>은행 정보:</strong> 계좌 정보 관리</div>
+                  <div>• <strong>계약 입력:</strong> 고객정보, 계약기본정보, 상세정보입력</div>
+                  <div>• <strong>필수 필드:</strong> 증권번호, 납입기간, 계약금액 필수 입력</div>
+                  <div>• <strong>동적 필드:</strong> JSON 형태로 확장 가능한 dynamicFields</div>
+                  <div>• <strong>계약 수정:</strong> 실시간 수정 및 즉시 서버 반영</div>
+                  <div>• <strong>계약 삭제:</strong> 확인 다이얼로그 및 완전 삭제</div>
+                  <div>• <strong>카테고리:</strong> 보험, 렌탈, 인터넷TV, 상조, 렌탈몰, 쇼핑몰, 즉시파트너</div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-medium text-gray-700 mb-3">🤝 파트너 신청 시스템</h3>
+                <h3 className="text-lg font-medium text-gray-700 mb-3">🏷️ 아이템 관리 시스템</h3>
                 <div className="space-y-2 text-sm text-gray-600">
-                  <div>• <strong>신청 폼:</strong> 상담가능날짜, 지역, 시간, 추천인, 메모</div>
-                  <div>• <strong>추천인 코드:</strong> 회원의 referralCode 또는 기본 추천인 코드 자동 적용</div>
-                  <div>• <strong>상태 관리:</strong> NEW → ASSIGNED → IN_PROGRESS → DONE</div>
-                  <div>• <strong>삭제 기능:</strong> 삭제 시 파트너 신청 버튼 재활성화</div>
+                  <div>• <strong>동적 상품 생성:</strong> +상품추가하기로 새로운 상품 생성</div>
+                  <div>• <strong>제목 수정:</strong> 사이드바제목수정으로 모든 상품 제목 수정</div>
+                  <div>• <strong>서버 동기화:</strong> 모든 변경사항 즉시 서버 저장</div>
+                  <div>• <strong>페이지 생성:</strong> 상품명으로 자동 페이지 생성</div>
+                  <div>• <strong>영어 경로:</strong> 한글 상품명을 영어 경로로 자동 변환</div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-medium text-gray-700 mb-3">📊 관리자 대시보드</h3>
+                <h3 className="text-lg font-medium text-gray-700 mb-3">👨‍💼 담당자 관리 시스템</h3>
                 <div className="space-y-2 text-sm text-gray-600">
-                  <div>• <strong>회원 관리:</strong> 일반회원, 파트너회원, 관리자 분리 관리</div>
-                  <div>• <strong>상담신청 관리:</strong> 파트너 신청 목록 및 상태 관리</div>
-                  <div>• <strong>회사 정보 관리:</strong> 기본 추천인 코드 등 회사 정보 설정</div>
-                  <div>• <strong>통계 대시보드:</strong> 회원 수, 신청 건수 등 통계</div>
+                  <div>• <strong>담당자 등록:</strong> 소속, 이름, 가입일 입력</div>
+                  <div>• <strong>담당자 배정:</strong> 상담신청관리에서 담당자 선택</div>
+                  <div>• <strong>상태 변경:</strong> 상담신청중 → 상담진행으로 자동 변경</div>
+                  <div>• <strong>계약 연동:</strong> 계약입력관리에서 담당자 정보 자동 표시</div>
+                  <div>• <strong>배정일시:</strong> 담당자 배정 시 자동 기록</div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-medium text-gray-700 mb-3">📱 PWA 및 모바일 지원</h3>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• <strong>PWA 전용 페이지:</strong> /pwa-login, /pwa-signup</div>
+                  <div>• <strong>공통 페이지:</strong> /member, /benefits, /settlement, /partner, /more</div>
+                  <div>• <strong>React Native:</strong> 네이티브 앱 개발 환경</div>
+                  <div>• <strong>상태 관리:</strong> Zustand를 통한 모바일 상태 관리</div>
+                  <div>• <strong>개발 도구:</strong> 어드민에서 네이티브 앱 개발 환경 제공</div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-medium text-gray-700 mb-3">💾 백업 시스템</h3>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• <strong>3중 백업:</strong> 수동백업, 로컬Git, GitHub 원격백업</div>
+                  <div>• <strong>수동 백업:</strong> node_modules 제외한 전체 프로젝트 백업</div>
+                  <div>• <strong>Git 백업:</strong> feature/member-home-dark 브랜치</div>
+                  <div>• <strong>GitHub 백업:</strong> 원격 저장소와 완전 동기화</div>
+                  <div>• <strong>백업 정리:</strong> 이전 백업들 자동 정리</div>
                 </div>
               </div>
             </div>
@@ -216,42 +304,71 @@ export default function DevelopmentDetailsPage() {
 
           {/* 최근 해결된 문제들 */}
           <section className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">🔧 최근 해결된 문제들</h2>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">🔧 최근 해결된 문제들 (2025년 9월 9일)</h2>
             <div className="space-y-4">
               <div className="bg-green-50 p-4 rounded">
-                <h3 className="text-lg font-medium text-green-800 mb-2">✅ 파트너 승인 시스템 완성</h3>
+                <h3 className="text-lg font-medium text-green-800 mb-2">✅ 계약입력관리 시스템 고도화</h3>
                 <div className="text-sm text-green-700 space-y-1">
-                  <div>• API에서 role과 partnerStatus 필드 업데이트 추가</div>
-                  <div>• 파트너 승인 시 MEMBER 역할과 APPROVED 상태로 변경</div>
-                  <div>• 승인된 사용자가 파트너회원 목록으로 정상 이동</div>
+                  <div>• 증권번호 필수 입력 설정 및 검증 추가</div>
+                  <div>• 납입기간 필드명 startDate → paymentTerm으로 변경</div>
+                  <div>• 계약금액 parseInt() 처리 시 콤마 제거 로직 추가</div>
+                  <div>• 계약목록 테이블에 납입기간 컬럼 추가</div>
+                  <div>• 계약 수정/삭제 기능 완전 구현</div>
                 </div>
               </div>
 
               <div className="bg-green-50 p-4 rounded">
-                <h3 className="text-lg font-medium text-green-800 mb-2">✅ 인증 시스템 개선</h3>
+                <h3 className="text-lg font-medium text-green-800 mb-2">✅ 아이템 관리 시스템 개선</h3>
                 <div className="text-sm text-green-700 space-y-1">
-                  <div>• adminSession 쿠키 기반 인증으로 통일</div>
-                  <div>• base64url 디코딩 로직 적용</div>
-                  <div>• 권한 검증 우회로 개발 중 문제 해결</div>
+                  <div>• 동적 상품 생성 시스템 구현 (+상품추가하기)</div>
+                  <div>• 사이드바 제목 수정 시스템 구현</div>
+                  <div>• 한글 상품명을 영어 경로로 자동 변환</div>
+                  <div>• 서버 즉시 저장 및 동기화</div>
+                  <div>• ItemCategory enum에 SHOPPING_MALL, INSTANT_PARTNER 추가</div>
                 </div>
               </div>
 
               <div className="bg-green-50 p-4 rounded">
-                <h3 className="text-lg font-medium text-green-800 mb-2">✅ 데이터베이스 스키마 안정화</h3>
+                <h3 className="text-lg font-medium text-green-800 mb-2">✅ 담당자 관리 시스템 구축</h3>
                 <div className="text-sm text-green-700 space-y-1">
-                  <div>• User 모델에 bankName, accountHolder, bankAccount 필드 추가</div>
-                  <div>• agreeTerms, agreeTermsAt 필드 추가</div>
-                  <div>• PartnerApplication 모델에 area, referrer 필드 추가</div>
-                  <div>• CompanyInfo 모델에 referralCodeDefault 필드 추가</div>
+                  <div>• Manager 모델 추가 (담당자소속, 담당자이름, 가입일)</div>
+                  <div>• 담당자 등록/수정/삭제 기능 구현</div>
+                  <div>• 상담신청관리에서 담당자 배정 기능</div>
+                  <div>• 계약입력관리에서 담당자 정보 자동 표시</div>
+                  <div>• 배정일시 자동 기록</div>
                 </div>
               </div>
 
               <div className="bg-green-50 p-4 rounded">
-                <h3 className="text-lg font-medium text-green-800 mb-2">✅ 하드코딩 제거</h3>
+                <h3 className="text-lg font-medium text-green-800 mb-2">✅ PWA 및 모바일 통합</h3>
                 <div className="text-sm text-green-700 space-y-1">
-                  <div>• &quot;SP001&quot; 하드코딩 완전 제거</div>
-                  <div>• 기본 추천인 코드를 회사정보에서 동적 로드</div>
-                  <div>• 모든 필드값을 데이터베이스에서 관리</div>
+                  <div>• PWA 전용 로그인/회원가입 페이지 분리</div>
+                  <div>• 웹과 PWA 경로 통합 및 최적화</div>
+                  <div>• React Native 네이티브 앱 개발 환경</div>
+                  <div>• 어드민 네이티브 앱 개발 도구</div>
+                  <div>• 실시간 미리보기 및 디바이스 프레임</div>
+                </div>
+              </div>
+
+              <div className="bg-green-50 p-4 rounded">
+                <h3 className="text-lg font-medium text-green-800 mb-2">✅ 백업 시스템 정리</h3>
+                <div className="text-sm text-green-700 space-y-1">
+                  <div>• 3중 백업 체계 구축 (수동백업, 로컬Git, GitHub)</div>
+                  <div>• 이전 혼란스러운 백업들 모두 정리</div>
+                  <div>• node_modules 제외한 최적화된 백업</div>
+                  <div>• 백업 정보 API 실시간 업데이트</div>
+                  <div>• 개발가이드 백업 현황 정확한 반영</div>
+                </div>
+              </div>
+
+              <div className="bg-green-50 p-4 rounded">
+                <h3 className="text-lg font-medium text-green-800 mb-2">✅ 데이터베이스 스키마 확장</h3>
+                <div className="text-sm text-green-700 space-y-1">
+                  <div>• SidebarItem 모델 추가 (동적 사이드바 관리)</div>
+                  <div>• Contract 모델에 dynamicFields, decisionPoints 등 추가</div>
+                  <div>• Admin 모델 독립화 (관리자 전용 테이블)</div>
+                  <div>• Manager 모델 추가 (담당자 관리)</div>
+                  <div>• 총 25개 모델로 확장</div>
                 </div>
               </div>
             </div>
@@ -259,33 +376,58 @@ export default function DevelopmentDetailsPage() {
 
           {/* 현재 시스템 상태 */}
           <section className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">📈 현재 시스템 상태</h2>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">📈 현재 시스템 상태 (2025년 9월 9일)</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h3 className="text-lg font-medium text-gray-700 mb-3">✅ 완료된 기능</h3>
                 <ul className="space-y-2 text-sm text-gray-600">
-                  <li>• 회원가입 및 로그인 시스템</li>
-                  <li>• 관리자 인증 및 권한 관리</li>
-                  <li>• 회원 정보 관리 (일반/파트너/관리자)</li>
-                  <li>• 파트너 신청 및 승인 시스템</li>
-                  <li>• 상담신청 관리</li>
-                  <li>• 회사 정보 관리</li>
-                  <li>• 포인트 시스템 기반 구조</li>
-                  <li>• 은행 정보 관리</li>
-                  <li>• 추천인 코드 시스템</li>
+                  <li>• <strong>인증 시스템:</strong> 웹/PWA/앱 로그인 분리</li>
+                  <li>• <strong>관리자 시스템:</strong> 독립적인 Admin 테이블</li>
+                  <li>• <strong>회원 관리:</strong> 일반/파트너/관리자/담당자</li>
+                  <li>• <strong>계약 관리:</strong> 입력/수정/삭제/검색</li>
+                  <li>• <strong>아이템 관리:</strong> 동적 생성/제목수정</li>
+                  <li>• <strong>담당자 관리:</strong> 등록/배정/관리</li>
+                  <li>• <strong>상담신청 관리:</strong> 파트너 신청 및 승인</li>
+                  <li>• <strong>PWA 지원:</strong> 웹과 모바일 통합</li>
+                  <li>• <strong>백업 시스템:</strong> 3중 백업 체계</li>
+                  <li>• <strong>회사 정보 관리:</strong> 기본 설정</li>
                 </ul>
               </div>
               
               <div>
-                <h3 className="text-lg font-medium text-gray-700 mb-3">🚧 개발 중인 기능</h3>
+                <h3 className="text-lg font-medium text-gray-700 mb-3">🚧 향후 개발 예정</h3>
                 <ul className="space-y-2 text-sm text-gray-600">
-                  <li>• 계약 관리 시스템</li>
-                  <li>• 결제 시스템</li>
-                  <li>• 정산 시스템</li>
-                  <li>• 알림 시스템</li>
-                  <li>• 통계 대시보드</li>
-                  <li>• 모바일 최적화</li>
+                  <li>• <strong>수금 관리:</strong> Excel 업로드/비교/분류</li>
+                  <li>• <strong>결제 시스템:</strong> Payment 모델 활용</li>
+                  <li>• <strong>정산 시스템:</strong> Settlement 모델 활용</li>
+                  <li>• <strong>포인트 시스템:</strong> PointLedger 모델 활용</li>
+                  <li>• <strong>알림 시스템:</strong> Notification 모델 활용</li>
+                  <li>• <strong>통계 대시보드:</strong> 실시간 통계</li>
+                  <li>• <strong>문의사항:</strong> Question 모델 활용</li>
+                  <li>• <strong>출금 요청:</strong> WithdrawalRequest 모델 활용</li>
                 </ul>
+              </div>
+            </div>
+            
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+              <h3 className="text-lg font-medium text-blue-800 mb-2">📊 현재 데이터 현황</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">8</div>
+                  <div className="text-gray-600">총 사용자</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">8</div>
+                  <div className="text-gray-600">총 계약</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600">7</div>
+                  <div className="text-gray-600">총 상품</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-orange-600">3</div>
+                  <div className="text-gray-600">담당자</div>
+                </div>
               </div>
             </div>
           </section>
@@ -324,32 +466,54 @@ export default function DevelopmentDetailsPage() {
                   <div className="bg-red-50 p-3 rounded">
                     <strong>캐시 문제:</strong> .next 폴더 삭제 후 재시작
                   </div>
+                  <div className="bg-red-50 p-3 rounded">
+                    <strong>Service Worker:</strong> sw.js 파일 비활성화로 캐시 문제 해결
+                  </div>
                 </div>
               </div>
             </div>
           </section>
 
-          {/* 백업 정보 */}
+          {/* 백업 시스템 */}
           <section className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">💾 백업 정보</h2>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">💾 백업 시스템 (3중 백업 체계)</h2>
             <div className="space-y-4">
               <div>
-                <h3 className="text-lg font-medium text-gray-700 mb-2">백업 위치</h3>
+                <h3 className="text-lg font-medium text-gray-700 mb-2">📦 1단계 - 수동 백업</h3>
                 <div className="bg-blue-50 p-4 rounded text-sm">
-                  <div><strong>시스템 백업:</strong> backups/system-backup-2025-01-31_15-30-00/</div>
-                  <div><strong>데이터베이스:</strong> prisma/dev.db</div>
-                  <div><strong>스키마:</strong> prisma/schema.prisma</div>
+                  <div><strong>백업 디렉토리:</strong> C:\home\backup-2025-09-09_17-52-13</div>
+                  <div><strong>백업 일시:</strong> 2025년 9월 9일 오후 5:59</div>
+                  <div><strong>백업 내용:</strong> sales-partner-landing, sales-partner-mobile-app (node_modules 제외)</div>
+                  <div><strong>백업 크기:</strong> 약 2.5GB</div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-medium text-gray-700 mb-2">복원 방법</h3>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div>• 시스템 백업: src 폴더를 백업에서 복사</div>
-                  <div>• 데이터베이스: dev.db 파일을 prisma 폴더에 복사</div>
-                  <div>• 스키마: schema.prisma 파일을 prisma 폴더에 복사</div>
-                  <div>• 의존성: npm install 실행</div>
-                  <div>• Prisma: npx prisma generate && npx prisma db push</div>
+                <h3 className="text-lg font-medium text-gray-700 mb-2">🔄 2단계 - 로컬 Git 백업</h3>
+                <div className="bg-green-50 p-4 rounded text-sm">
+                  <div><strong>브랜치:</strong> feature/member-home-dark</div>
+                  <div><strong>커밋 해시:</strong> 28b6939</div>
+                  <div><strong>커밋 일시:</strong> 2025년 9월 9일 오후 6:06</div>
+                  <div><strong>커밋 메시지:</strong> "feat: 계약입력관리 시스템 고도화 및 백업 시스템 정리"</div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-medium text-gray-700 mb-2">☁️ 3단계 - GitHub 원격 백업</h3>
+                <div className="bg-purple-50 p-4 rounded text-sm">
+                  <div><strong>원격 저장소:</strong> https://github.com/psy8200/sales-partner-landing.git</div>
+                  <div><strong>동기화 상태:</strong> 최신</div>
+                  <div><strong>마지막 푸시:</strong> 2025. 9. 9. 오후 6:06:18</div>
+                  <div><strong>백업 상태:</strong> ✅ 완료</div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-medium text-gray-700 mb-2">🔄 백업 정리 완료</h3>
+                <div className="bg-gray-50 p-4 rounded text-sm">
+                  <div><strong>삭제된 백업:</strong> backup-2025-09-06_00-43-26, backup-2025-09-06_00-43-33, backup-2025-09-09_17-12-59</div>
+                  <div><strong>유지되는 백업:</strong> backup-2025-09-09_17-52-13</div>
+                  <div><strong>백업 정보 API:</strong> /api/admin/backup-info 실시간 업데이트</div>
                 </div>
               </div>
             </div>

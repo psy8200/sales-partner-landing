@@ -72,6 +72,12 @@ const MembersPage = () => {
   const [questionSearch, setQuestionSearch] = useState('');
   const [questionPageSize, setQuestionPageSize] = useState(20);
   
+  // 프로필변경요청 관련 상태
+  const [profileChangeRequests, setProfileChangeRequests] = useState<any[]>([]);
+  const [selectedProfileRequests, setSelectedProfileRequests] = useState<Record<string, boolean>>({});
+  const [profileRequestSearch, setProfileRequestSearch] = useState('');
+  const [profileRequestPageSize, setProfileRequestPageSize] = useState(20);
+  
 
   const allSelected = useMemo(() => rows.length > 0 && rows.every(r => selected[r.id]), [rows, selected]);
   const selectedIds = useMemo(() => rows.filter(r => selected[r.id]).map(r => r.id), [rows, selected]);
@@ -187,6 +193,61 @@ const MembersPage = () => {
     }
   };
 
+  // 프로필변경요청 목록 가져오기
+  const fetchProfileChangeRequests = async () => {
+    try {
+      console.log('Fetching profile change requests...');
+      const params = new URLSearchParams();
+      if (profileRequestSearch) params.set('q', profileRequestSearch);
+      if (profileRequestPageSize) params.set('limit', String(profileRequestPageSize));
+      
+      const url = `/api/profile-change-requests?${params.toString()}`;
+      console.log('Fetching from URL:', url);
+      
+      const res = await fetch(url);
+      const data = await res.json();
+      
+      console.log('Profile change requests API response:', data);
+      
+      if (res.ok && data.success && data.requests) {
+        console.log('Setting profile change requests:', data.requests);
+        setProfileChangeRequests(data.requests);
+      } else {
+        console.error('Profile change requests API error:', data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching profile change requests:', error);
+    }
+  };
+
+  // 프로필변경요청 수정완료 처리
+  const handleCompleteRequest = async (requestId: string) => {
+    try {
+      const response = await fetch(`/api/profile-change-requests/${requestId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: 'COMPLETED'
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        alert('프로필변경요청이 수정완료로 변경되었습니다.');
+        // 목록 새로고침
+        fetchProfileChangeRequests();
+      } else {
+        alert(data.error || '요청 처리 중 오류가 발생했습니다.');
+      }
+    } catch (error) {
+      console.error('요청 완료 처리 오류:', error);
+      alert('네트워크 오류가 발생했습니다. 다시 시도해주세요.');
+    }
+  };
+
   useEffect(() => {
     // mode가 변경되면 페이지를 1로 리셋
     if (page !== 1) {
@@ -271,8 +332,24 @@ const MembersPage = () => {
         .catch(error => {
           console.error('Error fetching questions:', error);
         });
+
+      // fetchProfileChangeRequests 호출
+      const profileRequestParams = new URLSearchParams();
+      if (profileRequestSearch) profileRequestParams.set('q', profileRequestSearch);
+      if (profileRequestPageSize) profileRequestParams.set('limit', String(profileRequestPageSize));
+      
+      fetch(`/api/profile-change-requests?${profileRequestParams.toString()}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.success && data.requests) {
+            setProfileChangeRequests(data.requests || []);
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching profile change requests:', error);
+        });
     }
-  }, [page, limit, mode, searchTerm, status, role, questionSearch, questionPageSize]);
+  }, [page, limit, mode, searchTerm, status, role, questionSearch, questionPageSize, profileRequestSearch, profileRequestPageSize]);
 
   // 필터 옵션 로드
   useEffect(() => {
@@ -579,6 +656,147 @@ const MembersPage = () => {
                             </button>
                           ) : (
                             <span className="text-green-600">답변완료</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 프로필변경요청리스트 - 회원관리 메인 페이지에서만 표시 */}
+      {mode === 'ALL' && (
+        <>
+          <div className="bg-white shadow rounded-lg mt-6">
+            <div className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 border-b border-gray-200">
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg sm:text-xl font-semibold text-gray-900">프로필변경요청리스트</h2>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={profileRequestPageSize}
+                      onChange={(e) => { setProfileRequestPageSize(Number(e.target.value)); fetchProfileChangeRequests(); }}
+                      className="px-2 py-2 border border-gray-300 rounded-md text-xs sm:text-sm"
+                      aria-label="표시 행 수"
+                      title="표시 행 수"
+                    >
+                      <option value={10}>10줄</option>
+                      <option value={20}>20줄</option>
+                      <option value={30}>30줄</option>
+                    </select>
+                    <input
+                      type="text"
+                      placeholder="이름/연락처/요청내용 검색..."
+                      value={profileRequestSearch}
+                      onChange={(e) => setProfileRequestSearch(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') fetchProfileChangeRequests(); }}
+                      className="px-3 py-2 border border-gray-300 rounded-md text-xs sm:text-sm"
+                    />
+                    <button
+                      onClick={() => fetchProfileChangeRequests()}
+                      className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-xs sm:text-sm"
+                    >
+                      검색
+                    </button>
+                    <button
+                      className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-xs sm:text-sm"
+                    >
+                      삭제하기
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wider w-12">
+                      <input
+                        type="checkbox"
+                        aria-label="전체 선택"
+                        title="전체 선택"
+                      />
+                    </th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wider w-20 sm:w-24">
+                      이름
+                    </th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wider w-24 sm:w-32">
+                      연락처
+                    </th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wider min-w-0 flex-1">
+                      요청내용
+                    </th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wider w-20 sm:w-24">
+                      상태값
+                    </th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wider w-20 sm:w-24">
+                      관리
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {profileChangeRequests.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-3 sm:px-6 py-3 sm:py-4 text-center text-xs sm:text-sm text-gray-500">
+                        프로필변경요청이 없습니다.
+                      </td>
+                    </tr>
+                  ) : (
+                    profileChangeRequests.map((request) => (
+                      <tr key={request.id} className="hover:bg-gray-50">
+                        <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            checked={selectedProfileRequests[request.id] || false}
+                            onChange={(e) => {
+                              setSelectedProfileRequests(prev => ({
+                                ...prev,
+                                [request.id]: e.target.checked
+                              }));
+                            }}
+                            aria-label={`${request.userName} 선택`}
+                            title={`${request.userName} 선택`}
+                          />
+                        </td>
+                        <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                          {request.userName}
+                        </td>
+                        <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                          {request.userPhone}
+                        </td>
+                        <td className="px-2 sm:px-3 py-2 sm:py-3 text-xs sm:text-sm text-gray-900">
+                          <div className="max-w-xs truncate" title={request.content}>
+                            {request.content}
+                          </div>
+                        </td>
+                        <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            request.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                            request.status === 'PROCESSING' ? 'bg-blue-100 text-blue-800' :
+                            request.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {request.status === 'PENDING' ? '요청중' :
+                             request.status === 'PROCESSING' ? '처리중' :
+                             request.status === 'COMPLETED' ? '수정완료' : '거부'}
+                          </span>
+                        </td>
+                        <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                          {request.status === 'COMPLETED' ? (
+                            <span className="text-green-600 text-xs">처리완료</span>
+                          ) : (
+                            <button
+                              onClick={() => handleCompleteRequest(request.id)}
+                              className="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700 transition-colors"
+                            >
+                              수정완료
+                            </button>
                           )}
                         </td>
                       </tr>

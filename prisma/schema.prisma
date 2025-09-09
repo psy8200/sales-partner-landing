@@ -58,6 +58,7 @@ model User {
   settlements           Settlement[]
   userLogs              UserLog[]
   withdrawalRequests    WithdrawalRequest[]
+  profileChangeRequests ProfileChangeRequest[]
 
   @@index([email])
   @@index([phone])
@@ -753,10 +754,13 @@ enum ActivityType {
 enum ContractStatus {
   ACTIVE
   CONFIRMED
+  COLLECTION
+  LUMP_SUM
   COMPLETED
   CANCELLED
   SUSPENDED
 }
+
 
 enum LoginAction {
   LOGIN
@@ -774,6 +778,13 @@ enum AdminStatus {
   ACTIVE
   INACTIVE
   SUSPENDED
+}
+
+enum ProfileChangeRequestStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  REJECTED
 }
 
 model Manager {
@@ -797,4 +808,24 @@ model SidebarItem {
   isActive  Boolean  @default(true) // 활성화 여부
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ProfileChangeRequest {
+  id          String                      @id @default(cuid())
+  userId      String
+  userName    String                      // 요청자 이름
+  userPhone   String                      // 요청자 연락처
+  content     String                      // 요청내용
+  status      ProfileChangeRequestStatus  @default(PENDING)
+  processedBy String?                     // 처리자
+  processedAt DateTime?                   // 처리일시
+  memo        String?                     // 관리자 메모
+  createdAt   DateTime                    @default(now())
+  updatedAt   DateTime                    @updatedAt
+  user        User                        @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([processedBy])
 }

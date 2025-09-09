@@ -145,6 +145,7 @@ export async function GET(req: NextRequest) {
           lastLogoutAt: true,
           loginCount: true,
           createdAt: true,
+          updatedAt: true, // 수정일 필드 추가
           points: true,
           bankName: true,
           bankAccount: true,

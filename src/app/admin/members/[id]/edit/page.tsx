@@ -460,34 +460,52 @@ const MemberEditPage = ({ params }: { params: Promise<{ id: string }> }) => {
               </div>
               <div className="mb-3">
                 <span className="font-semibold text-lg">
-                  포인트 합계: {pointsData.totalPoints.toLocaleString()}원 (총 {pointsData.totalContracts}건)
+                  포인트 합계: {pointsData.totalPoints.toLocaleString()}P (총 {pointsData.totalContracts}건)
                 </span>
+                <div className="text-sm text-gray-600 mt-1">
+                  ※ 수금관리로 이동한 계약의 상품포인트 + 결정포인트 합산
+                </div>
               </div>
               
               {pointsData.categoryPoints.length > 0 && (
                 <div>
                   <div className="text-sm font-medium text-gray-700 mb-2">카테고리별 포인트:</div>
                   <div className="space-y-2">
-                                            {pointsData.categoryPoints.map((category: {category: string, points: number, count: number}, index: number) => (
-                          <div key={index} className="flex justify-between items-center text-sm">
+                    {pointsData.categoryPoints.map((category: {category: string, points: number, count: number, contracts: Array<{productPoints: number, decisionPoints: number, itemName: string}>}, index: number) => {
+                      return (
+                        <div key={index} className="text-sm">
+                          <div className="flex justify-between items-center mb-2">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                               category.category === 'INSURANCE' ? 'bg-blue-100 text-blue-800' :
                               category.category === 'RENTAL' ? 'bg-yellow-100 text-yellow-800' :
                               category.category === 'RENTAL_MALL' ? 'bg-yellow-100 text-yellow-800' :
                               category.category === 'FUNERAL' ? 'bg-purple-100 text-purple-800' :
-                              category.category === 'INTERNET_TV' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                              category.category === 'INTERNET_TV' ? 'bg-green-100 text-green-800' :
+                              category.category === 'INSTANT_PARTNER' ? 'bg-pink-100 text-pink-800' :
+                              category.category === 'SHOPPING_MALL' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-800'
                             }`}>
                               {category.category === 'INSURANCE' ? '보험' :
                                category.category === 'RENTAL' ? '렌탈몰' :
                                category.category === 'RENTAL_MALL' ? '렌탈몰' :
                                category.category === 'FUNERAL' ? '상조' :
-                               category.category === 'INTERNET_TV' ? '인터넷TV' : category.category}
+                               category.category === 'INTERNET_TV' ? '인터넷TV' :
+                               category.category === 'INSTANT_PARTNER' ? '즉시파트너' :
+                               category.category === 'SHOPPING_MALL' ? '쇼핑몰' : category.category}
                             </span>
                             <span className="font-medium">
-                              {category.points.toLocaleString()}원 ({category.count}건)
+                              {category.points.toLocaleString()}P ({category.count}건)
                             </span>
                           </div>
-                        ))}
+                          <div className="ml-2 space-y-1">
+                            {category.contracts.map((contract, contractIndex) => (
+                              <div key={contractIndex} className="text-xs text-gray-600">
+                                • {contract.itemName}: {contract.finalPoints.toLocaleString()}P
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

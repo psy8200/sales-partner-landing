@@ -121,6 +121,11 @@ export async function PUT(
         console.log(`🔒 보안 필드 변경 감지 - 추천인코드: ${currentUser.referralCode} → ${body.referralCode} (수정자: ${currentUserId})`);
       }
     }
+    
+    // 파트너승인 로깅
+    if (body.partnerStatus === 'APPROVED') {
+      console.log(`🎯 파트너승인 처리 - 사용자: ${id}, 역할: ${body.role}, 파트너상태: ${body.partnerStatus} (수정자: ${currentUserId})`);
+    }
 
     const updated = await prisma.user.update({
       where: { id },
@@ -134,10 +139,12 @@ export async function PUT(
         accountHolder: body.accountHolder,
         bankAccount: body.bankAccount,
         role: body.role, // 역할 업데이트
+        partnerStatus: body.partnerStatus, // 파트너 상태 업데이트
+        updatedAt: new Date(), // 수정일을 현재 시간으로 명시적 업데이트
         // 입사일/가입일 업데이트 (joinDate가 있으면 createdAt 업데이트)
         ...(body.joinDate && { createdAt: new Date(body.joinDate) }),
       },
-      select: { id: true },
+      select: { id: true, updatedAt: true },
     });
 
     // 변경 완료 로깅

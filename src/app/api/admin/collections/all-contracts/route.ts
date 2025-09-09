@@ -7,11 +7,11 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const search = searchParams.get('search') || '';
+    const paymentTerm = searchParams.get('paymentTerm') || '';
 
-
-    // 검색 조건 구성
+    // 검색 조건 구성 - 수금관리전체계약은 CONFIRMED 상태만
     const where: Record<string, unknown> = {
-      status: 'CONFIRMED' // 수금관리는 CONFIRMED 상태만
+      status: 'CONFIRMED'
     };
 
     if (search) {
@@ -21,6 +21,13 @@ export async function GET(request: NextRequest) {
         { companyName: { contains: search } },
         { itemName: { contains: search } }
       ];
+    }
+
+    // 납입기간 필터 추가
+    if (paymentTerm) {
+      where.dynamicFields = {
+        contains: `"paymentTerm":"${paymentTerm}"`
+      };
     }
 
     // 계약 목록 조회

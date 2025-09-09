@@ -431,10 +431,21 @@ export default function ContractRequestsPage() {
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ action: 'complete' }),
                               }).then(async (res)=>{
-                                if (!res.ok) { const t = await res.text(); throw new Error(t); }
+                                if (!res.ok) { 
+                                  const errorData = await res.json();
+                                  throw new Error(errorData.error || '상담완료 처리에 실패했습니다.');
+                                }
                                 const u = await res.json();
-                                setRows(prev=>prev.map(x=>x.id===r.id?{...x, status:u.backendStatus}:x));
-                              }).catch(e=>alert(e.message));
+                                setRows(prev=>prev.map(x=>x.id===r.id?{
+                                  ...x, 
+                                  status: u.backendStatus,
+                                  manager: u.manager // 담당자 정보도 업데이트
+                                }:x));
+                                alert(`✅ 상담완료 처리되었습니다!\n\n담당자: ${u.manager}`);
+                              }).catch(e=>{
+                                console.error('상담완료 오류:', e);
+                                alert(`상담완료 실패: ${e.message}`);
+                              });
                             }}
                           >
                             상담완료

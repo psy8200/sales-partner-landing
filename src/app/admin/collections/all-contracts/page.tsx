@@ -42,10 +42,12 @@ export default function AllContractsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('CONFIRMED');
+  const [paymentTermFilter, setPaymentTermFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [selectedContracts, setSelectedContracts] = useState<Set<string>>(new Set());
+  const [availablePaymentTerms, setAvailablePaymentTerms] = useState<string[]>([]);
 
   // 계약 목록 조회
   const fetchContracts = useCallback(async () => {
@@ -55,7 +57,8 @@ export default function AllContractsPage() {
         page: currentPage.toString(),
         limit: '10',
         search: searchTerm,
-        status: statusFilter
+        status: statusFilter,
+        paymentTerm: paymentTermFilter
       });
 
       const response = await fetch(`/api/admin/collections/all-contracts?${params}`);
@@ -64,13 +67,37 @@ export default function AllContractsPage() {
         setContracts(data.contracts);
         setTotalPages(data.pagination.totalPages);
         setTotal(data.pagination.total);
+        
+        // 사용 가능한 납입기간 추출
+        const paymentTerms = new Set<string>();
+        data.contracts.forEach((contract: Contract) => {
+          try {
+            const dynamicFields = contract.dynamicFields ? JSON.parse(contract.dynamicFields) : {};
+            const paymentTerm = dynamicFields.paymentTerm;
+            if (paymentTerm && paymentTerm.trim() !== '') {
+              paymentTerms.add(paymentTerm);
+            }
+          } catch (error) {
+            console.error('dynamicFields 파싱 오류:', error);
+          }
+        });
+        
+        // 납입기간을 정렬하여 설정
+        const sortedPaymentTerms = Array.from(paymentTerms).sort((a, b) => {
+          // 숫자 추출하여 정렬
+          const numA = parseInt(a.replace(/\D/g, '')) || 0;
+          const numB = parseInt(b.replace(/\D/g, '')) || 0;
+          return numA - numB;
+        });
+        
+        setAvailablePaymentTerms(sortedPaymentTerms);
       }
     } catch (error) {
       console.error('계약 목록 조회 오류:', error);
     } finally {
       setLoading(false);
     }
-  }, [currentPage, searchTerm, statusFilter]);
+  }, [currentPage, searchTerm, statusFilter, paymentTermFilter]);
 
   useEffect(() => {
     fetchContracts();
@@ -130,6 +157,82 @@ export default function AllContractsPage() {
     }
   };
 
+  // 수금관리로 이동
+  const handleMoveToCollection = async () => {
+    if (selectedContracts.size === 0) {
+      alert('이동할 계약을 선택해주세요.');
+      return;
+    }
+
+    if (!confirm(`선택된 ${selectedContracts.size}개 계약을 수금관리계약으로 이동시키시겠습니까?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/contracts/move-to-collection`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          contractIds: Array.from(selectedContracts) 
+        }),
+      });
+
+      if (response.ok) {
+        alert(`${selectedContracts.size}개 계약이 수금관리계약으로 이동되었습니다.`);
+        // 목록 새로고침
+        fetchContracts();
+        // 선택 상태 초기화
+        setSelectedContracts(new Set());
+      } else {
+        const error = await response.json();
+        alert(error.error || '계약 이동에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('계약 이동 오류:', error);
+      alert('계약 이동 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 일시납으로 이동
+  const handleMoveToLumpSum = async () => {
+    if (selectedContracts.size === 0) {
+      alert('이동할 계약을 선택해주세요.');
+      return;
+    }
+
+    if (!confirm(`선택된 ${selectedContracts.size}개 계약을 일시납계약으로 이동시키시겠습니까?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/contracts/move-to-lump-sum`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          contractIds: Array.from(selectedContracts) 
+        }),
+      });
+
+      if (response.ok) {
+        alert(`${selectedContracts.size}개 계약이 일시납계약으로 이동되었습니다.`);
+        // 목록 새로고침
+        fetchContracts();
+        // 선택 상태 초기화
+        setSelectedContracts(new Set());
+      } else {
+        const error = await response.json();
+        alert(error.error || '계약 이동에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('계약 이동 오류:', error);
+      alert('계약 이동 중 오류가 발생했습니다.');
+    }
+  };
+
   // 날짜 포맷
   const formatDate = (dateString: string) => {
     if (!dateString) return '-';
@@ -164,12 +267,6 @@ export default function AllContractsPage() {
                  )}
                </p>
              </div>
-            <div className="flex items-center space-x-3">
-              <button className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-                <Download className="w-4 h-4 mr-2" />
-                내보내기
-              </button>
-            </div>
           </div>
         </div>
 
@@ -189,14 +286,39 @@ export default function AllContractsPage() {
               </div>
             </div>
             <div className="flex items-center space-x-3">
+              <button className="flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+                <Search className="w-4 h-4 mr-2" />
+                검색
+              </button>
               <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                value={paymentTermFilter}
+                onChange={(e) => setPaymentTermFilter(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                aria-label="상태 필터"
+                aria-label="납입기간 필터"
               >
-                <option value="CONFIRMED">확정된 계약</option>
+                <option value="">전체</option>
+                {availablePaymentTerms.map((term) => (
+                  <option key={term} value={term}>
+                    {term}
+                  </option>
+                ))}
               </select>
+              <button 
+                onClick={handleMoveToCollection}
+                className="flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+              >
+                수금관리이동
+              </button>
+              <button 
+                onClick={handleMoveToLumpSum}
+                className="flex items-center px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                일시납이동
+              </button>
+              <button className="flex items-center px-4 py-2 text-sm font-medium text-white bg-gray-600 rounded-lg hover:bg-gray-700 transition-colors">
+                <Download className="w-4 h-4 mr-2" />
+                다운로드
+              </button>
             </div>
           </div>
         </div>
@@ -278,13 +400,17 @@ export default function AllContractsPage() {
                              contract.itemCategory === 'INTERNET_TV' ? 'bg-purple-100 text-purple-800' :
                              contract.itemCategory === 'FUNERAL' ? 'bg-gray-100 text-gray-800' :
                              contract.itemCategory === 'RENTAL_MALL' ? 'bg-orange-100 text-orange-800' :
+                             contract.itemCategory === 'INSTANT_PARTNER' ? 'bg-pink-100 text-pink-800' :
+                             contract.itemCategory === 'SHOPPING_MALL' ? 'bg-indigo-100 text-indigo-800' :
                              'bg-yellow-100 text-yellow-800'
                            }`}>
                              {contract.itemCategory === 'INSURANCE' ? '보험' :
                               contract.itemCategory === 'RENTAL' ? '렌탈' :
                               contract.itemCategory === 'INTERNET_TV' ? '인터넷/방송' :
                               contract.itemCategory === 'FUNERAL' ? '상조' :
-                              contract.itemCategory === 'RENTAL_MALL' ? '렌탈몰' : contract.itemCategory}
+                              contract.itemCategory === 'RENTAL_MALL' ? '렌탈몰' :
+                              contract.itemCategory === 'INSTANT_PARTNER' ? '즉시파트너' :
+                              contract.itemCategory === 'SHOPPING_MALL' ? '쇼핑몰' : contract.itemCategory}
                            </span>
                          </td>
                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 w-28">
@@ -318,7 +444,7 @@ export default function AllContractsPage() {
                              className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                              title="계약목록으로 되돌리기"
                            >
-                             수정하기
+                             되돌리기
                            </button>
                          </td>
                        </tr>

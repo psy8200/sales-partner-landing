@@ -117,7 +117,7 @@ export default function MyPage() {
         router.push('/partner');
         break;
       case 'more':
-        router.push('/more');
+        router.push('/profile');
         break;
       default:
         console.log('알 수 없는 탭:', tabId);
@@ -328,11 +328,6 @@ export default function MyPage() {
                         {user?.role === 'MEMBER' ? '파트너 회원' : '일반 회원'}
                       </span>
                     </div>
-                    {user?.partnerStatus === 'APPROVED' && (
-                      <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                        승인완료
-                      </span>
-                    )}
                   </div>
                   {user?.role === 'GENERAL' && user?.partnerStatus === 'PARTNER_APPLIED' && (
                     <span className="text-xs font-bold text-amber-600">
@@ -362,8 +357,13 @@ export default function MyPage() {
                   </div>
                 )}
                 {user?.role === 'MEMBER' && (
-                  <div className="bg-green-100 text-green-700 px-4 py-2 rounded-lg text-sm font-medium text-center">
-                    파트너 회원
+                  <div className="text-right">
+                    <div className="text-sm font-bold text-gray-900">
+                      나의 기준포인트
+                    </div>
+                    <div className="text-lg font-bold text-blue-600">
+                      {formatNumber(user?.points || 0)}P
+                    </div>
                   </div>
                 )}
               </div>

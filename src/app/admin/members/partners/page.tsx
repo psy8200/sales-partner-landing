@@ -13,9 +13,11 @@ type UserRow = {
   lastLoginAt: string | null;
   loginCount: number;
   createdAt: string;
+  updatedAt: string;
   points: number;
   bankName: string;
   bankAccount: string;
+  referralCode: string;
   totalPoints?: number;
 };
 
@@ -30,6 +32,14 @@ const PartnersPage = () => {
   const [rows, setRows] = useState<UserRow[]>([]);
   const [total, setTotal] = useState(0);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
+  
+  // 계좌수정 모달 상태
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [editingMember, setEditingMember] = useState<UserRow | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    bankName: '',
+    bankAccount: ''
+  });
 
   const allSelected = useMemo(() => rows.length > 0 && rows.every(r => selected[r.id]), [rows, selected]);
   const selectedIds = useMemo(() => rows.filter(r => selected[r.id]).map(r => r.id), [rows, selected]);
@@ -97,7 +107,120 @@ const PartnersPage = () => {
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / limit)), [total, limit]);
 
+  // 계좌수정 모달 열기
+  const handleAccountEdit = (userId: string) => {
+    const member = rows.find(r => r.id === userId);
+    if (!member) return;
 
+    setEditingMember(member);
+    setEditFormData({
+      bankName: member.bankName || '',
+      bankAccount: member.bankAccount || ''
+    });
+    setIsAccountModalOpen(true);
+  };
+
+  // 계좌수정 모달 닫기
+  const handleCloseAccountModal = () => {
+    setIsAccountModalOpen(false);
+    setEditingMember(null);
+    setEditFormData({
+      bankName: '',
+      bankAccount: ''
+    });
+  };
+
+  // 계좌수정 완료
+  const handleAccountUpdate = async () => {
+    if (!editingMember) return;
+
+    // 입력값 검증
+    if (!editFormData.bankName.trim()) {
+      alert('은행명을 입력해주세요.');
+      return;
+    }
+    if (!editFormData.bankAccount.trim()) {
+      alert('계좌번호를 입력해주세요.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/users/${editingMember.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editingMember.name,
+          phone: editingMember.phone,
+          email: editingMember.email,
+          points: editingMember.totalPoints || 0,
+          referralCode: editingMember.referralCode,
+          bankName: editFormData.bankName.trim(),
+          accountHolder: editingMember.name, // 예금주는 회원명으로 고정
+          bankAccount: editFormData.bankAccount.trim(),
+          role: editingMember.role,
+          partnerStatus: editingMember.partnerStatus
+        }),
+      });
+
+      if (response.ok) {
+        alert('계좌정보가 성공적으로 수정되었습니다.');
+        handleCloseAccountModal();
+        fetchUsers(); // 목록 새로고침
+      } else {
+        const error = await response.json();
+        alert(`계좌정보 수정 실패: ${error.error || '알 수 없는 오류'}`);
+      }
+    } catch (error) {
+      console.error('계좌정보 수정 오류:', error);
+      alert('계좌정보 수정 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 포인트새로고침 함수
+  const handlePointRefresh = async (userId: string) => {
+    const member = rows.find(r => r.id === userId);
+    if (!member) return;
+
+    try {
+      // 수금관리에서 해당 사용자의 계약 조회
+      const response = await fetch(`/api/admin/users/${userId}/points`);
+      if (!response.ok) {
+        throw new Error('포인트 조회 실패');
+      }
+
+      const pointsData = await response.json();
+      const newTotalPoints = pointsData.totalPoints || 0;
+
+      // 사용자 정보 업데이트 (포인트만)
+      const updateResponse = await fetch(`/api/admin/users/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: member.name,
+          phone: member.phone,
+          email: member.email,
+          points: newTotalPoints,
+          referralCode: member.referralCode,
+          bankName: member.bankName,
+          accountHolder: member.accountHolder,
+          bankAccount: member.bankAccount,
+          role: member.role,
+          partnerStatus: member.partnerStatus
+        }),
+      });
+
+      if (updateResponse.ok) {
+        alert(`포인트가 새로고침되었습니다.\n새로운 포인트: ${newTotalPoints.toLocaleString()}P`);
+        fetchUsers(); // 목록 새로고침
+      } else {
+        const error = await updateResponse.json();
+        alert(`포인트 새로고침 실패: ${error.error || '알 수 없는 오류'}`);
+      }
+    } catch (error) {
+      console.error('포인트 새로고침 오류:', error);
+      alert('포인트 새로고침 중 오류가 발생했습니다.');
+    }
+  };
 
   const roleLabel = (r: string) => {
     switch (r) {
@@ -249,23 +372,24 @@ const PartnersPage = () => {
                 </th>
                 <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
                 <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">연락처</th>
+                <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">추천인코드</th>
                 <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이메일주소</th>
                 <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">가입일</th>
                 <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">결정포인트</th>
                 <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">은행명</th>
                 <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">계좌번호</th>
-                <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">역할</th>
-                <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">파트너상태</th>
-                <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">수정</th>
+                <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">수정일</th>
+                <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태값</th>
+                <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">관리</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
-                <tr><td className="p-3 sm:p-6" colSpan={9}>불러오는 중...</td></tr>
+                <tr><td className="p-3 sm:p-6" colSpan={11}>불러오는 중...</td></tr>
               ) : error ? (
-                <tr><td className="p-3 sm:p-6 text-red-600 text-xs sm:text-sm" colSpan={9}>{error}</td></tr>
+                <tr><td className="p-3 sm:p-6 text-red-600 text-xs sm:text-sm" colSpan={11}>{error}</td></tr>
               ) : rows.length === 0 ? (
-                <tr><td className="p-3 sm:p-6 text-xs sm:text-sm" colSpan={9}>데이터가 없습니다.</td></tr>
+                <tr><td className="p-3 sm:p-6 text-xs sm:text-sm" colSpan={11}>데이터가 없습니다.</td></tr>
               ) : (
                 rows.map((member) => (
                   <tr key={member.id} className="hover:bg-gray-50">
@@ -277,30 +401,39 @@ const PartnersPage = () => {
                     </td>
                     <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{member.name}</td>
                     <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{member.phone}</td>
+                    <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{member.referralCode || '-'}</td>
                     <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{member.email}</td>
                     <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{new Date(member.createdAt).toLocaleDateString()}</td>
-                    <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{member.totalPoints?.toLocaleString() || '0'}원</td>
+                    <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{member.totalPoints?.toLocaleString() || '0'}P</td>
                     <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{member.bankName || '-'}</td>
                     <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{member.bankAccount || '-'}</td>
-                    <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{roleLabel(member.role)}</td>
-                    <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
+                    <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                      {member.updatedAt ? new Date(member.updatedAt).toLocaleDateString() : '-'}
+                    </td>
+                    <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        member.partnerStatus === 'NOT_APPLIED' ? 'bg-gray-100 text-gray-800' :
-                        member.partnerStatus === 'PARTNER_APPLIED' ? 'bg-yellow-100 text-yellow-800' :
-                        member.partnerStatus === 'APPROVED' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                        (member.totalPoints || 0) >= 50000 ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'
                       }`}>
-                        {partnerStatusLabel(member.partnerStatus)}
+                        {(member.totalPoints || 0) >= 50000 ? '파트너승인' : '파트너보류'}
                       </span>
                     </td>
                     <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm">
-                      <button
-                        onClick={() => window.open(`/admin/members/${member.id}/edit`, '_blank', 'width=720,height=720,scrollbars=yes,resizable=yes')}
-                        className="px-2 sm:px-3 py-1 border rounded hover:bg-gray-50 text-xs sm:text-sm"
-                        aria-label="수정"
-                        title="수정"
-                      >
-                        수정
-                      </button>
+                      <div className="flex space-x-1">
+                        <button
+                          onClick={() => handleAccountEdit(member.id)}
+                          className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
+                          title="계좌수정"
+                        >
+                          계좌수정
+                        </button>
+                        <button
+                          onClick={() => handlePointRefresh(member.id)}
+                          className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
+                          title="포인트새로고침"
+                        >
+                          포인트새로고침
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -331,6 +464,69 @@ const PartnersPage = () => {
           </div>
         </div>
       </div>
+
+      {/* 계좌수정 모달 */}
+      {isAccountModalOpen && editingMember && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              계좌정보 수정 - {editingMember.name}
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  은행명 *
+                </label>
+                <input
+                  type="text"
+                  value={editFormData.bankName}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, bankName: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="예: 국민은행"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  계좌번호 *
+                </label>
+                <input
+                  type="text"
+                  value={editFormData.bankAccount}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, bankAccount: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="예: 123456-78-901234"
+                />
+              </div>
+              
+              <div className="bg-gray-50 p-3 rounded-md">
+                <p className="text-sm text-gray-600">
+                  <strong>예금주:</strong> {editingMember.name}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  예금주는 회원명으로 자동 설정됩니다.
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={handleCloseAccountModal}
+                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleAccountUpdate}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                수정완료
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

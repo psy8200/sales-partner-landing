@@ -81,7 +81,7 @@ export async function PUT(req: NextRequest) {
       where: { id },
       data: {
         status: status as PartnerApplicationStatus,
-        processedBy: processedBy || '관리자',
+        processedBy: processedBy, // 하드코딩된 '관리자' 제거
         processedAt: new Date(),
       },
       include: {

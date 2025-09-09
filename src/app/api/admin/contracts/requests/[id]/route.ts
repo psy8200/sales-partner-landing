@@ -17,14 +17,25 @@ export async function PATCH(
     let status: string;
     let processedBy: string;
 
+    // 기존 상담신청 정보 조회 (담당자 정보 유지용)
+    const existingApplication = await prisma.partnerApplication.findUnique({
+      where: { id },
+      select: { processedBy: true }
+    });
+
     switch (action) {
       case 'assign':
         status = 'ASSIGNED';
-        processedBy = manager || '관리자';
+        // 담당자가 선택되지 않았으면 에러 반환
+        if (!manager || manager.trim() === '') {
+          return Response.json({ error: '담당자를 선택해주세요.' }, { status: 400 });
+        }
+        processedBy = manager;
         break;
       case 'complete':
         status = 'COMPLETED';
-        processedBy = '관리자';
+        // 상담완료는 상태값만 변경, 다른 필드는 건드리지 않음
+        processedBy = undefined; // processedBy 필드 업데이트 안함
         break;
       default:
         return Response.json({ error: '잘못된 액션입니다.' }, { status: 400 });
@@ -32,13 +43,19 @@ export async function PATCH(
 
     // 상담신청 상태 업데이트
     const currentTime = new Date();
+    const updateData: any = {
+      status: status as 'ASSIGNED' | 'COMPLETED',
+      processedAt: currentTime,
+    };
+    
+    // processedBy가 있을 때만 업데이트 (상담완료 시에는 기존 값 유지)
+    if (processedBy !== undefined) {
+      updateData.processedBy = processedBy;
+    }
+    
     const updatedApplication = await prisma.partnerApplication.update({
       where: { id },
-      data: {
-        status: status as 'ASSIGNED' | 'COMPLETED',
-        processedBy,
-        processedAt: currentTime,
-      },
+      data: updateData,
       include: {
         user: {
           select: {

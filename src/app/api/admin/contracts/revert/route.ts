@@ -18,11 +18,14 @@ export async function POST(request: NextRequest) {
         id: {
           in: contractIds
         },
-        status: 'CONFIRMED' // CONFIRMED 상태인 계약만 되돌리기 가능
+        status: {
+          in: ['CONFIRMED', 'COLLECTION', 'LUMP_SUM'] // 모든 확정 상태에서 되돌리기 가능
+        }
       },
       data: {
         status: 'ACTIVE',
-        confirmedAt: null // 확정일시 초기화
+        confirmedAt: null, // 확정일시 초기화
+        notes: null // 노트 초기화
       }
     });
 
