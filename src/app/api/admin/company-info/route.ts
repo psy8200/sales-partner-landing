@@ -7,10 +7,25 @@ export async function GET(request: NextRequest) {
     console.log('🔍 GET /api/admin/company-info 시작');
     
     // 데이터베이스에서 회사 정보 조회
-    const companyInfo = await prisma.companyInfo.findFirst({
+    console.log('🔍 Prisma 인스턴스 확인:', !!prisma);
+    console.log('🔍 CompanyInfo 모델 확인:', !!prisma.companyInfo);
+    
+    // 먼저 활성화된 회사정보 조회
+    console.log('🔍 활성화된 회사정보 조회 시작...');
+    let companyInfo = await prisma.companyInfo.findFirst({
       where: { isActive: true },
       orderBy: { createdAt: 'desc' }
     });
+    console.log('🔍 활성화된 회사정보 조회 결과:', companyInfo ? '발견됨' : '없음');
+    
+    // 활성화된 것이 없으면 가장 최근 회사정보 조회
+    if (!companyInfo) {
+      console.log('🔍 최근 회사정보 조회 시작...');
+      companyInfo = await prisma.companyInfo.findFirst({
+        orderBy: { createdAt: 'desc' }
+      });
+      console.log('🔍 최근 회사정보 조회 결과:', companyInfo ? '발견됨' : '없음');
+    }
 
     if (companyInfo) {
       console.log('✅ 회사 정보 조회 성공:', companyInfo.companyName);
@@ -30,7 +45,7 @@ export async function GET(request: NextRequest) {
         email: 'info@salespartner.com',
         website: 'https://salespartner.com',
         description: '최고의 세일즈 파트너 서비스를 제공합니다.',
-        referralCodeDefault: 'SP2024',
+        referralCodeDefault: '66678282',
         isActive: true
       };
       

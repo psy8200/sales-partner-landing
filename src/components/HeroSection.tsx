@@ -10,7 +10,7 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-white">
+    <section className="relative pt-24 pb-16 sm:pt-28 sm:pb-20 lg:pt-32 lg:pb-24 flex items-center justify-center overflow-hidden bg-white">
       {/* 깔끔한 배경 효과 */}
       <div className="absolute inset-0">
         {/* 미묘한 그라데이션 오버레이 */}
@@ -33,7 +33,7 @@ const HeroSection = () => {
            initial={{ opacity: 0, y: 20 }}
            animate={{ opacity: 1, y: 0 }}
            transition={{ duration: 0.8 }}
-           className="mb-16"
+           className="mb-8 sm:mb-12"
          >
            <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-full shadow-sm">
              <span className="text-blue-600 font-semibold text-base tracking-wide">⭐ 국내 최초 수익이 누적되는 자동화 플랫폼</span>
@@ -45,7 +45,7 @@ const HeroSection = () => {
            initial={{ opacity: 0, y: 30 }}
            animate={{ opacity: 1, y: 0 }}
            transition={{ duration: 0.8, delay: 0.2 }}
-           className="mb-16"
+           className="mb-8 sm:mb-12"
          >
                        <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black text-gray-900 leading-relaxed tracking-tight">
               <span className="block mb-8">매월 내는 돈을</span>
@@ -60,39 +60,44 @@ const HeroSection = () => {
            initial={{ opacity: 0, y: 20 }}
            animate={{ opacity: 1, y: 0 }}
            transition={{ duration: 0.8, delay: 0.4 }}
-           className="text-xl sm:text-2xl text-gray-600 mb-20 max-w-4xl mx-auto leading-relaxed font-light space-y-4"
+           className="text-xl sm:text-2xl text-gray-600 mb-16 sm:mb-20 lg:mb-24 max-w-4xl mx-auto leading-relaxed font-light space-y-4"
          >
            <span className="block">보험료 • 통신료 • 렌탈료 • 상조 • 쇼핑몰</span>
            <span className="block font-semibold text-blue-600">이미 내는 돈으로 매월 수익 창출</span>
            <span className="block">전국 <span className="text-blue-600 font-bold">800+ 성공 파트너</span>와 함께하는 안전한 네트워크</span>
          </motion.p>
 
-         {/* CTA 버튼들 - 더 간결하고 명확하게 */}
+         {/* CTA 버튼들 - 반응형 최적화 */}
          <motion.div
            initial={{ opacity: 0, y: 20 }}
            animate={{ opacity: 1, y: 0 }}
            transition={{ duration: 0.8, delay: 0.6 }}
-           className="space-y-6 md:space-y-0 md:space-x-6 md:flex md:justify-center mb-24"
+           className="flex flex-row gap-2 sm:gap-3 md:gap-4 lg:gap-6 justify-center mb-12 sm:mb-16"
          >
-                     <button
+           {/* 지금 시작하기 버튼 - 반응형 패딩 및 텍스트 크기 */}
+           <button
              onClick={handleSignup}
-             className="group relative px-10 py-5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl text-lg font-bold text-white hover:from-blue-500 hover:to-indigo-500 transition-all duration-300 shadow-xl hover:shadow-blue-500/20 transform hover:scale-105 border border-blue-500/40"
+             className="group relative px-4 py-3.5 sm:px-6 sm:py-3 md:px-8 md:py-4 lg:px-10 lg:py-5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg sm:rounded-xl text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white hover:from-blue-500 hover:to-indigo-500 transition-all duration-300 shadow-xl hover:shadow-blue-500/20 transform hover:scale-105 border border-blue-500/40 flex-1 sm:flex-none"
            >
              <span className="relative z-10">🎯 지금 시작하기</span>
              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl opacity-0 group-hover:opacity-15 transition-opacity duration-300"></div>
            </button>
           
-          <button onClick={handleOpenCalc} className="group px-10 py-5 bg-blue-600 text-white rounded-xl text-lg font-semibold hover:bg-blue-500 transition-all duration-300 shadow-lg inline-flex items-center border border-blue-500/50">
-            💰 수익 계산해보기
-          </button>
-                 </motion.div>
+           {/* 수익 계산해보기 버튼 - 반응형 패딩 및 텍스트 크기 */}
+           <button 
+             onClick={handleOpenCalc} 
+             className="group px-4 py-3.5 sm:px-6 sm:py-3 md:px-8 md:py-4 lg:px-10 lg:py-5 bg-blue-600 text-white rounded-lg sm:rounded-xl text-sm sm:text-base md:text-lg lg:text-xl font-semibold hover:bg-blue-500 transition-all duration-300 shadow-lg inline-flex items-center justify-center border border-blue-500/50 flex-1 sm:flex-none"
+           >
+             💰 수익 계산해보기
+           </button>
+         </motion.div>
 
          {/* 럭셔리 보증 배지 - 더 간결하게 */}
          <motion.div
            initial={{ opacity: 0, y: 20 }}
            animate={{ opacity: 1, y: 0 }}
            transition={{ duration: 0.8, delay: 0.8 }}
-           className="mt-12 flex flex-wrap justify-center gap-3"
+           className="mt-8 sm:mt-10 flex flex-wrap justify-center gap-3"
          >
            <div className="flex items-center px-3 py-1.5 bg-blue-50 rounded-full border border-blue-200">
              <span className="text-blue-600 mr-1.5 text-sm">🛡️</span>

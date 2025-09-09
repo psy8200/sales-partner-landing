@@ -385,3 +385,4 @@ export const usePwaUpdate = () => {
     reinstallApp
   };
 };
+

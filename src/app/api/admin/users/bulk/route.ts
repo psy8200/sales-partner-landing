@@ -3,8 +3,17 @@ import { prisma } from '@/lib/db';
 
 export async function DELETE(request: NextRequest) {
   try {
-    // 어드민 세션 쿠키에서 토큰 가져오기
-    const adminSessionToken = request.cookies.get('adminSession')?.value;
+    // 어드민 세션 쿠키에서 토큰 가져오기 (모든 adminSession 쿠키 확인)
+    const allCookies = request.cookies.getAll();
+    const adminSessionCookies = allCookies.filter(cookie => 
+      cookie.name.startsWith('adminSession_')
+    );
+    
+    let adminSessionToken = null;
+    if (adminSessionCookies.length > 0) {
+      // 가장 최근 쿠키 사용 (보통 마지막에 설정된 것)
+      adminSessionToken = adminSessionCookies[adminSessionCookies.length - 1].value;
+    }
     
     if (!adminSessionToken) {
       return NextResponse.json({ error: '어드민 로그인이 필요합니다.' }, { status: 401 });

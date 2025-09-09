@@ -8,10 +8,11 @@ import {
   TouchableOpacity, 
   ScrollView, 
   StyleSheet, 
-  Alert,
   KeyboardAvoidingView,
   Platform 
 } from 'react-native';
+import SuccessModal from '../native/modals/SuccessModal';
+import ErrorModal from '../native/modals/ErrorModal';
 import DuplicateErrorModal from './DuplicateErrorModal';
 import { useDuplicateError } from '@/hooks/useDuplicateError';
 
@@ -41,6 +42,11 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onLogin }) =>
   
   // 중복 오류 처리 훅
   const { errorState, showDuplicateError, closeModal, handleRetry, handleApiError } = useDuplicateError();
+  
+  // 모달 상태
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
   
   // 폼 필드 참조 (포커스용)
   const emailRef = useRef<TextInput>(null);
@@ -116,21 +122,19 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onLogin }) =>
       
       if (response.ok) {
         // 가입 성공
-        Alert.alert('회원가입 완료', result.message, [
-          {
-            text: '확인',
-            onPress: () => {
-              if (onSuccess) onSuccess();
-            }
-          }
-        ]);
+        setModalMessage(result.message);
+        setShowSuccessModal(true);
+        setTimeout(() => {
+          if (onSuccess) onSuccess();
+        }, 1500);
       } else {
         // 중복 오류 처리 - 새로운 모달 사용
         handleApiError(result, handleRetryInput);
       }
     } catch (error) {
       console.error('회원가입 오류:', error);
-      Alert.alert('오류', '회원가입 중 오류가 발생했습니다.');
+      setModalMessage('회원가입 중 오류가 발생했습니다.');
+      setShowErrorModal(true);
     }
   };
 
@@ -275,6 +279,19 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onLogin }) =>
         onClose={closeModal}
         onRetry={handleRetryInput}
         errorType={errorState.errorType || 'email'}
+      />
+
+      {/* 모달들 */}
+      <SuccessModal
+        visible={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        message={modalMessage}
+      />
+
+      <ErrorModal
+        visible={showErrorModal}
+        onClose={() => setShowErrorModal(false)}
+        message={modalMessage}
       />
     </KeyboardAvoidingView>
   );

@@ -218,6 +218,8 @@ const AdminsPage = () => {
                       checked={allSelected}
                       onChange={handleSelectAll}
                       className="rounded border-gray-300"
+                      aria-label="전체 선택"
+                      title="전체 선택"
                     />
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -255,6 +257,8 @@ const AdminsPage = () => {
                         checked={selectedAdmins[admin.id] || false}
                         onChange={() => handleSelectAdmin(admin.id)}
                         className="rounded border-gray-300"
+                        aria-label={`${admin.name} 선택`}
+                        title={`${admin.name} 선택`}
                       />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">

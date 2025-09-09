@@ -6,39 +6,59 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
-  Alert,
-  Image,
 } from 'react-native';
 import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
 import { lightTheme } from '../../styles/theme';
 import { useAuth } from '../../hooks/useAuth';
+import { useRouter } from 'next/navigation';
+import SuccessModal from '../../components/native/modals/SuccessModal';
+import ErrorModal from '../../components/native/modals/ErrorModal';
+import WarningModal from '../../components/native/modals/WarningModal';
 
 export const LoginScreen: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
+  const router = useRouter();
+
+  // 모달 상태
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showWarningModal, setShowWarningModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
 
   const handleLogin = async () => {
     if (!phone.trim() || !password.trim()) {
-      Alert.alert('오류', '전화번호와 비밀번호를 입력해주세요.');
+      setModalMessage('전화번호와 비밀번호를 입력해주세요.');
+      setShowWarningModal(true);
       return;
     }
 
     if (phone.length !== 8) {
-      Alert.alert('오류', '8자리 전화번호를 입력해주세요.');
+      setModalMessage('8자리 전화번호를 입력해주세요.');
+      setShowWarningModal(true);
       return;
     }
 
     setIsLoading(true);
     try {
       const success = await login(phone, password);
-      if (!success) {
-        Alert.alert('로그인 실패', '전화번호 또는 비밀번호가 올바르지 않습니다.');
+      if (success) {
+        // 로그인 성공 시 /member 페이지로 자동 이동
+        setModalMessage('로그인에 성공했습니다!');
+        setShowSuccessModal(true);
+        setTimeout(() => {
+          router.push('/member');
+        }, 1500);
+      } else {
+        setModalMessage('전화번호 또는 비밀번호가 올바르지 않습니다.');
+        setShowErrorModal(true);
       }
     } catch (error) {
-      Alert.alert('오류', '로그인 중 오류가 발생했습니다.');
+      setModalMessage('로그인 중 오류가 발생했습니다.');
+      setShowErrorModal(true);
     } finally {
       setIsLoading(false);
     }
@@ -51,15 +71,8 @@ export const LoginScreen: React.FC = () => {
     >
       <View style={styles.content}>
         <View style={styles.header}>
-          {/* 회사 로고 */}
-          <View style={styles.logoContainer}>
-            <Image 
-              source={{ uri: '/logo.png' }}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-          </View>
-          <Text style={styles.subtitle}>환영합니다. 행복하루 되세요!</Text>
+          <Text style={styles.title}>Sales Partner</Text>
+          <Text style={styles.subtitle}>회원 로그인</Text>
         </View>
 
         <Card style={styles.formCard} shadow="lg">
@@ -68,16 +81,19 @@ export const LoginScreen: React.FC = () => {
             <TextInput
               style={styles.input}
               value={phone}
-              onChangeText={(value) => {
+              onChangeText={(value: string) => {
                 // 숫자와 하이픈만 허용
                 const cleanValue = value.replace(/[^0-9-]/g, '');
                 setPhone(cleanValue);
               }}
-              placeholder="12345678"
+              placeholder="010-0000-0000 또는 00000000"
               keyboardType="phone-pad"
               autoCapitalize="none"
               autoCorrect={false}
             />
+            <Text style={styles.helperText}>
+              전체 전화번호 또는 뒤 8자리 모두 입력 가능합니다
+            </Text>
           </View>
 
           <View style={styles.inputGroup}>
@@ -85,7 +101,7 @@ export const LoginScreen: React.FC = () => {
             <TextInput
               style={styles.input}
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(value: string) => setPassword(value)}
               placeholder="비밀번호를 입력하세요"
               secureTextEntry
               autoCapitalize="none"
@@ -108,6 +124,25 @@ export const LoginScreen: React.FC = () => {
           </Text>
         </View>
       </View>
+
+      {/* 모달들 */}
+      <SuccessModal
+        visible={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        message={modalMessage}
+      />
+
+      <ErrorModal
+        visible={showErrorModal}
+        onClose={() => setShowErrorModal(false)}
+        message={modalMessage}
+      />
+
+      <WarningModal
+        visible={showWarningModal}
+        onClose={() => setShowWarningModal(false)}
+        message={modalMessage}
+      />
     </KeyboardAvoidingView>
   );
 };
@@ -126,12 +161,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: lightTheme.spacing.xxl,
   },
-  logoContainer: {
-    marginBottom: lightTheme.spacing.md,
-  },
-  logo: {
-    width: 120,
-    height: 60,
+  title: {
+    fontSize: lightTheme.typography.fontSize.xxxl,
+    fontWeight: lightTheme.typography.fontWeight.bold,
+    color: lightTheme.colors.primary,
+    marginBottom: lightTheme.spacing.sm,
   },
   subtitle: {
     fontSize: lightTheme.typography.fontSize.lg,
@@ -171,7 +205,6 @@ const styles = StyleSheet.create({
   },
   linkText: {
     color: lightTheme.colors.primary,
-    fontWeight: lightTheme.typography.fontWeight.bold,
-    fontSize: lightTheme.typography.fontSize.lg,
+    fontWeight: lightTheme.typography.fontWeight.medium,
   },
 });

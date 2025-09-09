@@ -63,8 +63,17 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // 어드민 세션 쿠키에서 토큰 가져오기
-    const adminSessionToken = request.cookies.get('adminSession')?.value;
+    // 어드민 세션 쿠키에서 토큰 가져오기 (모든 adminSession 쿠키 확인)
+    const allCookies = request.cookies.getAll();
+    const adminSessionCookies = allCookies.filter(cookie => 
+      cookie.name.startsWith('adminSession_')
+    );
+    
+    let adminSessionToken = null;
+    if (adminSessionCookies.length > 0) {
+      // 가장 최근 쿠키 사용 (보통 마지막에 설정된 것)
+      adminSessionToken = adminSessionCookies[adminSessionCookies.length - 1].value;
+    }
     
     if (!adminSessionToken) {
       return NextResponse.json(createUnauthorizedResponse('어드민 로그인이 필요합니다.'), { status: 401 });
@@ -156,8 +165,17 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // 어드민 세션 쿠키에서 토큰 가져오기
-    const adminSessionToken = request.cookies.get('adminSession')?.value;
+    // 어드민 세션 쿠키에서 토큰 가져오기 (모든 adminSession 쿠키 확인)
+    const allCookies = request.cookies.getAll();
+    const adminSessionCookies = allCookies.filter(cookie => 
+      cookie.name.startsWith('adminSession_')
+    );
+    
+    let adminSessionToken = null;
+    if (adminSessionCookies.length > 0) {
+      // 가장 최근 쿠키 사용 (보통 마지막에 설정된 것)
+      adminSessionToken = adminSessionCookies[adminSessionCookies.length - 1].value;
+    }
     
     if (!adminSessionToken) {
       return NextResponse.json({ error: '어드민 로그인이 필요합니다.' }, { status: 401 });
@@ -206,9 +224,23 @@ export async function DELETE(
       return NextResponse.json({ error: '관리자만 삭제할 수 있습니다.' }, { status: 403 });
     }
 
-    // 사용자 삭제
-    await prisma.user.delete({
-      where: { id }
+    // 사용자와 관련된 모든 데이터를 트랜잭션으로 삭제
+    await prisma.$transaction(async (tx) => {
+      // 1. 관련 데이터들 먼저 삭제
+      await tx.activityLog.deleteMany({ where: { userId: id } });
+      await tx.application.deleteMany({ where: { userId: id } });
+      await tx.consultation.deleteMany({ where: { userId: id } });
+      await tx.notification.deleteMany({ where: { userId: id } });
+      await tx.partnerApplication.deleteMany({ where: { userId: id } });
+      await tx.payment.deleteMany({ where: { userId: id } });
+      await tx.pointLedger.deleteMany({ where: { userId: id } });
+      await tx.question.deleteMany({ where: { userId: id } });
+      await tx.settlement.deleteMany({ where: { userId: id } });
+      await tx.userLog.deleteMany({ where: { userId: id } });
+      await tx.withdrawalRequest.deleteMany({ where: { userId: id } });
+
+      // 2. 마지막으로 사용자 삭제
+      await tx.user.delete({ where: { id } });
     });
 
     console.log(`관리자 삭제 완료: ${userToDelete.name} (${userToDelete.email})`);

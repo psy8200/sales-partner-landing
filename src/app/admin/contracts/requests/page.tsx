@@ -16,6 +16,14 @@ interface PartnerApplicationItem {
   createdAt: string;
 }
 
+interface Manager {
+  id: string;
+  department: string;
+  name: string;
+  joinDate: string;
+  isActive: boolean;
+}
+
 type RequestRow = {
   id: string;
   customerName: string;
@@ -40,6 +48,7 @@ export default function ContractRequestsPage() {
   const [rows, setRows] = useState<RequestRow[]>([]);
   const [total, setTotal] = useState(0);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [managers, setManagers] = useState<Manager[]>([]);
 
   const allSelected = useMemo(() => rows.length > 0 && rows.every(r => selected[r.id]), [rows, selected]);
   const selectedIds = useMemo(() => rows.filter(r => selected[r.id]).map(r => r.id), [rows, selected]);
@@ -68,7 +77,7 @@ export default function ContractRequestsPage() {
         referrer: it.referrer || '-',
         availableTime: it.availableTime,
         additionalNote: it.additionalNote,
-        status: it.backendStatus || 'NEW',
+        status: it.backendStatus || 'PENDING',
         manager: it.manager,
         assignedAt: it.assignedAt,
         createdAt: it.createdAt,
@@ -82,8 +91,24 @@ export default function ContractRequestsPage() {
     }
   };
 
+  const fetchManagers = async () => {
+    try {
+      const res = await fetch('/api/admin/managers');
+      if (!res.ok) {
+        throw new Error('담당자 목록을 불러오는데 실패했습니다.');
+      }
+      const data = await res.json();
+      if (data.success && data.data) {
+        setManagers(data.data);
+      }
+    } catch (e: unknown) {
+      console.error('담당자 목록 조회 오류:', e);
+    }
+  };
+
   useEffect(() => {
     fetchRequests();
+    fetchManagers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, limit, status, searchTerm]);
 
@@ -321,43 +346,77 @@ export default function ContractRequestsPage() {
                             (r.status as any) === 'CANCELLED' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
                           }`}>
                             {(r.status as any) === 'PENDING' ? '상담신청중' : 
-                             (r.status as any) === 'ASSIGNED' ? '배정완료' : 
+                             (r.status as any) === 'ASSIGNED' ? '상담진행' : 
                              (r.status as any) === 'COMPLETED' ? '상담완료' : 
                              (r.status as any) === 'CANCELLED' ? '취소' : r.status}
                           </span>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                          <input
-                            value={r.manager || ''}
-                            onChange={(e)=>{
-                              const v = e.target.value;
-                              setRows(prev=>prev.map(x=>x.id===r.id?{...x, manager:v}:x));
-                            }}
-                            placeholder="담당자 입력"
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          />
+                          {(r.status as any) === 'PENDING' ? (
+                            <select
+                              value={r.manager || ''}
+                              onChange={(e)=>{
+                                const v = e.target.value;
+                                setRows(prev=>prev.map(x=>x.id===r.id?{...x, manager:v}:x));
+                              }}
+                              className="w-full px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                            >
+                              <option value="">담당자 선택</option>
+                              {managers.map((manager) => (
+                                <option key={manager.id} value={manager.name}>
+                                  {manager.name} ({manager.department})
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className="text-sm font-medium text-gray-900">
+                              {r.manager || '-'}
+                            </span>
+                          )}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-xs">
                           {(r.status as any) === 'PENDING' ? (
                             <button
-                              className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
+                              className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={!r.manager || r.manager.trim() === ''}
                               onClick={()=>{
                                 const v = r.manager || '';
+                                if (!v || v.trim() === '') {
+                                  alert('담당자를 선택해주세요.');
+                                  return;
+                                }
+                                
+                                if (!confirm(`담당자 "${v}"로 배정하시겠습니까?\n\n고객: ${r.customerName}\n연락처: ${r.phone}`)) {
+                                  return;
+                                }
+
                                 fetch(`/api/admin/contracts/requests/${r.id}`, {
                                   method: 'PATCH',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({ action: 'assign', manager: v }),
                                 }).then(async (res)=>{
-                                  if (!res.ok) { const t = await res.text(); throw new Error(t); }
+                                  if (!res.ok) { 
+                                    const t = await res.text(); 
+                                    throw new Error(t || '배정 처리에 실패했습니다.'); 
+                                  }
                                   const u = await res.json();
-                                  setRows(prev=>prev.map(x=>x.id===r.id?{...x, status:u.backendStatus, assignedAt:u.assignedAt, manager:u.manager}:x));
-                                }).catch(e=>alert(e.message));
+                                  setRows(prev=>prev.map(x=>x.id===r.id?{
+                                    ...x, 
+                                    status: u.backendStatus, 
+                                    assignedAt: u.assignedAt, 
+                                    manager: u.manager
+                                  }:x));
+                                  alert(`✅ 배정 완료!\n\n담당자: ${u.manager}\n배정일: ${new Date(u.assignedAt).toLocaleDateString('ko-KR')}`);
+                                }).catch(e=>{
+                                  console.error('배정 오류:', e);
+                                  alert(`배정 실패: ${e.message}`);
+                                });
                               }}
                             >
                               배정완료
                             </button>
                           ) : (
-                            <span className="text-green-700 text-xs">배정됨</span>
+                            <span className="text-green-700 text-xs font-medium">배정완료</span>
                           )}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">

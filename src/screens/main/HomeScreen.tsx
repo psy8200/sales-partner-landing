@@ -4,7 +4,6 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
-  Alert,
 } from 'react-native';
 import { AppBar } from '../../components/common/AppBar';
 import { SummaryCard } from '../../components/business/SummaryCard';
@@ -16,12 +15,17 @@ import { useAuth } from '../../hooks/useAuth';
 import { useApi } from '../../hooks/useApi';
 import { apiClient } from '../../services/api/client';
 import { StatsData, ActivityItem, QuickAction, InfoCard } from '../../types';
+import InfoModal from '../../components/native/modals/InfoModal';
 
 export const HomeScreen: React.FC = () => {
   const { user, refreshUser } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [statsData, setStatsData] = useState<StatsData | null>(null);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
+
+  // 모달 상태
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
 
   // API 호출 훅
   const { execute: fetchStats, loading: statsLoading } = useApi<StatsData>(
@@ -61,19 +65,23 @@ export const HomeScreen: React.FC = () => {
   };
 
   const handleChargePress = () => {
-    Alert.alert('충전', '충전 기능을 준비 중입니다.');
+    setModalMessage('충전 기능을 준비 중입니다.');
+    setShowInfoModal(true);
   };
 
   const handleTransferPress = () => {
-    Alert.alert('이체', '이체 기능을 준비 중입니다.');
+    setModalMessage('이체 기능을 준비 중입니다.');
+    setShowInfoModal(true);
   };
 
   const handleActivityPress = (activity: ActivityItem) => {
-    Alert.alert('활동 상세', `${activity.title} - ${activity.subtitle}`);
+    setModalMessage(`${activity.title} - ${activity.subtitle}`);
+    setShowInfoModal(true);
   };
 
   const handleViewAllActivities = () => {
-    Alert.alert('전체 활동', '전체 활동 내역을 준비 중입니다.');
+    setModalMessage('전체 활동 내역을 준비 중입니다.');
+    setShowInfoModal(true);
   };
 
   // 빠른 액션 데이터
@@ -83,42 +91,60 @@ export const HomeScreen: React.FC = () => {
       title: '정산',
       icon: 'account-balance-wallet',
       color: lightTheme.colors.primary,
-      onPress: () => Alert.alert('정산', '정산 기능을 준비 중입니다.'),
+      onPress: () => {
+        setModalMessage('정산 기능을 준비 중입니다.');
+        setShowInfoModal(true);
+      },
     },
     {
       id: 'history',
       title: '내역',
       icon: 'history',
       color: lightTheme.colors.secondary,
-      onPress: () => Alert.alert('내역', '내역 기능을 준비 중입니다.'),
+      onPress: () => {
+        setModalMessage('내역 기능을 준비 중입니다.');
+        setShowInfoModal(true);
+      },
     },
     {
       id: 'account',
       title: '계좌',
       icon: 'account-balance',
       color: lightTheme.colors.success,
-      onPress: () => Alert.alert('계좌', '계좌 기능을 준비 중입니다.'),
+      onPress: () => {
+        setModalMessage('계좌 기능을 준비 중입니다.');
+        setShowInfoModal(true);
+      },
     },
     {
       id: 'security',
       title: '보안',
       icon: 'security',
       color: lightTheme.colors.warning,
-      onPress: () => Alert.alert('보안', '보안 기능을 준비 중입니다.'),
+      onPress: () => {
+        setModalMessage('보안 기능을 준비 중입니다.');
+        setShowInfoModal(true);
+      },
     },
     {
       id: 'partner',
       title: '파트너',
       icon: 'people',
       color: lightTheme.colors.info,
-      onPress: () => Alert.alert('파트너', '파트너 기능을 준비 중입니다.'),
+      onPress: () => {
+        setModalMessage('파트너 기능을 준비 중입니다.');
+        setShowInfoModal(true);
+      },
     },
     {
       id: 'support',
       title: '지원',
       icon: 'support-agent',
       color: lightTheme.colors.error,
-      onPress: () => Alert.alert('지원', '지원 기능을 준비 중입니다.'),
+      onPress: () => {
+        setModalMessage('지원 기능을 준비 중입니다.');
+        setShowInfoModal(true);
+      },
     },
   ];
 
@@ -226,6 +252,13 @@ export const HomeScreen: React.FC = () => {
           onViewAllPress={handleViewAllActivities}
         />
       </ScrollView>
+
+      {/* 정보 모달 */}
+      <InfoModal
+        visible={showInfoModal}
+        onClose={() => setShowInfoModal(false)}
+        message={modalMessage}
+      />
     </View>
   );
 };

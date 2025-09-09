@@ -3,8 +3,17 @@ import { prisma } from '@/lib/db';
 
 export async function DELETE(request: NextRequest) {
   try {
-    // 어드민 세션 쿠키에서 토큰 가져오기
-    const adminSessionToken = request.cookies.get('adminSession')?.value;
+    // 어드민 세션 쿠키에서 토큰 가져오기 (모든 adminSession 쿠키 확인)
+    const allCookies = request.cookies.getAll();
+    const adminSessionCookies = allCookies.filter(cookie => 
+      cookie.name.startsWith('adminSession_')
+    );
+    
+    let adminSessionToken = null;
+    if (adminSessionCookies.length > 0) {
+      // 가장 최근 쿠키 사용 (보통 마지막에 설정된 것)
+      adminSessionToken = adminSessionCookies[adminSessionCookies.length - 1].value;
+    }
     
     if (!adminSessionToken) {
       return NextResponse.json({ error: '어드민 로그인이 필요합니다.' }, { status: 401 });
@@ -61,13 +70,29 @@ export async function DELETE(request: NextRequest) {
       }, { status: 403 });
     }
 
-    // 사용자 삭제
-    const result = await prisma.user.deleteMany({ 
-      where: { 
-        id: { in: ids },
-        role: { in: ['GENERAL', 'MEMBER'] }, // 일반회원과 파트너회원만
-        referralCode: { not: 'SUPER_ADMIN' } // 최고관리자 제외
-      } 
+    // 사용자와 관련된 모든 데이터를 트랜잭션으로 삭제
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. 관련 데이터들 먼저 삭제
+      await tx.activityLog.deleteMany({ where: { userId: { in: ids } } });
+      await tx.application.deleteMany({ where: { userId: { in: ids } } });
+      await tx.consultation.deleteMany({ where: { userId: { in: ids } } });
+      await tx.notification.deleteMany({ where: { userId: { in: ids } } });
+      await tx.partnerApplication.deleteMany({ where: { userId: { in: ids } } });
+      await tx.payment.deleteMany({ where: { userId: { in: ids } } });
+      await tx.pointLedger.deleteMany({ where: { userId: { in: ids } } });
+      await tx.question.deleteMany({ where: { userId: { in: ids } } });
+      await tx.settlement.deleteMany({ where: { userId: { in: ids } } });
+      await tx.userLog.deleteMany({ where: { userId: { in: ids } } });
+      await tx.withdrawalRequest.deleteMany({ where: { userId: { in: ids } } });
+
+      // 2. 마지막으로 사용자 삭제
+      return await tx.user.deleteMany({ 
+        where: { 
+          id: { in: ids },
+          role: { in: ['GENERAL', 'MEMBER'] }, // 일반회원과 파트너회원만
+          referralCode: { not: 'SUPER_ADMIN' } // 최고관리자 제외
+        } 
+      });
     });
 
     console.log(`회원 일괄 삭제 완료: ${result.count}명`);
@@ -85,3 +110,4 @@ export async function DELETE(request: NextRequest) {
     }, { status: 500 });
   }
 }
+

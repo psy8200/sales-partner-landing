@@ -89,6 +89,7 @@ export const PwaProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Service Worker 등록 및 상태 확인
   useEffect(() => {
+    /*
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js')
         .then((registration) => {
@@ -126,6 +127,7 @@ export const PwaProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setPwaState(prev => ({ ...prev, serviceWorkerStatus: 'error' }));
         });
     }
+    */
   }, []);
 
   // PWA 설치 함수

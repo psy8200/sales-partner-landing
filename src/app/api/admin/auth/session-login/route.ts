@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
       iat: Date.now()
     });
 
-    // 세션 스토리지용 응답 (쿠키 설정 없음)
+    // 세션 스토리지용 응답 + 쿠키 설정
     const response = NextResponse.json({
       success: true,
       admin: {
@@ -121,8 +121,71 @@ export async function POST(request: NextRequest) {
         lastActivityAt: admin.lastActivityAt,
         createdAt: admin.createdAt
       },
-      sessionToken: token
+      sessionToken: token,
+      // sessionStorage 저장을 위한 스크립트 추가
+      sessionStorageScript: `
+        if (typeof window !== 'undefined' && window.sessionStorage) {
+          try {
+            sessionStorage.setItem('adminUser', JSON.stringify(${JSON.stringify({
+              id: admin.id,
+              name: admin.name,
+              email: admin.email,
+              phone: admin.phone,
+              role: admin.role,
+              status: admin.status,
+              joinDate: admin.joinDate,
+              lastLoginAt: admin.lastLoginAt,
+              lastLogoutAt: admin.lastLogoutAt,
+              isOnline: admin.isOnline,
+              lastActivityAt: admin.lastActivityAt,
+              createdAt: admin.createdAt
+            })}));
+            sessionStorage.setItem('adminSessionToken', '${token}');
+            console.log('✅ sessionStorage에 관리자 정보 저장 완료');
+          } catch (error) {
+            console.error('❌ sessionStorage 저장 실패:', error);
+          }
+        }
+      `
     });
+
+    // 관리자별 고유 쿠키 이름 생성
+    const cookieName = `adminSession_${admin.id}`;
+    const authCookieName = `adminAuthToken_${admin.id}`;
+    
+    // 기존 세션 쿠키들 정리
+    const allCookies = request.cookies.getAll();
+    const existingAdminCookies = allCookies.filter(cookie => 
+      cookie.name === cookieName || cookie.name === authCookieName ||
+      (cookie.name.startsWith(`adminSession_${admin.id}_`) && cookie.name !== cookieName) ||
+      (cookie.name.startsWith(`adminAuthToken_${admin.id}_`) && cookie.name !== authCookieName)
+    );
+    
+    // 기존 쿠키들 삭제
+    existingAdminCookies.forEach(cookie => {
+      response.cookies.delete(cookie.name);
+      console.log(`🗑️ 기존 쿠키 삭제: ${cookie.name}`);
+    });
+    
+    // 관리자 세션 쿠키 설정 (90일 유지)
+    const NINETY_DAYS = 60 * 60 * 24 * 90;
+    response.cookies.set(cookieName, token, {
+      httpOnly: true,
+      path: '/',
+      sameSite: 'lax',
+      maxAge: NINETY_DAYS,
+      expires: new Date(Date.now() + NINETY_DAYS * 1000),
+    });
+
+    response.cookies.set(authCookieName, admin.id, {
+      httpOnly: true,
+      path: '/',
+      sameSite: 'lax',
+      maxAge: NINETY_DAYS,
+      expires: new Date(Date.now() + NINETY_DAYS * 1000),
+    });
+    
+    console.log(`🍪 관리자 쿠키 설정 완료: ${cookieName}, ${authCookieName}`);
     
     console.log(`✅ 세션 스토리지 기반 로그인 성공: ${admin.name} (${admin.role})`);
 
@@ -136,4 +199,5 @@ export async function POST(request: NextRequest) {
     }, { status: 500 });
   }
 }
+
 

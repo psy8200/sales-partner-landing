@@ -2,6 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import SuccessModal from '@/components/modals/SuccessModal';
+import ErrorModal from '@/components/modals/ErrorModal';
+import WarningModal from '@/components/modals/WarningModal';
 
 interface User {
   id: string;
@@ -11,10 +15,10 @@ interface User {
   role: string;
   partnerStatus: string;
   address?: string;
-  referralCode?: string;  // 추천인코드 필드 추가
 }
 
 const PartnerApplyPage = () => {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -23,15 +27,39 @@ const PartnerApplyPage = () => {
     availableDate: '',
     availableTime: '',
     additionalNote: '',
-    area: '',
-    referralCode: ''
+    area: ''
   });
+
+  // 모달 상태
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showWarningModal, setShowWarningModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
 
   useEffect(() => {
     // 로그인된 사용자 정보 가져오기
     const fetchUserInfo = async () => {
       try {
-        const response = await fetch('/api/auth/me');
+        // PWA 환경에서 인증 토큰 확인
+        let authHeaders: Record<string, string> = {};
+
+        // PWA 환경에서 AsyncStorage에서 토큰 가져오기
+        if (typeof window !== 'undefined' && window.localStorage) {
+          try {
+            const pwaAuthToken = localStorage.getItem('pwaAuthToken');
+            if (pwaAuthToken) {
+              authHeaders['Authorization'] = `Bearer ${pwaAuthToken}`;
+              console.log('PWA 사용자 정보 조회 - 인증 토큰 사용:', pwaAuthToken);
+            }
+          } catch (error) {
+            console.log('PWA 토큰 가져오기 실패:', error);
+          }
+        }
+
+        const response = await fetch('/api/auth/me', {
+          headers: authHeaders,
+          credentials: 'include' // 쿠키 포함하여 인증 정보 전달
+        });
         if (response.ok) {
           const userData = await response.json();
           console.log('사용자 정보:', userData.user); // 디버깅용
@@ -41,23 +69,13 @@ const PartnerApplyPage = () => {
             setFormData(prev => ({ ...prev, area: userData.user.address }));
           }
           
-          // 추천인코드 설정 (회원가입시 입력값 우선, 없으면 기본값)
-          if (!userData?.user?.referralCode) {
-            // 추천인코드 설정 (회원가입시 입력값 우선, 없으면 기본값)
-            try {
-              const savedReferralCode = localStorage.getItem('companyReferralCode');
-              if (savedReferralCode) {
-                setUser(prev => prev ? { ...prev, referralCode: savedReferralCode } : null);
-              }
-            } catch (error) {
-              console.error('기본추천인코드 로드 실패:', error);
-            }
-          }
         } else {
           console.error('사용자 정보 가져오기 실패:', response.status, response.statusText);
           setError('로그인이 필요합니다. 로그인 페이지로 이동합니다.');
           setTimeout(() => {
-            window.location.href = '/login';
+            // PWA 환경 감지하여 적절한 로그인 페이지로 이동
+            const isPwaEnvironment = window.parent !== window || window.location.pathname.includes('/pwa-');
+            window.location.href = isPwaEnvironment ? '/pwa-login' : '/login';
           }, 2000);
           return;
         }
@@ -77,17 +95,25 @@ const PartnerApplyPage = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+    console.log('🎯 파트너신청 폼 제출 시작');
+    console.log('📝 폼 데이터:', formData);
     
     // 폼 유효성 검사
     if (!formData.availableDate) {
-      alert('상담가능 날짜를 선택해주세요.');
+      console.log('❌ 상담가능 날짜 누락');
+      setModalMessage('상담가능 날짜를 선택해주세요.');
+      setShowWarningModal(true);
       return;
     }
     
     if (!formData.availableTime) {
-      alert('상담가능 시간을 선택해주세요.');
+      console.log('❌ 상담가능 시간 누락');
+      setModalMessage('상담가능 시간을 선택해주세요.');
+      setShowWarningModal(true);
       return;
     }
     
@@ -97,7 +123,8 @@ const PartnerApplyPage = () => {
     today.setHours(0, 0, 0, 0);
     
     if (selectedDate < today) {
-      alert('상담가능 날짜는 오늘 이후로 선택해주세요.');
+      setModalMessage('상담가능 날짜는 오늘 이후로 선택해주세요.');
+      setShowWarningModal(true);
       return;
     }
     
@@ -106,21 +133,44 @@ const PartnerApplyPage = () => {
     thirtyDaysLater.setDate(today.getDate() + 30);
     
     if (selectedDate > thirtyDaysLater) {
-      alert('상담가능 날짜는 30일 이내로 선택해주세요.');
+      setModalMessage('상담가능 날짜는 30일 이내로 선택해주세요.');
+      setShowWarningModal(true);
       return;
     }
     
     // 최종 확인
-    const confirmSubmit = confirm(`파트너신청을 진행하시겠습니까?\n\n상담일: ${formData.availableDate}\n상담시간: ${formData.availableTime}`);
+    const confirmSubmit = confirm(`파트너회원신청을 진행하시겠습니까?\n\n상담일: ${formData.availableDate}\n상담시간: ${formData.availableTime}`);
     if (!confirmSubmit) {
       return;
     }
 
     setSubmitting(true);
+    console.log('🚀 API 호출 시작');
     try {
+      // PWA 환경에서 인증 토큰 확인
+      let authHeaders: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+
+      // PWA 환경에서 AsyncStorage에서 토큰 가져오기
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const pwaAuthToken = localStorage.getItem('pwaAuthToken');
+          if (pwaAuthToken) {
+            authHeaders['Authorization'] = `Bearer ${pwaAuthToken}`;
+            console.log('🔑 PWA 인증 토큰 사용:', pwaAuthToken);
+          } else {
+            console.log('⚠️ PWA 토큰이 없음 - 쿠키 인증만 사용');
+          }
+        } catch (error) {
+          console.log('PWA 토큰 가져오기 실패:', error);
+        }
+      }
+
       const response = await fetch('/api/partner/apply', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
+        credentials: 'include', // 쿠키 포함하여 인증 정보 전달
         body: JSON.stringify({
           availableDate: formData.availableDate,
           availableTime: formData.availableTime,
@@ -130,32 +180,71 @@ const PartnerApplyPage = () => {
       });
 
       const result = await response.json();
+      console.log('📡 파트너신청 API 응답:', result);
 
       if (result.success) {
+        // API 성공 시 실제 업데이트된 상태 확인
+        console.log('✅ 파트너신청 성공 - 응답 데이터:', result);
+        if (result.application) {
+          console.log('📋 신청 ID:', result.application.id);
+          console.log('📊 신청 상태:', result.application.status);
+        }
         // 성공 메시지를 더 친근하게 표시
-        const successMessage = `🎉 ${user?.name}님의 파트너신청이 완료되었습니다!
+        const successMessage = `🎉 ${user?.name}님의 파트너회원신청이 완료되었습니다!
         
 관리자 상담 후 승인 처리됩니다.
 1-2일 내에 연락드리겠습니다.`;
         
-        alert(successMessage);
+        // 웹과 PWA 동일하게 처리 - 모달 후 즉시 이동
+        setModalMessage(successMessage);
+        setShowSuccessModal(true);
         
-        // 부모 창 새로고침 후 창 닫기
-        if (window.opener && !window.opener.closed) {
-          window.opener.location.reload();
+        // alert 확인 후 즉시 페이지 이동 (웹과 PWA 동일)
+        if (window.parent !== window) {
+          // PWA 환경 - 부모 창에도 이동 알림
+          window.parent.postMessage({ 
+            type: 'PWA_NAVIGATE', 
+            url: '/member'
+          }, '*');
+          console.log('📤 PWA에서 부모 창에 /member 이동 알림');
         }
-        window.close();
+        
+        // 즉시 페이지 이동 (웹과 PWA 동일)
+        console.log('🔄 /member 페이지로 즉시 이동');
+        window.location.href = '/member';
       } else {
-        console.error('파트너신청 실패:', result.error);
-        alert(result.error || '파트너신청에 실패했습니다. 잠시 후 다시 시도해주세요.');
+        console.error('파트너회원신청 실패:', result.error);
+        const errorMessage = result.error || '파트너회원신청에 실패했습니다. 잠시 후 다시 시도해주세요.';
+        
+        // iframe 환경에서는 부모 창에서 에러 alert 표시
+        if (window.parent !== window) {
+          window.parent.postMessage({ 
+            type: 'PWA_ERROR_ALERT', 
+            message: errorMessage
+          }, '*');
+        } else {
+          setModalMessage(errorMessage);
+          setShowErrorModal(true);
+        }
       }
     } catch (error) {
-      console.error('파트너신청 오류:', error);
-      alert('파트너신청 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      console.error('파트너회원신청 오류:', error);
+      let errorMessage = '파트너회원신청 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
       
       // 네트워크 오류인 경우 재시도 안내
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        alert('네트워크 연결을 확인하고 다시 시도해주세요.');
+        errorMessage = '네트워크 연결을 확인하고 다시 시도해주세요.';
+      }
+      
+      // iframe 환경에서는 부모 창에서 에러 alert 표시
+      if (window.parent !== window) {
+        window.parent.postMessage({ 
+          type: 'PWA_ERROR_ALERT', 
+          message: errorMessage
+        }, '*');
+      } else {
+        setModalMessage(errorMessage);
+        setShowErrorModal(true);
       }
     } finally {
       setSubmitting(false);
@@ -182,7 +271,11 @@ const PartnerApplyPage = () => {
               <div className="text-6xl mb-4">⚠️</div>
               <p className="text-red-600 mb-4">{error}</p>
               <button 
-                onClick={() => window.location.href = '/login'}
+                onClick={() => {
+                  // PWA 환경 감지하여 적절한 로그인 페이지로 이동
+                  const isPwaEnvironment = window.parent !== window || window.location.pathname.includes('/pwa-');
+                  window.location.href = isPwaEnvironment ? '/pwa-login' : '/login';
+                }}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
               >
                 로그인하기
@@ -199,14 +292,14 @@ const PartnerApplyPage = () => {
     );
   }
 
-  // 이미 파트너신청을 한 경우
+  // 이미 파트너회원신청을 한 경우
   if (user.partnerStatus !== 'NOT_APPLIED') {
     const getStatusMessage = (status: string) => {
       switch (status) {
         case 'PARTNER_APPLIED':
           return {
             title: '신청 완료',
-            message: '파트너신청이 완료되었습니다. 관리자 상담 후 승인 처리됩니다.',
+            message: '파트너회원신청이 완료되었습니다. 관리자 상담 후 승인 처리됩니다.',
             icon: '📋'
           };
         case 'APPROVED':
@@ -218,7 +311,7 @@ const PartnerApplyPage = () => {
         default:
           return {
             title: '처리 중',
-            message: '파트너신청이 처리 중입니다. 잠시만 기다려주세요.',
+            message: '파트너회원신청이 처리 중입니다. 잠시만 기다려주세요.',
             icon: '⏳'
           };
       }
@@ -235,7 +328,19 @@ const PartnerApplyPage = () => {
             {statusInfo.message}
           </p>
           <button
-            onClick={() => window.close()}
+            onClick={() => {
+              console.log('창닫기 버튼 클릭됨');
+              // iframe 환경에서는 부모 창으로 메시지 전송
+              if (window.parent !== window) {
+                window.parent.postMessage({ 
+                  type: 'PWA_CLOSE_WINDOW' 
+                }, '*');
+                console.log('부모 창에 창닫기 요청 전송');
+              } else {
+                // 일반 웹 환경에서는 window.close() 사용
+                window.close();
+              }
+            }}
             className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
           >
             창 닫기
@@ -255,17 +360,17 @@ const PartnerApplyPage = () => {
       >
         {/* 헤더 */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">🤝 파트너신청</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">🤝 파트너회원신청</h1>
           <p className="text-gray-600 text-sm mb-2">
             {user.name}님의 상담가능 일정을 알려주세요
           </p>
           <div className="text-xs text-blue-600 bg-blue-50 px-3 py-2 rounded-lg">
-            💡 파트너가 되시면 매월 안정적인 수익을 창출하실 수 있습니다
+            💡 누적수익 자동화시스템으로 새로운 수익!
           </div>
         </div>
 
-        {/* 파트너신청 폼 */}
-        <form onSubmit={handleSubmit} className="space-y-6 flex-1">
+        {/* 파트너회원신청 폼 */}
+        <form className="space-y-6 flex-1">
           {/* 상담가능 날짜 */}
           <div>
             <label htmlFor="availableDate" className="block text-sm font-medium text-gray-700 mb-2">
@@ -329,18 +434,6 @@ const PartnerApplyPage = () => {
             </select>
           </div>
 
-          {/* 추천인코드 표시 */}
-          <div>
-            <label htmlFor="referralCode" className="block text-sm font-medium text-gray-700 mb-2">
-              추천인코드
-            </label>
-            <div className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
-              {user?.referralCode || 'SP001'}
-            </div>
-            <p className="text-xs text-blue-600 mt-1">
-              💡 회원가입 시 입력한 추천인코드입니다. 입력하지 않은 경우 기본값이 표시됩니다.
-            </p>
-          </div>
 
           {/* 추가 메모 */}
           <div className="flex-1">
@@ -364,9 +457,22 @@ const PartnerApplyPage = () => {
 
           {/* 신청 버튼 */}
           <button
-            type="submit"
+            type="button"
             disabled={submitting}
-            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold py-4 px-6 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-300 transform hover:scale-105 shadow-lg disabled:opacity-60 disabled:transform-none disabled:cursor-not-allowed"
+            onClick={async (e) => {
+              console.log('🎯 파트너신청 버튼 클릭됨!');
+              console.log('submitting 상태:', submitting);
+              console.log('버튼 클릭 이벤트:', e);
+              console.log('현재 폼 데이터:', formData);
+              
+              // 폼 제출 처리
+              await handleSubmit(e);
+            }}
+            className={`w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold py-4 px-6 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-300 transform hover:scale-105 shadow-lg relative z-50 ${
+              submitting 
+                ? 'opacity-60 transform-none cursor-not-allowed' 
+                : 'hover:from-orange-600 hover:to-orange-700 hover:scale-105'
+            }`}
           >
             {submitting ? (
               <div className="flex items-center justify-center">
@@ -374,7 +480,7 @@ const PartnerApplyPage = () => {
                 신청 중...
               </div>
             ) : (
-              '🎯 파트너신청 완료하기'
+              '🎯 파트너회원신청 완료하기'
             )}
           </button>
         </form>
@@ -393,10 +499,32 @@ const PartnerApplyPage = () => {
         {/* 하단 안내 */}
         <div className="mt-6 text-center space-y-2">
           <button
-            onClick={() => window.close()}
+            onClick={() => {
+              console.log('취소하고 창닫기 버튼 클릭됨');
+              // iframe 환경에서는 부모 창으로 메시지 전송
+              if (window.parent !== window) {
+                window.parent.postMessage({ 
+                  type: 'PWA_CLOSE_WINDOW' 
+                }, '*');
+                console.log('부모 창에 창닫기 요청 전송');
+              } else {
+                // 일반 웹 환경에서는 window.close() 사용
+                window.close();
+              }
+            }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
-                window.close();
+                console.log('취소하고 창닫기 버튼 키보드 클릭됨');
+                // iframe 환경에서는 부모 창으로 메시지 전송
+                if (window.parent !== window) {
+                  window.parent.postMessage({ 
+                    type: 'PWA_CLOSE_WINDOW' 
+                  }, '*');
+                  console.log('부모 창에 창닫기 요청 전송');
+                } else {
+                  // 일반 웹 환경에서는 window.close() 사용
+                  window.close();
+                }
               }
             }}
             className="text-sm text-gray-500 hover:text-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded px-2 py-1"
@@ -406,6 +534,37 @@ const PartnerApplyPage = () => {
           </button>
         </div>
       </motion.div>
+
+      {/* 모달들 */}
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        message={modalMessage}
+        onConfirm={() => {
+          // 성공 모달 확인 후 페이지 이동
+          if (window.parent !== window) {
+            // PWA 환경 - 부모 창에도 이동 알림
+            window.parent.postMessage({ 
+              type: 'PWA_NAVIGATE', 
+              path: '/member' 
+            }, '*');
+          }
+          router.push('/member');
+        }}
+        confirmText="확인"
+      />
+
+      <ErrorModal
+        isOpen={showErrorModal}
+        onClose={() => setShowErrorModal(false)}
+        message={modalMessage}
+      />
+
+      <WarningModal
+        isOpen={showWarningModal}
+        onClose={() => setShowWarningModal(false)}
+        message={modalMessage}
+      />
     </div>
   );
 };

@@ -1,19 +1,49 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import Link from 'next/link';
-import { 
-  Gift, 
-  Home,
-  Calculator,
-  User,
-  Menu
-} from 'lucide-react';
 import { getLevelIcon } from '@/lib/levelIcons';
+import { BottomTab } from '../(member)/member/_components/BottomTab';
 
 const BenefitsPage = () => {
-  const [activeTab] = useState('benefits');
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState('benefits');
+
+  // 하단 탭 변경 핸들러
+  const handleTabChange = (tabId: string) => {
+    console.log('📱 PWA 하단 탭 변경:', tabId);
+    setActiveTab(tabId);
+    
+    // PWA 환경에서 부모 창에 탭 변경 알림
+    if (window.parent !== window) {
+      window.parent.postMessage({ 
+        type: 'PWA_TAB_CHANGE', 
+        tabId: tabId 
+      }, '*');
+    }
+
+    // 실제 페이지 이동 로직
+    switch (tabId) {
+      case 'home':
+        router.push('/member');
+        break;
+      case 'benefits':
+        router.push('/benefits');
+        break;
+      case 'settlement':
+        router.push('/settlement');
+        break;
+      case 'partner':
+        router.push('/partner');
+        break;
+      case 'more':
+        router.push('/more');
+        break;
+      default:
+        console.log('알 수 없는 탭:', tabId);
+    }
+  };
   const [user, setUser] = useState<{
     id: string;
     name: string;
@@ -172,7 +202,7 @@ const BenefitsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[color:var(--bg)] text-[color:var(--text)] pb-20">
+    <div className="min-h-screen bg-[color:var(--bg)] text-[color:var(--text)] pb-20 pt-4">
              {/* 헤더 */}
        <header className="bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 border-b border-slate-200/40">
                    <div className="h-20 px-4 flex items-center justify-center pt-2">
@@ -191,7 +221,7 @@ const BenefitsPage = () => {
          </div>
                                </header>
 
-                              <main className="px-4 py-4 space-y-4">
+                              <main className="px-4 py-6 space-y-6">
                    {/* 현재 사용자의 다음 단계 보너스 */}
           {currentUserBonus && (
             <section>
@@ -311,47 +341,11 @@ const BenefitsPage = () => {
 
                                 </main>
 
-        {/* 하단 탭 */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[color:var(--card)] border-t border-slate-200/40 pb-safe">
-        <div className="flex items-center justify-around px-4 py-2">
-          {[
-            { id: 'home', label: '홈', icon: Home },
-            { id: 'benefits', label: '혜택', icon: Gift },
-            { id: 'settlement', label: '정산', icon: Calculator },
-            { id: 'partner', label: '파트너', icon: User },
-            { id: 'more', label: '전체', icon: Menu },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = tab.id === activeTab;
-            
-            return (
-              <Link
-                key={tab.id}
-                href={tab.id === 'home' ? '/mypage' : `/${tab.id}`}
-                className="flex flex-col items-center justify-center py-2 px-3 min-h-[44px] min-w-[44px] rounded-[var(--radius-btn)] transition-colors"
-                aria-label={tab.label}
-              >
-                <Icon
-                  className={`w-5 h-5 mb-1 ${
-                    isActive
-                      ? 'text-[color:var(--primary)]'
-                      : 'text-[color:var(--muted)]'
-                  }`}
-                />
-                <span
-                  className={`text-xs font-medium ${
-                    isActive
-                      ? 'text-[color:var(--primary)]'
-                      : 'text-[color:var(--muted)]'
-                  }`}
-                >
-                  {tab.label}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+        {/* 하단 탭 - PWA 전용 기능 유지 */}
+      <BottomTab
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+      />
     </div>
   );
 };

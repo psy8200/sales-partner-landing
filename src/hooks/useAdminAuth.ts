@@ -72,6 +72,15 @@ export function useAdminAuth(): UseAdminAuthReturn {
         sessionStorage.setItem('adminUser', JSON.stringify(data.admin));
         sessionStorage.setItem('adminSessionToken', data.sessionToken);
         
+        // 서버에서 제공한 sessionStorage 스크립트 실행 (추가 보장)
+        if (data.sessionStorageScript && typeof window !== 'undefined') {
+          try {
+            eval(data.sessionStorageScript);
+          } catch (error) {
+            console.error('sessionStorage 스크립트 실행 실패:', error);
+          }
+        }
+        
         setUser(data.admin);
         return true;
       } else {

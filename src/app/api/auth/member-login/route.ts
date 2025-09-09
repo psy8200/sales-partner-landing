@@ -112,6 +112,24 @@ export async function POST(req: Request) {
       expires: new Date(Date.now() + NINETY_DAYS * 1000),
     });
 
+    // 일반 세션 쿠키도 설정 (PWA 페이지에서 인증 확인용)
+    res.cookies.set('session', sessionToken, {
+      httpOnly: true,
+      path: '/', // 전체 경로에서 사용 가능
+      sameSite: 'lax',
+      maxAge: NINETY_DAYS,
+      expires: new Date(Date.now() + NINETY_DAYS * 1000),
+    });
+
+    // 일반 authToken 쿠키도 설정
+    res.cookies.set('authToken', user.id, {
+      httpOnly: true,
+      path: '/', // 전체 경로에서 사용 가능
+      sameSite: 'lax',
+      maxAge: NINETY_DAYS,
+      expires: new Date(Date.now() + NINETY_DAYS * 1000),
+    });
+
     console.log('📱 [PWA 로그인] 로그인 성공:', { userId: user.id, platform: 'pwa' });
 
     return res;

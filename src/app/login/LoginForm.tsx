@@ -1,11 +1,15 @@
 'use client'
 
 import { useState } from 'react'
+import LoginModal from '@/components/LoginModal'
 
 export default function LoginForm() {
   const [formData, setFormData] = useState({ id: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalType, setModalType] = useState<'error' | 'notfound' | 'success'>('error');
+  const [modalMessage, setModalMessage] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,28 +36,72 @@ export default function LoginForm() {
       if (res.ok) {
         // 관리자 계정인지 확인
         if (result.user && (result.user.role === 'ADMIN' || result.user.role === 'MANAGER')) {
-          alert('관리자로 로그인되었습니다. 어드민 페이지로 이동합니다.');
-          window.location.href = '/admin';
+          setModalType('success');
+          setModalMessage('관리자로 로그인되었습니다. 어드민 페이지로 이동합니다.');
+          setModalOpen(true);
+          setTimeout(() => {
+            window.location.href = '/admin';
+          }, 1500);
         } else {
-          alert('로그인되었습니다. 마이페이지로 이동합니다.');
-          window.location.href = '/mypage';
+          setModalType('success');
+          setModalMessage('로그인되었습니다. 마이페이지로 이동합니다.');
+          setModalOpen(true);
+          setTimeout(() => {
+            window.location.href = '/mypage';
+          }, 1500);
         }
       } else {
         const errorMessage = result.error || '로그인에 실패했습니다.';
-        setError(errorMessage);
+        
+        // 404 오류인 경우 (회원정보 없음)
+        if (res.status === 404) {
+          setModalType('notfound');
+          setModalMessage('입력하신 전화번호로 등록된 계정이 없습니다.');
+        } else {
+          setModalType('error');
+          setModalMessage(errorMessage);
+        }
+        
+        setModalOpen(true);
         console.error('로그인 실패:', errorMessage);
       }
     } catch (e) {
       const errorMessage = '로그인 중 오류가 발생했습니다.';
-      setError(errorMessage);
+      setModalType('error');
+      setModalMessage(errorMessage);
+      setModalOpen(true);
       console.error('로그인 오류:', e);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleModalClose = () => {
+    setModalOpen(false);
+    setError(null);
+  };
+
+  const handleSignup = () => {
+    setModalOpen(false);
+    window.location.href = '/signup';
+  };
+
+  const handleRetry = () => {
+    setModalOpen(false);
+    setError(null);
+  };
+
   return (
     <>
+      <LoginModal
+        isOpen={modalOpen}
+        onClose={handleModalClose}
+        onSignup={handleSignup}
+        onRetry={handleRetry}
+        message={modalMessage}
+        type={modalType}
+      />
+      
       <form onSubmit={handleSubmit} className="space-y-8">
         <div>
           <div className="flex justify-between items-center mb-2">

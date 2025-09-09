@@ -11,6 +11,9 @@ import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showAddItemForm, setShowAddItemForm] = useState(false);
+  const [newItemTitle, setNewItemTitle] = useState('');
+  const [allItemProducts, setAllItemProducts] = useState<{name: string, href: string, icon: string}[]>([]);
   const pathname = usePathname();
   const { user, loading } = useAdminAuth();
 
@@ -43,6 +46,118 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // 새 상품 추가 함수 (서버 기반)
+  const handleAddNewItem = async () => {
+    if (!newItemTitle.trim()) {
+      alert('상품 제목을 입력해주세요.');
+      return;
+    }
+
+    try {
+      // 상품명을 URL 안전한 영어 형태로 변환
+      const koreanToEnglish: { [key: string]: string } = {
+        '보험': 'insurance', '상담': 'consultation', '신청': 'application',
+        '렌탈': 'rental', '상품': 'product', '인터넷': 'internet',
+        'TV': 'tv', '결합': 'combo', '상조': 'funeral',
+        '몰': 'mall', '분양': 'sale', '즉시': 'instant',
+        '파트너': 'partner', '가입': 'join', '쇼핑': 'shopping',
+        '구매': 'purchase', '신청': 'apply'
+      };
+      
+      let safeItemName = newItemTitle.trim();
+      
+      // 한글을 영어로 변환
+      Object.keys(koreanToEnglish).forEach(korean => {
+        safeItemName = safeItemName.replace(new RegExp(korean, 'g'), koreanToEnglish[korean]);
+      });
+      
+      // 특수문자 제거하고 소문자로 변환
+      safeItemName = safeItemName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+      
+      // 서버에 새 아이템 추가
+      const response = await fetch('/api/admin/sidebar-items', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newItemTitle.trim(),
+          href: `/admin/items/${safeItemName}`,
+          icon: '🆕',
+          isCustom: true,
+          order: allItemProducts.length + 1
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || '서버 저장에 실패했습니다.');
+      }
+
+      // 서버에서 업데이트된 데이터 다시 로드
+      await loadSidebarItems();
+      
+      setNewItemTitle('');
+      setShowAddItemForm(false);
+      
+      alert('새 상품 페이지가 성공적으로 생성되었습니다!');
+    } catch (error) {
+      console.error('새 상품 추가 오류:', error);
+      alert(error instanceof Error ? error.message : '새 상품 추가 중 오류가 발생했습니다.');
+    }
+  };
+
+
+  // 서버에서 모든 상품 로드 함수
+  const loadSidebarItems = async () => {
+    try {
+      const response = await fetch('/api/admin/sidebar-items');
+      const result = await response.json();
+      
+      if (result.success && result.data.length > 0) {
+        // 서버 데이터를 order 순으로 정렬
+        const sortedItems = result.data
+          .sort((a: any, b: any) => a.order - b.order)
+          .map((item: any) => ({
+            name: item.name,
+            href: item.href,
+            icon: item.icon,
+            id: item.id,
+            isCustom: item.isCustom
+          }));
+        setAllItemProducts(sortedItems);
+      } else {
+        // 서버에 데이터가 없으면 빈 배열
+        setAllItemProducts([]);
+      }
+    } catch (error) {
+      console.error('사이드바 아이템 로드 오류:', error);
+      setAllItemProducts([]);
+    }
+  };
+
+  // 컴포넌트 마운트 시 서버에서 모든 상품 로드
+  useEffect(() => {
+    loadSidebarItems();
+  }, []);
+
+  // 새 창으로부터 메시지 수신하여 사이드바 업데이트
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === 'ALL_ITEMS_UPDATED') {
+        // 제목 수정 페이지에서 전달받은 모든 상품들로 업데이트
+        setAllItemProducts(event.data.items);
+        
+        // localStorage에 통합된 상품 목록 저장
+        localStorage.setItem('allItemProducts', JSON.stringify(event.data.items));
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
   // 사이드바 메뉴 항목들 (개발가이드 예시)
   const sideMenus: Record<string, { name: string; href: string; icon?: string }[]> = {
     '개발가이드': [
@@ -60,6 +175,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     '관리자관리': [
       { name: '관리자목록', href: '/admin/admins', icon: '👥' },
       { name: '접속로그', href: '/admin/admins/logs', icon: '📋' },
+      { name: '담당자관리', href: '/admin/admins/managers', icon: '👨‍💼' },
     ],
     '상담/계약관리': [
       { name: '상담신청관리', href: '/admin/contracts/requests', icon: '📥' },
@@ -75,13 +191,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
       { name: '정산 내역', href: '/admin/settlements' },
     ],
     '아이템관리': [
-      { name: '아이템 목록', href: '/admin/items', icon: '🧩' },
-      { name: '보험상담신청', href: '/admin/items/insurance', icon: '🛡️' },
-      { name: '렌탈상품신청', href: '/admin/items/rental', icon: '📦' },
-      { name: '인터넷+TV 결합상품신청', href: '/admin/items/internet-tv', icon: '📺' },
-      { name: '상조결합상품신청', href: '/admin/items/funeral', icon: '⚰️' },
-      { name: '렌탈몰분양신청', href: '/admin/items/rental-mall', icon: '🏪' },
-      { name: '+상품추가하기', href: '/admin/items/new', icon: '➕' },
+      { name: '아이템관리홈', href: '/admin/items', icon: '🧩' },
     ],
   };
 
@@ -94,6 +204,14 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     const activeMain = mainMenu.find(m => pathname?.startsWith(m.href));
     const key = activeMain ? activeMain.name : '개발가이드';
     const base = sideMenus[key] || [];
+    
+    // 아이템관리인 경우 서버에서 로드한 상품들 반환
+    if (key === '아이템관리') {
+      // allItemProducts에서 "아이템관리홈"을 제외하고 합치기 (중복 방지)
+      const filteredProducts = allItemProducts.filter(item => item.name !== '아이템관리홈');
+      return [...base, ...filteredProducts];
+    }
+    
     return base;
   }
 
@@ -246,19 +364,66 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
                         ? 'bg-blue-100 text-blue-700'
                         : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
                     }`}
-                    onClick={(e)=>{
-                      if (item.name.startsWith('+상품추가하기')) {
-                        e.preventDefault();
-                        if (typeof window !== 'undefined') {
-                          window.open(item.href, 'addItem', 'width=420,height=220');
-                        }
-                      }
-                    }}
                   >
                     <span className="mr-2 xl:mr-3">{item.icon}</span>
                     <span className="truncate">{item.name}</span>
                   </Link>
                 ))}
+                
+                {/* 새 상품 추가 폼 */}
+                {pathname?.startsWith('/admin/items') && (
+                  <div className="mt-4 p-2 border-t border-gray-200 space-y-2">
+                    {!showAddItemForm ? (
+                      <button
+                        onClick={() => setShowAddItemForm(true)}
+                        className="w-full flex items-center px-2 py-2 text-xs xl:text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
+                      >
+                        <span className="mr-2 xl:mr-3">➕</span>
+                        <span className="truncate">+상품추가하기</span>
+                      </button>
+                    ) : (
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={newItemTitle}
+                          onChange={(e) => setNewItemTitle(e.target.value)}
+                          placeholder="상품 제목을 입력하세요"
+                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                          autoFocus
+                        />
+                        <div className="flex space-x-1">
+                          <button
+                            onClick={handleAddNewItem}
+                            className="flex-1 px-2 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                          >
+                            추가하기
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowAddItemForm(false);
+                              setNewItemTitle('');
+                            }}
+                            className="flex-1 px-2 py-1 text-xs bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+                          >
+                            취소
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* 사이드바 제목 수정 버튼 */}
+                    <button
+                      onClick={() => {
+                        const editUrl = `/admin/items/edit-titles?items=${encodeURIComponent(JSON.stringify(allItemProducts))}`;
+                        window.open(editUrl, 'editTitles', 'width=600,height=500,scrollbars=yes,resizable=yes');
+                      }}
+                      className="w-full flex items-center px-2 py-2 text-xs xl:text-sm font-medium text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded-md transition-colors"
+                    >
+                      <span className="mr-2 xl:mr-3">✏️</span>
+                      <span className="truncate">사이드바제목수정</span>
+                    </button>
+                  </div>
+                )}
               </nav>
             </div>
           </div>

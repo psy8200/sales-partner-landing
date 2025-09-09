@@ -53,6 +53,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/stripe": "^8.0.416",
+    "@types/xlsx": "^0.0.35",
     "autoprefixer": "^10.4.14",
     "eslint": "^9",
     "eslint-config-next": "15.4.3",

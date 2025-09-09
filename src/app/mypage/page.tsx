@@ -12,13 +12,13 @@ import {
   Users, 
   MessageCircle, 
   Gift, 
-  Clock,
-  Home,
-  Menu
+  Clock
 } from 'lucide-react';
 
 import { getLevelIcon } from '@/lib/levelIcons';
 import { formatNumber } from '@/lib/utils';
+import PartnerOnlyModal from '@/components/PartnerOnlyModal';
+import { BottomTab } from '../(member)/member/_components/BottomTab';
 
 interface User {
   id: string;
@@ -69,16 +69,6 @@ interface Inquiry {
   answeredAt: string;
 }
 
-// 실제 활동 데이터 타입
-interface RealActivity {
-  id: string;
-  icon: string;
-  title: string;
-  subtitle: string;
-  amount: string;
-  isPositive: boolean;
-  date: string;
-}
 
 export default function MyPage() {
   const router = useRouter();
@@ -91,13 +81,48 @@ export default function MyPage() {
   });
   const [statsData, setStatsData] = useState<StatsData>({});
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
-  const [activities, setActivities] = useState<RealActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showPartnerModal, setShowPartnerModal] = useState(false);
   const [newInquiry, setNewInquiry] = useState({ title: '', content: '' });
 
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [activeTab, setActiveTab] = useState('home');
+
+  // 하단 탭 변경 핸들러
+  const handleTabChange = (tabId: string) => {
+    console.log('📱 PWA 하단 탭 변경:', tabId);
+    setActiveTab(tabId);
+    
+    // PWA 환경에서 부모 창에 탭 변경 알림
+    if (window.parent !== window) {
+      window.parent.postMessage({ 
+        type: 'PWA_TAB_CHANGE', 
+        tabId: tabId 
+      }, '*');
+    }
+
+    // 실제 페이지 이동 로직
+    switch (tabId) {
+      case 'home':
+        router.push('/member');
+        break;
+      case 'benefits':
+        router.push('/benefits');
+        break;
+      case 'settlement':
+        router.push('/settlement');
+        break;
+      case 'partner':
+        router.push('/partner');
+        break;
+      case 'more':
+        router.push('/more');
+        break;
+      default:
+        console.log('알 수 없는 탭:', tabId);
+    }
+  };
 
   // 사용자 정보 조회
   useEffect(() => {
@@ -108,7 +133,9 @@ export default function MyPage() {
           const data = await response.json();
           setUser(data.user); // user 객체 안에서 사용자 데이터 가져오기
         } else {
-          router.push('/login');
+          // PWA 환경 감지하여 적절한 로그인 페이지로 이동
+          const isPwaEnvironment = window.parent !== window || window.location.pathname.includes('/pwa-');
+          router.push(isPwaEnvironment ? '/pwa-login' : '/login');
         }
       } catch (error) {
         console.error('사용자 정보 조회 실패:', error);
@@ -157,24 +184,6 @@ export default function MyPage() {
     fetchStatsData();
   }, [user]);
 
-  // 활동 데이터 조회
-  useEffect(() => {
-    if (!user) return;
-
-    const fetchActivities = async () => {
-      try {
-        const response = await fetch('/api/mypage/activities');
-        if (response.ok) {
-          const data = await response.json();
-          setActivities(data.activities || []);
-        }
-      } catch (error) {
-        console.error('활동 데이터 조회 실패:', error);
-      }
-    };
-
-    fetchActivities();
-  }, [user]);
 
   // 문의 내역 조회
   useEffect(() => {
@@ -182,10 +191,26 @@ export default function MyPage() {
 
     const fetchInquiries = async () => {
       try {
+        console.log('=== 문의 내역 조회 시작 ===');
         const response = await fetch('/api/inquiries');
+        console.log('문의 API 응답 상태:', response.status);
+        
         if (response.ok) {
           const data = await response.json();
-          setInquiries(data.inquiries || []);
+          console.log('🔍 문의 API 응답 데이터:', data);
+          console.log('🔍 data.data:', data.data);
+          console.log('🔍 data.data?.inquiries:', data.data?.inquiries);
+          
+          // API 응답 구조: { success: true, data: { inquiries: [...] } }
+          const inquiries = data.data?.inquiries || [];
+          console.log('🔍 최종 inquiries 배열:', inquiries);
+          console.log('🔍 inquiries 길이:', inquiries.length);
+          
+          setInquiries(inquiries);
+          console.log('✅ 문의 목록 설정 완료:', inquiries);
+        } else {
+          const errorData = await response.json();
+          console.error('문의 내역 조회 실패:', response.status, errorData);
         }
       } catch (error) {
         console.error('문의 내역 조회 실패:', error);
@@ -210,18 +235,33 @@ export default function MyPage() {
       });
 
       if (response.ok) {
+        const result = await response.json();
+        console.log('문의 제출 성공:', result);
+        
+        // 폼 초기화
         setNewInquiry({ title: '', content: '' });
         setSubmitStatus('success');
         
-        // 문의 목록 새로고침
+        // 즉시 문의 목록 새로고침
         const inquiriesResponse = await fetch('/api/inquiries');
         if (inquiriesResponse.ok) {
           const data = await inquiriesResponse.json();
-          setInquiries(data.inquiries || []);
+          // API 응답 구조: { success: true, data: { inquiries: [...] } }
+          const inquiries = data.data?.inquiries || [];
+          setInquiries(inquiries);
+          console.log('문의 목록 업데이트됨:', inquiries);
+          
+          // 문의 목록으로 스크롤 이동
+          setTimeout(() => {
+            const inquiryList = document.querySelector('[data-inquiry-list]');
+            if (inquiryList) {
+              inquiryList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }, 100);
         }
         
-        // 3초 후 성공 상태 초기화
-        setTimeout(() => setSubmitStatus('idle'), 3000);
+        // 2초 후 성공 상태 초기화
+        setTimeout(() => setSubmitStatus('idle'), 2000);
       } else {
         setSubmitStatus('error');
         setTimeout(() => setSubmitStatus('idle'), 3000);
@@ -265,132 +305,260 @@ export default function MyPage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-[color:var(--bg)] text-[color:var(--text)] pb-24">
-      {/* 상단 여백 추가 */}
-      <div className="h-4"></div>
-      
+    <div className="min-h-screen bg-[color:var(--bg)] text-[color:var(--text)] pb-24 pt-4">
       {/* 앱바 */}
       <header className="bg-[color:var(--bg)] border-b border-slate-200/40">
-        <div className="px-4 py-4">
-          {/* 환영 메시지 */}
-          <div className="mb-3">
-            <h1 className="text-[color:var(--text)] font-semibold text-lg">
-              <span className="text-2xl font-bold">{user?.name || '사용자'}</span>님 환영합니다.
-            </h1>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 space-y-2 sm:space-y-0 mt-2">
-              <p className="text-sm text-green-600 font-medium">
-                {user?.role === 'MEMBER' ? '파트너' : '일반회원'}
-                {user?.partnerStatus === 'APPROVED' && ' • 승인완료'}
-              </p>
-              {user?.role === 'GENERAL' && (
-                <button
-                  onClick={() => router.push('/partner-apply')}
-                  className="bg-[color:var(--primary)] text-[color:var(--primary-foreground)] text-sm px-4 py-2 rounded-[var(--radius-btn)] font-medium hover:opacity-90 transition-opacity w-full sm:w-auto"
-                >
-                  파트너신청
-                </button>
-              )}
+        <div className="px-4 py-2">
+          {/* 사용자 정보 - 밝은 하늘색 그라데이션 */}
+          <div className="mb-0 p-4 bg-gradient-to-r from-sky-50 to-blue-50 rounded-xl border border-sky-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-xl font-semibold text-gray-900 mb-1">
+                  {user?.name || '사용자'}님 <span className="text-sm font-normal">환영합니다</span>
+                </h1>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1">
+                      {user?.role === 'MEMBER' ? (
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      ) : (
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      )}
+                      <span className={`text-sm ${user?.role === 'MEMBER' ? 'text-green-600' : 'text-blue-600'}`}>
+                        {user?.role === 'MEMBER' ? '파트너 회원' : '일반 회원'}
+                      </span>
+                    </div>
+                    {user?.partnerStatus === 'APPROVED' && (
+                      <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                        승인완료
+                      </span>
+                    )}
+                  </div>
+                  {user?.role === 'GENERAL' && user?.partnerStatus === 'PARTNER_APPLIED' && (
+                    <span className="text-xs font-bold text-amber-600">
+                      파트너승인대기중
+                    </span>
+                  )}
+                </div>
+              </div>
+              
+              <div className="text-right">
+                {user?.role === 'GENERAL' && user?.partnerStatus === 'NOT_APPLIED' && (
+                  <button
+                    onClick={() => router.push('/partner-apply')}
+                    className="bg-blue-600 text-white px-3 py-1.5 rounded-md text-xs font-medium hover:bg-blue-700 transition-colors"
+                  >
+                    파트너회원으로<br />신청/전환하기
+                  </button>
+                )}
+                {user?.role === 'GENERAL' && user?.partnerStatus === 'PARTNER_APPLIED' && (
+                  <div className="text-right">
+                    <div className="text-sm font-bold text-gray-900">
+                      나의 기준포인트
+                    </div>
+                    <div className="text-lg font-bold text-blue-600">
+                      {formatNumber(user?.finalPoints || 0)}P
+                    </div>
+                  </div>
+                )}
+                {user?.role === 'MEMBER' && (
+                  <div className="bg-green-100 text-green-700 px-4 py-2 rounded-lg text-sm font-medium text-center">
+                    파트너 회원
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* 결정포인트 정보 */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
-            <p className="text-[color:var(--text)] text-sm font-medium text-center">
-              나의 기준포인트: <span className="text-xl font-bold text-blue-600">{formatNumber(user?.finalPoints || 0)}</span>P
-            </p>
-          </div>
         </div>
       </header>
 
       {/* 메인 콘텐츠 */}
-      <main className="px-4 py-4 space-y-4">
+      <main className="px-4 py-2 pt-2 space-y-1">
 
         {/* 총 지급수수료 박스 */}
-        {user?.role === 'MEMBER' && (
-          <div className="bg-[color:var(--card)] border border-slate-200/40 rounded-[var(--radius-card)] shadow-sm p-4">
-            <div className="flex justify-between items-center">
-              <p className="text-[color:var(--text)] text-base font-semibold">총 지급수수료</p>
+        <div 
+          className={`bg-[color:var(--card)] border border-slate-200/40 rounded-[var(--radius-card)] shadow-sm p-4 transition-all duration-200 ${
+            user?.role === 'MEMBER' 
+              ? 'opacity-100' 
+              : 'opacity-40 cursor-pointer hover:opacity-60'
+          }`}
+          onClick={() => {
+            if (user?.role !== 'MEMBER') {
+              setShowPartnerModal(true);
+            }
+          }}
+        >
+          <div className="flex justify-between items-center">
+            <p className="text-[color:var(--text)] text-base font-semibold">이번달 지급수익</p>
+            <div className="text-right">
+              <span className="text-[color:var(--text)] text-xl font-bold tabular-nums">
+                {user?.role === 'MEMBER' 
+                  ? formatNumber((pointSummary.total || user?.points || 0) + (statsData?.monthlyExpectedIncome?.value || 0) + inquiries.filter(i => i.status === 'PENDING').length)
+                  : '0'
+                }P
+              </span>
+            </div>
+          </div>
+          {user?.role !== 'MEMBER' && (
+            <div className="mt-2 text-xs text-blue-600 font-medium">
+              💡 파트너회원 전용 기능
+            </div>
+          )}
+        </div>
+
+        {/* 요약 카드 */}
+        <div 
+          className={`bg-[color:var(--card)] border border-slate-200/40 rounded-[var(--radius-card)] shadow-sm p-4 transition-all duration-200 ${
+            user?.role === 'MEMBER' 
+              ? 'opacity-100' 
+              : 'opacity-40 cursor-pointer hover:opacity-60'
+          }`}
+          onClick={() => {
+            if (user?.role !== 'MEMBER') {
+              setShowPartnerModal(true);
+            }
+          }}
+        >
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            {/* 캐쉬백 */}
+            <div>
+              <p className="text-blue-600 text-sm mb-1 font-medium">캐쉬백</p>
               <div className="text-right">
-                <span className="text-[color:var(--text)] text-xl font-bold tabular-nums">
-                  {formatNumber((pointSummary.total || user?.points || 0) + (statsData?.monthlyExpectedIncome?.value || 0) + inquiries.filter(i => i.status === 'PENDING').length)}P
+                <span className="text-[color:var(--text)] text-lg font-bold tabular-nums">
+                  {user?.role === 'MEMBER' 
+                    ? formatNumber(pointSummary.total || user?.points || 0)
+                    : '0'
+                  }P
+                </span>
+              </div>
+            </div>
+
+            {/* 트리수당 */}
+            <div>
+              <p className="text-green-600 text-sm mb-1 font-medium">트리수당</p>
+              <div className="text-right">
+                <span className="text-[color:var(--text)] text-lg font-bold tabular-nums">
+                  {user?.role === 'MEMBER' 
+                    ? formatNumber(statsData?.monthlyExpectedIncome?.value || 0)
+                    : '0'
+                  }P
+                </span>
+              </div>
+            </div>
+
+            {/* 추천수당 */}
+            <div>
+              <p className="text-purple-600 text-sm mb-1 font-medium">추천수당</p>
+              <div className="text-right">
+                <span className="text-[color:var(--text)] text-lg font-bold tabular-nums">
+                  {user?.role === 'MEMBER' 
+                    ? formatNumber(inquiries.filter(i => i.status === 'PENDING').length)
+                    : '0'
+                  }P
+                </span>
+              </div>
+            </div>
+
+            {/* 추천매칭 */}
+            <div>
+              <p className="text-orange-600 text-sm mb-1 font-medium">추천매칭</p>
+              <div className="text-right">
+                <span className="text-[color:var(--text)] text-lg font-bold tabular-nums">
+                  0P
                 </span>
               </div>
             </div>
           </div>
-        )}
-
-        {/* 요약 카드 */}
-        {user?.role === 'MEMBER' && (
-          <div className="bg-[color:var(--card)] border border-slate-200/40 rounded-[var(--radius-card)] shadow-sm p-4">
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              {/* 캐쉬백 */}
-              <div>
-                <p className="text-blue-600 text-sm mb-1 font-medium">캐쉬백</p>
-                <div className="text-right">
-                  <span className="text-[color:var(--text)] text-lg font-bold tabular-nums">
-                    {formatNumber(pointSummary.total || user?.points || 0)}P
-                  </span>
-                </div>
-              </div>
-
-              {/* 트리수당 */}
-              <div>
-                <p className="text-green-600 text-sm mb-1 font-medium">트리수당</p>
-                <div className="text-right">
-                  <span className="text-[color:var(--text)] text-lg font-bold tabular-nums">
-                    {formatNumber(statsData?.monthlyExpectedIncome?.value || 0)}P
-                  </span>
-                </div>
-              </div>
-
-              {/* 추천수당 */}
-              <div>
-                <p className="text-purple-600 text-sm mb-1 font-medium">추천수당</p>
-                <div className="text-right">
-                  <span className="text-[color:var(--text)] text-lg font-bold tabular-nums">
-                    {formatNumber(inquiries.filter(i => i.status === 'PENDING').length)}P
-                  </span>
-                </div>
-              </div>
-
-              {/* 추천매칭 */}
-              <div>
-                <p className="text-orange-600 text-sm mb-1 font-medium">추천매칭</p>
-                <div className="text-right">
-                  <span className="text-[color:var(--text)] text-lg font-bold tabular-nums">
-                    0P
-                  </span>
-                </div>
-              </div>
+          {user?.role !== 'MEMBER' && (
+            <div className="text-center text-xs text-blue-600 font-medium">
+              💡 파트너회원 전용 기능
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
 
 
                           {/* 정보 카드 */}
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 gap-3">
-            <div className="bg-[color:var(--card)] border border-slate-200/40 rounded-[var(--radius-card)] shadow-sm p-4">
-              <p className="text-[color:var(--muted)] text-sm mb-1">총 누적수익</p>
+            <div 
+              className={`bg-[color:var(--card)] border border-slate-200/40 rounded-[var(--radius-card)] shadow-sm p-4 transition-all duration-200 ${
+                user?.role === 'MEMBER' 
+                  ? 'opacity-100' 
+                  : 'opacity-40 cursor-pointer hover:opacity-60'
+              }`}
+              onClick={() => {
+                if (user?.role !== 'MEMBER') {
+                  alert('파트너회원 전용 메뉴입니다.\n파트너회원으로 전환하시면 더 많은 혜택을 받으실 수 있습니다!');
+                }
+              }}
+            >
+              <p className="text-[color:var(--muted)] text-sm mb-1">총 누적지급 수수료</p>
               <p className="text-[color:var(--text)] text-lg font-bold tabular-nums">
-                {formatNumber((pointSummary.total || user?.points || 0) + (statsData?.monthlyExpectedIncome?.value || 0) + inquiries.filter(i => i.status === 'PENDING').length)}P
+                {user?.role === 'MEMBER' 
+                  ? formatNumber((pointSummary.total || user?.points || 0) + (statsData?.monthlyExpectedIncome?.value || 0) + inquiries.filter(i => i.status === 'PENDING').length)
+                  : '0'
+                }P
               </p>
+              {user?.role !== 'MEMBER' && (
+                <div className="mt-2 text-xs text-blue-600 font-medium">
+                  💡 파트너회원 전용 기능
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-[color:var(--card)] border border-slate-200/40 rounded-[var(--radius-card)] shadow-sm p-4">
+              <div 
+                className={`bg-[color:var(--card)] border border-slate-200/40 rounded-[var(--radius-card)] shadow-sm p-4 transition-all duration-200 ${
+                  user?.role === 'MEMBER' 
+                    ? 'opacity-100' 
+                    : 'opacity-40 cursor-pointer hover:opacity-60'
+                }`}
+                onClick={() => {
+                  if (user?.role !== 'MEMBER') {
+                    setShowPartnerModal(true);
+                  }
+                }}
+              >
                 <p className="text-[color:var(--muted)] text-sm mb-1">이번달추천인수</p>
                 <p className="text-[color:var(--text)] text-lg font-bold tabular-nums">
-                  {user?.monthlyReferrals || 0}명
+                  {user?.role === 'MEMBER' 
+                    ? (user?.monthlyReferrals || 0)
+                    : '0'
+                  }명
                 </p>
+                {user?.role !== 'MEMBER' && (
+                  <div className="mt-1 text-xs text-blue-600 font-medium">
+                    💡 파트너 전용
+                  </div>
+                )}
               </div>
 
-              <div className="bg-[color:var(--card)] border border-slate-200/40 rounded-[var(--radius-card)] shadow-sm p-4">
+              <div 
+                className={`bg-[color:var(--card)] border border-slate-200/40 rounded-[var(--radius-card)] shadow-sm p-4 transition-all duration-200 ${
+                  user?.role === 'MEMBER' 
+                    ? 'opacity-100' 
+                    : 'opacity-40 cursor-pointer hover:opacity-60'
+                }`}
+                onClick={() => {
+                  if (user?.role !== 'MEMBER') {
+                    setShowPartnerModal(true);
+                  }
+                }}
+              >
                 <p className="text-[color:var(--muted)] text-sm mb-1">총추천인수</p>
                 <p className="text-[color:var(--text)] text-lg font-bold tabular-nums">
-                  {user?.totalReferrals || 0}명
+                  {user?.role === 'MEMBER' 
+                    ? (user?.totalReferrals || 0)
+                    : '0'
+                  }명
                 </p>
+                {user?.role !== 'MEMBER' && (
+                  <div className="mt-1 text-xs text-blue-600 font-medium">
+                    💡 파트너 전용
+                  </div>
+                )}
               </div>
             </div>
 
@@ -422,87 +590,16 @@ export default function MyPage() {
           </div>
         </div>
 
-        {/* 최근 활동 */}
-        <div className="space-y-4">
-          <h2 className="text-[color:var(--text)] font-semibold text-base">
-            최근 활동
-          </h2>
-          
-          <div className="space-y-3">
-            {activities.length === 0 ? (
-              <div className="bg-[color:var(--card)] border border-slate-200/40 rounded-[var(--radius-card)] shadow-sm p-8 text-center">
-                <Clock className="w-12 h-12 text-[color:var(--muted)] mx-auto mb-4" />
-                <p className="text-[color:var(--text)] font-medium mb-2">
-                  활동 내역이 없습니다
-                </p>
-                <p className="text-[color:var(--muted)] text-sm">
-                  새로운 활동이 생기면 여기에 표시됩니다
-                </p>
-              </div>
-            ) : (
-              activities.map((activity) => {
-                // 아이콘 컴포넌트 동적 렌더링
-                const getIconComponent = (iconName: string) => {
-                  switch (iconName) {
-                    case 'ArrowUpRight': return ArrowUpRight;
-                    case 'ArrowDownRight': return ArrowDownRight;
-                    case 'MessageCircle': return MessageCircle;
-                    default: return ArrowUpRight;
-                  }
-                };
-                
-                const IconComponent = getIconComponent(activity.icon);
-                
-                return (
-                  <div
-                    key={activity.id}
-                    className="bg-[color:var(--card)] border border-slate-200/40 rounded-[var(--radius-card)] shadow-sm p-4"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-[color:var(--bg)] rounded-[var(--radius-btn)] flex items-center justify-center">
-                        <IconComponent className="w-5 h-5 text-[color:var(--primary)]" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-[color:var(--text)] font-medium text-sm">
-                          {activity.title}
-                        </p>
-                        <p className="text-[color:var(--muted)] text-xs">
-                          {activity.subtitle}
-                        </p>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        {activity.isPositive ? (
-                          <ArrowUpRight className="w-4 h-4 text-[color:var(--success)]" />
-                        ) : (
-                          <ArrowDownRight className="w-4 h-4 text-[color:var(--danger)]" />
-                        )}
-                        <span
-                          className={`font-semibold text-sm tabular-nums ${
-                            activity.isPositive
-                              ? 'text-[color:var(--success)]'
-                              : 'text-[color:var(--danger)]'
-                          }`}
-                        >
-                          {activity.amount}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
 
         {/* 문의 내역 */}
         <div className="space-y-4">
-          <h2 className="text-[color:var(--text)] font-semibold text-base">
-            문의 내역
+          <h2 className="text-[color:var(--text)] font-semibold text-base flex items-center">
+            <span className="text-2xl mr-2">💬</span>
+            무엇이든 물어보세요. 문의하기
           </h2>
           
           {/* 새 문의 작성 */}
           <div className="bg-[color:var(--card)] border border-slate-200/40 rounded-[var(--radius-card)] shadow-sm p-4">
-            <h3 className="text-sm font-medium text-[color:var(--text)] mb-3">새 문의 작성</h3>
             <div className="space-y-3">
               <input
                 type="text"
@@ -521,26 +618,33 @@ export default function MyPage() {
               <button
                 onClick={handleInquirySubmit}
                 disabled={submitStatus === 'loading'}
-                className={`w-full py-3 px-4 rounded-[var(--radius-btn)] font-medium transition-opacity ${
+                className={`w-full py-3 px-5 rounded-lg font-semibold text-base shadow-md transition-all duration-200 transform hover:scale-105 ${
                   submitStatus === 'loading'
-                    ? 'bg-[color:var(--muted)] text-[color:var(--muted-foreground)] cursor-not-allowed'
+                    ? 'bg-gray-400 text-white cursor-not-allowed'
                     : submitStatus === 'success'
-                    ? 'bg-[color:var(--success)] text-[color:var(--success-foreground)]'
+                    ? 'bg-green-500 text-white'
                     : submitStatus === 'error'
-                    ? 'bg-[color:var(--danger)] text-[color:var(--danger-foreground)]'
-                    : 'bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:opacity-90'
+                    ? 'bg-red-500 text-white'
+                    : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 hover:shadow-xl'
                 }`}
               >
                 {submitStatus === 'loading' ? '제출 중...' : 
                  submitStatus === 'success' ? '제출 완료!' : 
                  submitStatus === 'error' ? '제출 실패' : 
-                 '문의 제출'}
+                 '문의하기 입력완료'}
               </button>
             </div>
           </div>
 
           {/* 문의 목록 */}
-          <div className="space-y-3">
+          <div className="space-y-3" data-inquiry-list>
+            {(() => {
+              console.log('🔍 렌더링 시 inquiries 상태:', inquiries);
+              console.log('🔍 inquiries 타입:', typeof inquiries);
+              console.log('🔍 Array.isArray(inquiries):', Array.isArray(inquiries));
+              console.log('🔍 inquiries.length:', inquiries?.length);
+              return null;
+            })()}
             {!inquiries || !Array.isArray(inquiries) || inquiries.length === 0 ? (
               <div className="bg-[color:var(--card)] border border-slate-200/40 rounded-[var(--radius-card)] shadow-sm p-8 text-center">
                 <Clock className="w-12 h-12 text-[color:var(--muted)] mx-auto mb-4" />
@@ -555,40 +659,63 @@ export default function MyPage() {
               inquiries.map((inquiry) => (
                 <div
                   key={inquiry.id}
-                  className="bg-[color:var(--card)] border border-slate-200/40 rounded-[var(--radius-card)] shadow-sm p-4 hover:opacity-80 transition-opacity"
+                  className="bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium text-[color:var(--text)] truncate">{inquiry.title}</h4>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        inquiry.status === 'ANSWERED'
-                          ? 'bg-[color:var(--success)]/10 text-[color:var(--success)]'
-                          : 'bg-[color:var(--warning)]/10 text-[color:var(--warning)]'
-                      }`}
-                    >
-                      {inquiry.status === 'ANSWERED' ? '답변완료' : '답변대기'}
-                    </span>
-                  </div>
-                  <p className="text-sm text-[color:var(--muted)] mb-2 line-clamp-2">{inquiry.content}</p>
-                  
-                  {/* 답변 내용 표시 */}
-                  {inquiry.answer && (
-                    <div className="mt-3 p-3 bg-[color:var(--success)]/5 border border-[color:var(--success)]/20 rounded-[var(--radius-btn)]">
-                      <div className="flex items-center mb-2">
-                        <span className="text-xs font-medium text-[color:var(--success)]">관리자 답변</span>
-                        {inquiry.answeredAt && (
-                          <span className="text-xs text-[color:var(--muted)] ml-2">
-                            {new Date(inquiry.answeredAt).toLocaleDateString()}
-                          </span>
-                        )}
+                  {/* 문의 헤더 */}
+                  <div className="p-6 border-b border-gray-50">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 text-lg mb-2">{inquiry.title}</h4>
+                        <p className="text-gray-600 text-sm leading-relaxed">{inquiry.content}</p>
                       </div>
-                      <p className="text-sm text-[color:var(--text)] whitespace-pre-wrap">{inquiry.answer}</p>
+                      <span
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold ml-4 flex-shrink-0 ${
+                          inquiry.status === 'ANSWERED'
+                            ? 'bg-green-50 text-green-700 border border-green-200'
+                            : 'bg-orange-50 text-orange-700 border border-orange-200'
+                        }`}
+                      >
+                        {inquiry.status === 'ANSWERED' ? '답변완료' : '답변대기'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-400">
+                      {new Date(inquiry.createdAt).toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                  
+                  {/* 관리자 답변 */}
+                  {inquiry.answer && (
+                    <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50">
+                      <div className="flex items-center mb-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mr-3 shadow-sm">
+                          <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-blue-900">관리자</p>
+                          <p className="text-xs text-blue-600">
+                            {new Date(inquiry.answeredAt || inquiry.updatedAt).toLocaleDateString('ko-KR', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="bg-white rounded-xl p-4 shadow-sm border border-blue-100">
+                        <p className="text-gray-800 leading-relaxed">{inquiry.answer}</p>
+                      </div>
                     </div>
                   )}
-                  
-                  <div className="flex items-center justify-between text-xs text-[color:var(--muted)] mt-2">
-                    <span>작성일: {new Date(inquiry.createdAt).toLocaleDateString()}</span>
-                  </div>
                 </div>
               ))
             )}
@@ -596,48 +723,17 @@ export default function MyPage() {
         </div>
       </main>
 
-      {/* 하단 탭 */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[color:var(--card)] border-t border-slate-200/40 pb-safe">
-        <div className="flex items-center justify-around px-2 py-3">
-          {[
-            { id: 'home', label: '홈', icon: Home },
-            { id: 'benefits', label: '혜택', icon: Gift },
-            { id: 'settlement', label: '정산', icon: Calculator },
-            { id: 'partner', label: '파트너', icon: Users },
-            { id: 'more', label: '전체', icon: Menu },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = tab.id === activeTab;
-            
-            return (
-              <Link
-                key={tab.id}
-                href={tab.id === 'home' ? '/mypage' : `/${tab.id}`}
-                className="flex flex-col items-center justify-center py-2 px-3 min-h-[44px] min-w-[44px] rounded-[var(--radius-btn)] transition-colors"
-                aria-label={tab.label}
-              >
-                <Icon
-                  className={`w-5 h-5 mb-1 ${
-                    isActive
-                      ? 'text-[color:var(--primary)]'
-                      : 'text-[color:var(--muted)]'
-                  }`}
-                />
-                <span
-                  className={`text-xs font-medium ${
-                    isActive
-                      ? 'text-[color:var(--primary)]'
-                      : 'text-[color:var(--muted)]'
-                  }`}
-                >
-                  {tab.label}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+      {/* 하단 탭 - 웹 전용 기능 유지 */}
+      <BottomTab
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+      />
 
+      {/* 파트너 전용 모달 */}
+      <PartnerOnlyModal
+        isOpen={showPartnerModal}
+        onClose={() => setShowPartnerModal(false)}
+      />
     </div>
   );
 }

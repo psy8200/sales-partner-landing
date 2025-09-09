@@ -31,12 +31,13 @@ export async function PATCH(
     }
 
     // 상담신청 상태 업데이트
+    const currentTime = new Date();
     const updatedApplication = await prisma.partnerApplication.update({
       where: { id },
       data: {
         status: status as 'ASSIGNED' | 'COMPLETED',
         processedBy,
-        processedAt: new Date(),
+        processedAt: currentTime,
       },
       include: {
         user: {
@@ -57,6 +58,7 @@ export async function PATCH(
       backendStatus: updatedApplication.status,
       manager: updatedApplication.processedBy,
       assignedAt: updatedApplication.processedAt?.toISOString(),
+      processedAt: updatedApplication.processedAt?.toISOString(),
     });
   } catch (error: unknown) {
     console.error('PATCH /api/admin/contracts/requests/[id] error', error);

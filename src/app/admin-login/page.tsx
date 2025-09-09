@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 const AdminLoginPage = () => {
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -16,12 +16,12 @@ const AdminLoginPage = () => {
     setError('');
 
     try {
-      const response = await fetch('/api/admin/auth/login', {
+      const response = await fetch('/api/admin/auth/session-login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ phone, password }),
       });
 
       const data = await response.json();
@@ -57,19 +57,19 @@ const AdminLoginPage = () => {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
-              <label htmlFor="email" className="sr-only">
-                이메일 주소
+              <label htmlFor="phone" className="sr-only">
+                전화번호 (뒤 8자리)
               </label>
               <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
+                id="phone"
+                name="phone"
+                type="tel"
+                autoComplete="tel"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="이메일 주소"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                placeholder="전화번호 (뒤 8자리)"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
               />
             </div>
             <div>
@@ -109,8 +109,8 @@ const AdminLoginPage = () => {
           <div className="text-center">
             <div className="text-sm text-gray-600">
               <p className="font-medium">테스트 계정:</p>
-              <p>이메일: psy@local</p>
-              <p>비밀번호: 0130</p>
+              <p>전화번호: 12345678</p>
+              <p>비밀번호: 87587200</p>
             </div>
           </div>
         </form>

@@ -30,21 +30,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 사이드바 아이템들도 조회 (itemName 매핑용)
+    const sidebarItems = await prisma.sidebarItem.findMany({
+      where: {
+        isActive: true
+      }
+    });
+
     // 카테고리 한글명 변환 함수
-    const getCategoryName = (category: string) => {
+    const getCategoryName = (item: any) => {
+      // itemName이 있으면 사이드바에서 해당하는 제목을 찾아서 반환
+      if (item.itemName) {
+        const matchingSidebarItem = sidebarItems.find(sidebarItem => 
+          sidebarItem.href.includes(item.itemName)
+        );
+        if (matchingSidebarItem) {
+          return matchingSidebarItem.name;
+        }
+        return item.itemName;
+      }
+      
+      // 기존 category 필드 처리
+      if (!item.category) return '';
       const categoryMap: Record<string, string> = {
         'INSURANCE': '보험',
         'RENTAL': '렌탈',
         'INTERNET_TV': '인터넷/방송',
         'FUNERAL': '상조',
-        'RENTAL_MALL': '렌탈몰'
+        'RENTAL_MALL': '렌탈몰',
+        'INSTANT_PARTNER': '즉시파트너',
+        'SHOPPING_MALL': '쇼핑구매'
       };
-      return categoryMap[category] || category;
+      return categoryMap[item.category] || item.category;
     };
 
     // 엑셀 데이터 준비
     const excelData = items.map(item => ({
-      '카테고리': getCategoryName(item.category),
+      '카테고리': getCategoryName(item),
       '제공사': item.provider,
       '상품명': item.productName,
       '납입기간': item.paymentTerm,
@@ -82,12 +104,13 @@ export async function POST(request: NextRequest) {
     // 파일명 생성 (현재 날짜 포함)
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0];
-    const filename = `아이템목록_${dateStr}.xlsx`;
+    const filename = `items_${dateStr}.xlsx`;
+    const encodedFilename = encodeURIComponent(`아이템목록_${dateStr}.xlsx`);
 
     // 응답 헤더 설정
     const response = new NextResponse(excelBuffer);
     response.headers.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    response.headers.set('Content-Disposition', `attachment; filename="${filename}"`);
+    response.headers.set('Content-Disposition', `attachment; filename="${filename}"; filename*=UTF-8''${encodedFilename}`);
 
     return response;
 

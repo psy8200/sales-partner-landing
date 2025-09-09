@@ -14,8 +14,17 @@ function decodeAdminSessionToken(token: string) {
 // GET: 총 회원수 조회
 export async function GET(request: NextRequest) {
   try {
-    // 세션 토큰 확인
-    const sessionToken = request.cookies.get('adminSession')?.value;
+    // 세션 토큰 확인 (모든 adminSession 쿠키 확인)
+    const allCookies = request.cookies.getAll();
+    const adminSessionCookies = allCookies.filter(cookie => 
+      cookie.name.startsWith('adminSession_')
+    );
+    
+    let sessionToken = null;
+    if (adminSessionCookies.length > 0) {
+      // 가장 최근 쿠키 사용 (보통 마지막에 설정된 것)
+      sessionToken = adminSessionCookies[adminSessionCookies.length - 1].value;
+    }
     
     if (!sessionToken) {
       return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
@@ -53,4 +62,5 @@ export async function GET(request: NextRequest) {
     }, { status: 500 });
   }
 }
+
 

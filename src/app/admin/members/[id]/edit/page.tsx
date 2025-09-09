@@ -128,7 +128,24 @@ const MemberEditPage = ({ params }: { params: Promise<{ id: string }> }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // 필수 필드 검증
+    if (!formData.name.trim()) {
+      alert('이름을 입력해주세요.');
+      return;
+    }
+    if (!formData.email.trim()) {
+      alert('이메일을 입력해주세요.');
+      return;
+    }
+    if (!formData.phone.trim()) {
+      alert('연락처를 입력해주세요.');
+      return;
+    }
+    
     try {
+      console.log('🔍 회원 정보 수정 데이터:', formData);
+      
       const res = await fetch(`/api/admin/users/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -140,18 +157,56 @@ const MemberEditPage = ({ params }: { params: Promise<{ id: string }> }) => {
         throw new Error(error.error || '저장에 실패했습니다.');
       }
       
-      alert('저장되었습니다.');
+      const result = await res.json();
+      console.log('✅ 회원 정보 수정 성공:', result);
+      
+      // 귀여운 성공 창 표시
+      const successMessage = `
+        🎉 회원 정보 수정 완료! 🎉
+        
+        ✅ 이름: ${formData.name}
+        ✅ 연락처: ${formData.phone}
+        ✅ 이메일: ${formData.email}
+        ✅ 추천인코드: ${formData.referralCode}
+        
+        모든 정보가 성공적으로 저장되었습니다!
+      `;
+      
+      alert(successMessage);
+      
+      // 부모 창 새로고침하여 테이블 업데이트
       if (window.opener && !window.opener.closed) {
-        try { window.opener.location.reload(); } catch {}
+        try { 
+          window.opener.location.reload(); 
+        } catch (e) {
+          console.log('부모 창 새로고침 실패:', e);
+        }
       }
-      window.close();
+      
+      // 창 닫기
+      setTimeout(() => {
+        window.close();
+      }, 500);
+      
     } catch (error: unknown) {
+      console.error('❌ 회원 정보 수정 오류:', error);
       alert(error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.');
     }
   };
 
   const handlePartnerApproval = async () => {
-    if (!confirm('이 사용자를 파트너로 승인하시겠습니까?')) return;
+    // 파트너 승인 조건 재확인
+    if (pointsData.totalPoints < 50000) {
+      alert('포인트가 50,000P 미만입니다. 파트너 승인이 불가능합니다.');
+      return;
+    }
+    
+    if (!formData.bankName || !formData.accountHolder || !formData.bankAccount) {
+      alert('은행 정보가 완전하지 않습니다. 은행명, 예금주, 계좌번호를 모두 입력해주세요.');
+      return;
+    }
+    
+    if (!confirm('이 사용자를 파트너로 승인하시겠습니까?\n\n승인 조건:\n- 포인트: 50,000P 이상 ✅\n- 은행명: ' + formData.bankName + ' ✅\n- 예금주: ' + formData.accountHolder + ' ✅\n- 계좌번호: ' + formData.bankAccount + ' ✅')) return;
     
     try {
       const approvalData = {
@@ -159,6 +214,8 @@ const MemberEditPage = ({ params }: { params: Promise<{ id: string }> }) => {
         role: 'MEMBER',
         partnerStatus: 'APPROVED'
       };
+      
+      console.log('🔍 파트너 승인 데이터:', approvalData);
       
       const res = await fetch(`/api/admin/users/${userId}`, {
         method: 'PUT',
@@ -171,13 +228,48 @@ const MemberEditPage = ({ params }: { params: Promise<{ id: string }> }) => {
         throw new Error(error.error || '파트너 승인 처리에 실패했습니다.');
       }
       
-      alert('파트너 승인 처리가 완료되었습니다.');
+      const result = await res.json();
+      console.log('✅ 파트너 승인 성공:', result);
+      
+      // 귀여운 파트너 승인 성공 창 표시
+      const partnerSuccessMessage = `
+        🎊 파트너 승인 완료! 🎊
+        
+        👤 회원: ${formData.name}
+        💰 포인트: ${pointsData.totalPoints.toLocaleString()}P
+        🏦 은행: ${formData.bankName}
+        👤 예금주: ${formData.accountHolder}
+        💳 계좌: ${formData.bankAccount}
+        
+        🚀 해당 회원이 파트너회원 페이지로 이동됩니다!
+      `;
+      
+      alert(partnerSuccessMessage);
       setFormData(approvalData);
+      
+      // 부모 창 새로고침
       if (window.opener && !window.opener.closed) {
-        try { window.opener.location.reload(); } catch {}
+        try { 
+          window.opener.location.reload(); 
+        } catch (e) {
+          console.log('부모 창 새로고침 실패:', e);
+        }
       }
-      window.close();
+      
+      // 파트너회원 페이지로 이동
+      setTimeout(() => {
+        window.close();
+        if (window.opener && !window.opener.closed) {
+          try {
+            window.opener.location.href = '/admin/members/partners';
+          } catch (e) {
+            console.log('파트너회원 페이지 이동 실패:', e);
+          }
+        }
+      }, 1000);
+      
     } catch (error: unknown) {
+      console.error('❌ 파트너 승인 오류:', error);
       alert(error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.');
     }
   };
@@ -353,14 +445,16 @@ const MemberEditPage = ({ params }: { params: Promise<{ id: string }> }) => {
               <div className="absolute top-2 right-2 text-right">
                 <div className="space-y-1">
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    pointsData.totalPoints >= 50000 
+                    pointsData.totalPoints >= 50000 && formData.bankName && formData.accountHolder && formData.bankAccount
                       ? 'bg-green-100 text-green-800' 
                       : 'bg-orange-100 text-orange-800'
                   }`}>
-                    {pointsData.totalPoints >= 50000 ? '파트너승인' : '파트너승인대기'}
+                    {pointsData.totalPoints >= 50000 && formData.bankName && formData.accountHolder && formData.bankAccount 
+                      ? '파트너승인가능' 
+                      : '파트너승인대기'}
                   </span>
                   <div className="text-xs text-gray-500">
-                    50,000P 이상 = 승인
+                    50,000P + 은행정보 = 승인
                   </div>
                 </div>
               </div>
@@ -413,7 +507,7 @@ const MemberEditPage = ({ params }: { params: Promise<{ id: string }> }) => {
             >
               저장
             </button>
-            {pointsData.totalPoints >= 50000 && (
+            {pointsData.totalPoints >= 50000 && formData.bankName && formData.accountHolder && formData.bankAccount && (
               <button
                 type="button"
                 onClick={handlePartnerApproval}

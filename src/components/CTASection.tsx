@@ -9,7 +9,7 @@ const CTASection = () => {
   };
 
   return (
-    <section className="py-20 bg-white relative overflow-hidden">
+    <section className="py-8 sm:py-12 lg:py-16 bg-white relative overflow-hidden">
       {/* 깔끔한 배경 효과 */}
       <div className="absolute inset-0">
         {/* 미묘한 그라데이션 오버레이 */}
@@ -33,7 +33,7 @@ const CTASection = () => {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
-          className="mb-10"
+          className="mb-6 sm:mb-8"
         >
           <div className="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-full shadow-sm">
             <span className="text-blue-600 font-medium text-sm tracking-wide">🚀 지금이 마지막 기회입니다!</span>
@@ -46,7 +46,7 @@ const CTASection = () => {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
           viewport={{ once: true }}
-          className="mb-10"
+          className="mb-6 sm:mb-8"
         >
           <h2 className="text-4xl md:text-6xl font-black text-gray-900 mb-6">
             <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 bg-clip-text text-transparent">

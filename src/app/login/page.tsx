@@ -13,7 +13,7 @@ export default function LoginPage() {
               className="mx-auto h-16 w-auto"
             />
           </h1>
-          <p className="text-gray-600 text-lg">환영합니다. 행복하루 되세요!</p>
+          <p className="text-gray-600 text-lg">환영합니다. 행복한 하루 되세요!</p>
         </div>
         <LoginForm />
       </div>

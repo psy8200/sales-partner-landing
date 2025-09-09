@@ -53,17 +53,34 @@ export async function POST(request: NextRequest) {
     // 추천인코드 처리: 입력하지 않았으면 기본추천인코드 사용
     let finalReferralCode = validatedData.referralCode;
     if (!finalReferralCode || finalReferralCode.trim() === '') {
-      // 회사정보에서 기본추천인코드 가져오기
-      const companyInfo = await prisma.companyInfo.findFirst({
-        where: { isActive: true },
-        orderBy: { createdAt: 'desc' }
-      });
-      
-      if (companyInfo && companyInfo.referralCodeDefault) {
-        finalReferralCode = companyInfo.referralCodeDefault;
-        console.log('✅ 기본추천인코드 적용:', finalReferralCode);
-      } else {
-        console.log('⚠️ 기본추천인코드 없음, 빈 값으로 저장');
+      // 회사정보 API를 통해 기본추천인코드 가져오기
+      console.log('🔍 회원가입: 회사정보 API 호출 시작...');
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+        const companyInfoResponse = await fetch(`${baseUrl}/api/admin/company-info`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (companyInfoResponse.ok) {
+          const companyInfoData = await companyInfoResponse.json();
+          console.log('🔍 회원가입: 회사정보 API 응답:', companyInfoData);
+          
+          if (companyInfoData.success && companyInfoData.companyInfo && companyInfoData.companyInfo.referralCodeDefault) {
+            finalReferralCode = companyInfoData.companyInfo.referralCodeDefault;
+            console.log('✅ 기본추천인코드 적용:', finalReferralCode);
+          } else {
+            console.log('⚠️ 회사정보 API에서 기본추천인코드 없음, 빈 값으로 저장');
+            finalReferralCode = null;
+          }
+        } else {
+          console.log('⚠️ 회사정보 API 호출 실패, 빈 값으로 저장');
+          finalReferralCode = null;
+        }
+      } catch (error) {
+        console.error('❌ 회사정보 API 호출 중 오류:', error);
         finalReferralCode = null;
       }
     } else {

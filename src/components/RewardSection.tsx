@@ -79,14 +79,14 @@ const RewardSection = () => {
   ];
 
   return (
-    <section className="py-12 sm:py-16 lg:py-20 bg-gray-900">
+    <section className="py-8 sm:py-12 lg:py-16 bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
-          className="text-center mb-8 sm:mb-12 lg:mb-16"
+          className="text-center mb-6 sm:mb-8 lg:mb-12"
         >
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6">
             🎁 <span className="text-blue-400">회원님의 성공을 축하하는 특별 혜택 보너스</span>
@@ -98,7 +98,7 @@ const RewardSection = () => {
         </motion.div>
 
         {/* 단계별 보상 카드 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8 mb-8 sm:mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {stageRewards.map((reward, index) => (
             <motion.div
               key={`reward-stage-${index}-${reward.stage}`}
@@ -178,7 +178,7 @@ const RewardSection = () => {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.6 }}
           viewport={{ once: true }}
-          className="mt-8 sm:mt-12 grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8"
+          className="mt-6 sm:mt-8 grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6"
         >
           <div className="bg-white/10 rounded-xl p-6 text-center">
             <div className="text-3xl mb-3">⚡</div>

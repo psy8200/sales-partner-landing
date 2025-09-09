@@ -10,19 +10,35 @@ const inquirySchema = z.object({
   type: z.enum(['QUESTION', 'SUGGESTION']).default('QUESTION'),
 });
 
+// 세션 토큰 디코딩 함수
+function decodeSessionToken(token: string) {
+  try {
+    const decoded = Buffer.from(token, 'base64url').toString();
+    return JSON.parse(decoded);
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const validatedData = inquirySchema.parse(body);
 
     // 현재 로그인된 사용자 정보 가져오기
-    const authToken = request.cookies.get('authToken')?.value;
+    const sessionToken = request.cookies.get('session')?.value;
     
-    if (!authToken) {
+    if (!sessionToken) {
       return createUnauthorizedResponse('로그인이 필요합니다.');
     }
 
-    const userId = authToken;
+    // 토큰 디코딩
+    const tokenData = decodeSessionToken(sessionToken);
+    if (!tokenData || !tokenData.userId) {
+      return createUnauthorizedResponse('유효하지 않은 세션입니다.');
+    }
+
+    const userId = tokenData.userId;
     
     // 사용자 정보 확인
     const user = await prisma.user.findUnique({
@@ -73,14 +89,30 @@ export async function POST(request: NextRequest) {
 // 사용자의 문의글 목록 조회
 export async function GET(request: NextRequest) {
   try {
-    // 현재 로그인된 사용자 정보 가져오기
-    const authToken = request.cookies.get('authToken')?.value;
+    console.log('=== 문의 목록 조회 시작 ===');
     
-    if (!authToken) {
+    // 현재 로그인된 사용자 정보 가져오기
+    const sessionToken = request.cookies.get('session')?.value;
+    console.log('session 쿠키:', sessionToken ? '존재함' : '없음');
+    
+    if (!sessionToken) {
+      console.log('session 쿠키가 없음');
       return createUnauthorizedResponse('로그인이 필요합니다.');
     }
 
-    const userId = authToken;
+    // 토큰 디코딩
+    const tokenData = decodeSessionToken(sessionToken);
+    console.log('토큰 디코딩 결과:', tokenData);
+    
+    if (!tokenData || !tokenData.userId) {
+      console.log('유효하지 않은 토큰');
+      return createUnauthorizedResponse('유효하지 않은 세션입니다.');
+    }
+
+    const userId = tokenData.userId;
+    console.log('사용자 ID:', userId);
+    
+    console.log('문의 목록 조회 - userId:', userId);
     
     const inquiries = await prisma.question.findMany({
       where: {
@@ -97,6 +129,9 @@ export async function GET(request: NextRequest) {
         createdAt: 'desc',
       },
     });
+    
+    console.log('조회된 문의 개수:', inquiries.length);
+    console.log('문의 목록:', inquiries.map(q => ({ id: q.id, title: q.title, createdAt: q.createdAt })));
 
     return createSuccessResponse({
       inquiries: inquiries.map(inquiry => ({

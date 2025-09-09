@@ -11,6 +11,8 @@ interface DevelopmentControlsProps {
   onRotate: () => void;
   onUrlChange: (url: string) => void;
   currentUrl: string;
+  pwaCurrentPath?: string;
+  onApplyPwaPath?: () => void;
 }
 
 export const DevelopmentControls: React.FC<DevelopmentControlsProps> = ({
@@ -21,6 +23,8 @@ export const DevelopmentControls: React.FC<DevelopmentControlsProps> = ({
   onRotate,
   onUrlChange,
   currentUrl,
+  pwaCurrentPath = '/login',
+  onApplyPwaPath,
 }) => {
   const quickActions = [
     { name: '홈페이지', url: '/member', icon: Eye },
@@ -45,6 +49,35 @@ export const DevelopmentControls: React.FC<DevelopmentControlsProps> = ({
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="/member"
         />
+      </div>
+
+      {/* PWA 경로 표시 */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          PWA 경로
+        </label>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={pwaCurrentPath}
+            readOnly
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700"
+            placeholder="/login"
+          />
+          {onApplyPwaPath && (
+            <button
+              onClick={onApplyPwaPath}
+              disabled={pwaCurrentPath === currentUrl}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              title="PWA 경로를 페이지 URL에 적용"
+            >
+              적용하기
+            </button>
+          )}
+        </div>
+        <p className="text-xs text-gray-500 mt-1">
+          미리보기에서 실제로 보이는 페이지 경로
+        </p>
       </div>
 
       {/* 빠른 액션 */}
@@ -74,10 +107,11 @@ export const DevelopmentControls: React.FC<DevelopmentControlsProps> = ({
         <button
           onClick={onRefresh}
           disabled={isLoading}
+          title="로그인 상태를 유지하면서 페이지를 새로고침합니다"
           className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
         >
           <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-          새로고침
+          새로고침 (로그인 유지)
         </button>
 
         <button

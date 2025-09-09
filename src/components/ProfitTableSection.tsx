@@ -35,7 +35,7 @@ const ProfitTableSection = () => {
   const currency = (n: number) => n.toLocaleString('ko-KR');
 
   return (
-    <section className="py-12 sm:py-16 lg:py-20 bg-gray-50">
+    <section className="py-8 sm:py-12 lg:py-16 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
 
@@ -179,7 +179,7 @@ const ProfitTableSection = () => {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
             viewport={{ once: true }}
-            className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8 sm:mb-12"
+            className="bg-white rounded-2xl shadow-xl overflow-hidden mb-6 sm:mb-8"
           >
             <div className="p-6 lg:p-8 bg-blue-50 border-b border-blue-200">
               <h3 className="text-xl lg:text-2xl font-bold text-gray-900 text-center">
@@ -322,7 +322,7 @@ const ProfitTableSection = () => {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
           viewport={{ once: true }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8"
         >
           <div className="bg-white rounded-xl p-4 sm:p-6 shadow-lg text-center">
             <div className="text-2xl sm:text-3xl mb-3 sm:mb-4">💰</div>

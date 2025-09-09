@@ -47,9 +47,10 @@ class PushNotificationService {
     }
 
     try {
-      this.registration = await navigator.serviceWorker.register('/sw.js');
-      console.log('Service Worker 등록 성공:', this.registration);
-      return this.registration;
+      // this.registration = await navigator.serviceWorker.register('/sw.js');
+      console.log('Service Worker 등록 성공 (Service Worker 비활성화됨)');
+      // return this.registration;
+      return null; // Service Worker 비활성화로 인해 null 반환
     } catch (error) {
       console.error('Service Worker 등록 실패:', error);
       throw error;
@@ -407,3 +408,4 @@ export const usePushNotification = () => {
     updateStatus
   };
 };
+

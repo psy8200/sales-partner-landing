@@ -83,20 +83,20 @@ export async function POST(req: Request) {
       } 
     });
 
-    // 웹 전용 세션 쿠키 설정 (90일, /web 경로)
+    // 웹 전용 세션 쿠키 설정 (90일, / 경로)
     const NINETY_DAYS = 60 * 60 * 24 * 90;
-    res.cookies.set('webSession', sessionToken, {
+    res.cookies.set('session', sessionToken, {
       httpOnly: true,
-      path: '/web', // 웹 전용 경로
+      path: '/', // 루트 경로로 변경
       sameSite: 'lax',
       maxAge: NINETY_DAYS,
       expires: new Date(Date.now() + NINETY_DAYS * 1000),
     });
 
     // 웹 전용 사용자 ID 쿠키도 설정
-    res.cookies.set('webAuthToken', user.id, {
+    res.cookies.set('authToken', user.id, {
       httpOnly: true,
-      path: '/web', // 웹 전용 경로
+      path: '/', // 루트 경로로 변경
       sameSite: 'lax',
       maxAge: NINETY_DAYS,
       expires: new Date(Date.now() + NINETY_DAYS * 1000),
@@ -111,3 +111,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: '로그인 중 오류가 발생했습니다.' }, { status: 500 });
   }
 }
+

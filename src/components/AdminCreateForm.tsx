@@ -167,6 +167,7 @@ const AdminCreateForm: React.FC<AdminCreateFormProps> = ({ onSuccess, onCancel }
               value={formData.role}
               onChange={handleInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label="관리자 역할 선택"
             >
               <option value="ADMIN">관리자</option>
               <option value="SUPER_ADMIN">최고관리자</option>
@@ -182,6 +183,7 @@ const AdminCreateForm: React.FC<AdminCreateFormProps> = ({ onSuccess, onCancel }
               name="joinDate"
               value={formData.joinDate}
               onChange={handleInputChange}
+              placeholder="YYYY-MM-DD"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
@@ -216,4 +218,5 @@ const AdminCreateForm: React.FC<AdminCreateFormProps> = ({ onSuccess, onCancel }
 };
 
 export default AdminCreateForm;
+
 

@@ -21,6 +21,7 @@ const RentalItemsPage = () => {
   const [baseAmount, setBaseAmount] = useState<string>('');
   const [expectedRate, setExpectedRate] = useState<string>('');
   const [pointRate, setPointRate] = useState<string>('');
+  const [pageTitle, setPageTitle] = useState('렌탈상품신청'); // 기본값
 
   const monthlyRate = useMemo(() => {
     const exp = parseFloat(expectedRate || '0');
@@ -40,6 +41,20 @@ const RentalItemsPage = () => {
   }, [monthlyAmount, pointRate]);
 
   const [rows, setRows] = useState<RentalRow[]>([]);
+
+  // 페이지 제목을 서버에서 가져오기
+  React.useEffect(() => {
+    fetch('/api/admin/sidebar-items/%2Fadmin%2Fitems%2Frental')
+      .then(r => r.json())
+      .then(d => {
+        if (d?.success && d?.data?.name) {
+          setPageTitle(d.data.name);
+        }
+      })
+      .catch(error => {
+        console.error('페이지 제목 로드 오류:', error);
+      });
+  }, []);
 
   React.useEffect(() => {
     fetch('/api/admin/items/settings?category=RENTAL')
@@ -108,7 +123,7 @@ const RentalItemsPage = () => {
   return (
     <div className="space-y-6">
       <div className="border-b border-gray-200 pb-4">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">렌탈상품신청 설정</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{pageTitle} 설정</h1>
         <p className="mt-1 text-sm text-gray-600">상단에서 상품을 설정 후 추가하기 클릭 시 하단 테이블에 반영됩니다.</p>
       </div>
 

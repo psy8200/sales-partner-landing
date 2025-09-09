@@ -10,6 +10,7 @@ interface ContractFormData {
   customerName: string;
   customerPhone: string;
   customerAddress: string;
+  manager: string;
   insuredName: string;
   insuredPhone: string;
   itemCategory: string;
@@ -20,7 +21,7 @@ interface ContractFormData {
   pointRate: string;
   decisionPoints: string;
   contractDate: string;
-  startDate: string;
+  paymentTerm: string;
   endDate: string;
   payoutRate: string;
   finalPoints: string;
@@ -28,13 +29,7 @@ interface ContractFormData {
   dynamicFields: Record<string, string>;
 }
 
-const itemCategories = [
-  { value: 'INSURANCE', label: '보험' },
-  { value: 'RENTAL', label: '렌탈' },
-  { value: 'INTERNET_TV', label: '인터넷/방송' },
-  { value: 'FUNERAL', label: '상조' },
-  { value: 'RENTAL_MALL', label: '렌탈몰' },
-];
+// 상품 카테고리는 서버에서 동적으로 로드
 
 export default function ContractEntriesPage() {
   // 기본 상태
@@ -42,6 +37,7 @@ export default function ContractEntriesPage() {
     customerName: '',
     customerPhone: '',
     customerAddress: '',
+    manager: '',
     insuredName: '',
     insuredPhone: '',
     itemCategory: '',
@@ -68,6 +64,9 @@ export default function ContractEntriesPage() {
   const [products, setProducts] = useState<Array<{id: string, productName: string, expectedRate: string, pointRate: string}>>([]);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingContractId, setEditingContractId] = useState<string | null>(null);
+  
+  // 상품 카테고리 상태 (아이템관리와 동기화)
+  const [itemCategories, setItemCategories] = useState<Array<{value: string, label: string}>>([]);
 
   // 계약 목록 상태
   const [contracts, setContracts] = useState<Contract[]>([]);
@@ -92,9 +91,10 @@ export default function ContractEntriesPage() {
       formData.itemName,
       formData.contractAmount,
       formData.contractDate,
-      formData.startDate,
+      formData.paymentTerm,
       formData.payoutRate,
-      formData.finalPoints
+      formData.finalPoints,
+      formData.dynamicFields['policyNumber'] // 증권번호 필수 입력
     ];
     
     return requiredFields.every(field => field && field.trim() !== '');
@@ -238,17 +238,19 @@ export default function ContractEntriesPage() {
   };
 
   // 회원 선택 처리
-  const handleMemberSelect = (member: { name: string; phone: string; address: string }) => {
+  const handleMemberSelect = (member: { name: string; phone: string; address: string; manager?: string }) => {
     console.log('✅ 회원 선택됨:', member);
     setFormData(prev => ({
       ...prev,
       customerName: member.name,
       customerPhone: member.phone,
       customerAddress: member.address || '',
+      manager: member.manager || '',
     }));
     console.log('📝 폼 데이터 업데이트 완료');
     setIsMemberSearchOpen(false);
   };
+
 
   // 카테고리 변경 시 회사명 로드
   const handleCategoryChange = async (category: string) => {
@@ -303,6 +305,35 @@ export default function ContractEntriesPage() {
     }
   };
 
+  // 계약 삭제 처리
+  const handleDeleteContract = async (contract: Contract) => {
+    if (!confirm(`정말로 "${contract.customerName}" 고객의 계약을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/contracts/entries/${contract.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '계약 삭제 중 오류가 발생했습니다.');
+      }
+
+      // 성공 메시지 표시
+      alert('계약이 성공적으로 삭제되었습니다.');
+      
+      // 계약 목록 새로고침
+      await loadContracts(currentPage);
+      
+    } catch (error) {
+      console.error('계약 삭제 오류:', error);
+      alert(`계약 삭제 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+    }
+  };
+
   // 계약 수정 모드 시작
   const handleEditContract = async (contract: Contract) => {
     try {
@@ -315,18 +346,19 @@ export default function ContractEntriesPage() {
         customerName: contract.customerName || '',
         customerPhone: contract.customerPhone || '',
         customerAddress: contract.customerAddress || '',
-        insuredName: (contract as any).insuredName || '',
-        insuredPhone: (contract as any).insuredPhone || '',
+        manager: dynamicFields.manager || '', // dynamicFields에서 가져오기
+        insuredName: contract.insuredName || '',
+        insuredPhone: contract.insuredPhone || '',
         itemCategory: contract.itemCategory || '',
         companyName: contract.companyName || '',
         itemName: contract.itemName || '',
         contractAmount: contract.contractAmount?.toString() || '',
         expectedRate: contract.expectedRate?.toString() || '',
         pointRate: contract.pointRate?.toString() || '',
-        decisionPoints: (contract as any).decisionPoints?.toString() || '',
+        decisionPoints: contract.decisionPoints?.toString() || '',
         contractDate: contract.contractDate ? new Date(contract.contractDate).toISOString().split('T')[0] : '',
-        startDate: contract.startDate || '',
-        endDate: contract.endDate || '',
+        paymentTerm: dynamicFields.paymentTerm || '', // dynamicFields에서 가져오기
+        endDate: contract.endDate ? new Date(contract.endDate).toISOString().split('T')[0] : '',
         payoutRate: contract.payoutRate?.toString() || '',
         finalPoints: contract.finalPoints?.toString() || '',
         installationDate: contract.installationDate ? new Date(contract.installationDate).toISOString().split('T')[0] : '',
@@ -349,6 +381,7 @@ export default function ContractEntriesPage() {
       customerName: '',
       customerPhone: '',
       customerAddress: '',
+      manager: '',
       insuredName: '',
       insuredPhone: '',
       itemCategory: '',
@@ -378,21 +411,101 @@ export default function ContractEntriesPage() {
     try {
       const response = await fetch(`/api/admin/contracts/entries?page=${page}&limit=10`);
       if (response.ok) {
-        const data = await response.json();
-        setContracts(data.contracts);
-        setTotalPages(data.pagination.totalPages);
-        setCurrentPage(page);
+        const result = await response.json();
+        if (result.success && result.data) {
+          setContracts(result.data.contracts || []);
+          setTotalPages(result.data.pagination?.totalPages || 1);
+          setCurrentPage(page);
+        } else {
+          console.error('API 응답 오류:', result);
+          setContracts([]);
+        }
+      } else {
+        console.error('HTTP 오류:', response.status);
+        setContracts([]);
       }
     } catch (error) {
       console.error('계약 목록 로드 오류:', error);
+      setContracts([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // 컴포넌트 마운트 시 계약 목록 로드
+  // 상품 카테고리 로드 함수 (아이템관리와 동기화)
+  const loadItemCategories = async () => {
+    try {
+      const response = await fetch('/api/admin/sidebar-items');
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        // 사이드바 아이템에서 상품 카테고리만 추출
+        const categories = result.data
+          .filter((item: any) => item.href !== '/admin/items') // 아이템관리홈 제외
+          .map((item: any) => {
+            // href에서 카테고리 추출
+            const hrefParts = item.href.split('/');
+            const categoryPath = hrefParts[hrefParts.length - 1];
+            
+            // 카테고리 매핑
+            let categoryValue = '';
+            let categoryLabel = item.name.replace(' 설정', ''); // "설정" 제거
+            
+            switch (categoryPath) {
+              case 'insurance':
+                categoryValue = 'INSURANCE';
+                break;
+              case 'rental':
+                categoryValue = 'RENTAL';
+                break;
+              case 'internet-tv':
+                categoryValue = 'INTERNET_TV';
+                break;
+              case 'funeral':
+                categoryValue = 'FUNERAL';
+                break;
+              case 'rental-mall':
+                categoryValue = 'RENTAL_MALL';
+                break;
+              case 'instant-partner':
+                categoryValue = 'INSTANT_PARTNER';
+                break;
+              case 'shopping-mall':
+                categoryValue = 'SHOPPING_MALL';
+                break;
+              default:
+                // 동적 생성된 아이템의 경우
+                categoryValue = categoryPath.toUpperCase().replace(/-/g, '_');
+            }
+            
+            return {
+              value: categoryValue,
+              label: categoryLabel
+            };
+          })
+          .filter((cat: any) => cat.value); // 유효한 카테고리만
+            
+        setItemCategories(categories);
+      }
+    } catch (error) {
+      console.error('상품 카테고리 로드 오류:', error);
+      // 오류 시 기본 카테고리 설정
+      setItemCategories([
+        { value: 'INSURANCE', label: '보험' },
+        { value: 'RENTAL', label: '렌탈' },
+        { value: 'INTERNET_TV', label: '인터넷/방송' },
+        { value: 'FUNERAL', label: '상조' },
+        { value: 'RENTAL_MALL', label: '렌탈몰' },
+        { value: 'INSTANT_PARTNER', label: '즉시파트너' },
+        { value: 'SHOPPING_MALL', label: '쇼핑몰' },
+      ]);
+    }
+  };
+
+  // 컴포넌트 마운트 시 계약 목록과 상품 카테고리 로드
   useEffect(() => {
     loadContracts();
+    loadItemCategories();
   }, []);
 
   // 폼 제출 처리 (입력/수정 통합)
@@ -423,6 +536,7 @@ export default function ContractEntriesPage() {
         customerName: '',
         customerPhone: '',
         customerAddress: '',
+        manager: '',
         insuredName: '',
         insuredPhone: '',
         itemCategory: '',
@@ -564,7 +678,7 @@ export default function ContractEntriesPage() {
               </div>
 
               {/* 주소 */}
-              <div className="col-span-12 sm:col-span-4">
+              <div className="col-span-12 sm:col-span-3">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   주소 <span className="text-red-500">*</span>
                 </label>
@@ -576,6 +690,21 @@ export default function ContractEntriesPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="고객 주소를 입력하세요"
                   required
+                />
+              </div>
+
+              {/* 담당자 */}
+              <div className="col-span-12 sm:col-span-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  담당자
+                </label>
+                <input
+                  type="text"
+                  name="manager"
+                  value={formData.manager}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
+                  placeholder="자동 입력"
+                  readOnly
                 />
               </div>
 
@@ -818,8 +947,8 @@ export default function ContractEntriesPage() {
                   납입기간 <span className="text-red-500">*</span>
                 </label>
                 <select
-                  name="startDate"
-                  value={formData.startDate}
+                  name="paymentTerm"
+                  value={formData.paymentTerm}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   required
@@ -945,14 +1074,21 @@ export default function ContractEntriesPage() {
             <div className="grid grid-cols-12 gap-4">
               {/* 증권번호 - 25% (3/12) */}
               <div className="col-span-12 md:col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">증권번호</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  증권번호 <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
+                  name="policyNumber"
                   value={formData.dynamicFields['policyNumber'] || ''}
                   onChange={(e)=>handleDynamicFieldChange('policyNumber', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="증권번호를 입력하세요"
+                  required
+                  aria-label="증권번호 입력"
+                  title="수금관리에 필요한 증권번호를 입력하세요"
                 />
+                <p className="text-xs text-gray-500 mt-1">수금관리에 필수 입력 항목입니다</p>
               </div>
               
               {/* 상품의세부정보 - 25% (3/12) */}
@@ -1074,6 +1210,7 @@ export default function ContractEntriesPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">연락처</th>
                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">카테고리</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">증권번호</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">납입기간</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">계약금액</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">최종결정포인트</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">계약일</th>
@@ -1085,19 +1222,25 @@ export default function ContractEntriesPage() {
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={11} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={12} className="px-6 py-4 text-center text-gray-500">
                     로딩 중...
                   </td>
                 </tr>
               ) : filteredContracts.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={12} className="px-6 py-4 text-center text-gray-500">
                     등록된 계약이 없습니다.
                   </td>
                 </tr>
               ) : (
                 filteredContracts.map((contract, idx) => {
-                  const dynamicFields = (contract as any).dynamicFields ? JSON.parse((contract as any).dynamicFields) : {};
+                  let dynamicFields = {};
+                  try {
+                    dynamicFields = (contract as any).dynamicFields ? JSON.parse((contract as any).dynamicFields) : {};
+                  } catch (e) {
+                    console.error('동적필드 파싱 오류:', e);
+                    dynamicFields = {};
+                  }
                   return (
                     <tr key={`contract-${contract.id || idx}-${idx}`} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -1116,23 +1259,31 @@ export default function ContractEntriesPage() {
                         {contract.customerPhone}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                           contract.itemCategory === 'INSURANCE' ? 'bg-blue-100 text-blue-800' :
-                           contract.itemCategory === 'RENTAL' ? 'bg-green-100 text-green-800' :
-                           contract.itemCategory === 'INTERNET_TV' ? 'bg-purple-100 text-purple-800' :
-                           contract.itemCategory === 'FUNERAL' ? 'bg-gray-100 text-gray-800' :
-                           contract.itemCategory === 'RENTAL_MALL' ? 'bg-orange-100 text-orange-800' :
-                           'bg-yellow-100 text-yellow-800'
-                         }`}>
-                           {contract.itemCategory === 'INSURANCE' ? '보험' :
-                            contract.itemCategory === 'RENTAL' ? '렌탈' :
-                            contract.itemCategory === 'INTERNET_TV' ? '인터넷/방송' :
-                            contract.itemCategory === 'FUNERAL' ? '상조' :
-                            contract.itemCategory === 'RENTAL_MALL' ? '렌탈몰' : contract.itemCategory}
-                         </span>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          contract.itemCategory === 'INSURANCE' ? 'bg-blue-100 text-blue-800' :
+                          contract.itemCategory === 'RENTAL' ? 'bg-green-100 text-green-800' :
+                          contract.itemCategory === 'INTERNET_TV' ? 'bg-purple-100 text-purple-800' :
+                          contract.itemCategory === 'FUNERAL' ? 'bg-gray-100 text-gray-800' :
+                          contract.itemCategory === 'RENTAL_MALL' ? 'bg-orange-100 text-orange-800' :
+                          contract.itemCategory === 'INSTANT_PARTNER' ? 'bg-pink-100 text-pink-800' :
+                          contract.itemCategory === 'SHOPPING_MALL' ? 'bg-indigo-100 text-indigo-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {contract.itemCategory === 'INSURANCE' ? '보험' :
+                           contract.itemCategory === 'RENTAL' ? '렌탈' :
+                           contract.itemCategory === 'INTERNET_TV' ? '인터넷/방송' :
+                           contract.itemCategory === 'FUNERAL' ? '상조' :
+                           contract.itemCategory === 'RENTAL_MALL' ? '렌탈몰' :
+                           contract.itemCategory === 'INSTANT_PARTNER' ? '즉시파트너' :
+                           contract.itemCategory === 'SHOPPING_MALL' ? '쇼핑몰' :
+                           contract.itemCategory}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {dynamicFields.policyNumber || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {dynamicFields.paymentTerm || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {contract.contractAmount?.toLocaleString()}원
@@ -1156,12 +1307,22 @@ export default function ContractEntriesPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <button 
-                          className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
-                          onClick={() => handleEditContract(contract)}
-                        >
-                          수정
-                        </button>
+                        <div className="flex space-x-2">
+                          <button 
+                            className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                            onClick={() => handleEditContract(contract)}
+                            title="계약 수정"
+                          >
+                            수정
+                          </button>
+                          <button 
+                            className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
+                            onClick={() => handleDeleteContract(contract)}
+                            title="계약 삭제"
+                          >
+                            삭제
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

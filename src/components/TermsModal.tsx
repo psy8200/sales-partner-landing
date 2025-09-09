@@ -20,6 +20,8 @@ export const TermsModal: React.FC<TermsModalProps> = ({ isOpen, onClose }) => {
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            title="닫기"
+            aria-label="모달 닫기"
           >
             <X className="w-5 h-5" />
           </button>
@@ -146,3 +148,4 @@ export const TermsModal: React.FC<TermsModalProps> = ({ isOpen, onClose }) => {
     </div>
   );
 };
+

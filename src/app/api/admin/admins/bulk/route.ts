@@ -6,8 +6,17 @@ export async function DELETE(request: NextRequest) {
   try {
     console.log('🔍 관리자 일괄 삭제 요청 처리 중...');
     
-    // 세션 토큰 확인
-    const adminSession = request.cookies.get('adminSession')?.value;
+    // 세션 토큰 확인 (모든 adminSession 쿠키 확인)
+    const allCookies = request.cookies.getAll();
+    const adminSessionCookies = allCookies.filter(cookie => 
+      cookie.name.startsWith('adminSession_')
+    );
+    
+    let adminSession = null;
+    if (adminSessionCookies.length > 0) {
+      // 가장 최근 쿠키 사용 (보통 마지막에 설정된 것)
+      adminSession = adminSessionCookies[adminSessionCookies.length - 1].value;
+    }
     if (!adminSession) {
       console.log('❌ 관리자 세션 없음');
       return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });

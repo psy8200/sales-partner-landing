@@ -39,27 +39,39 @@ export async function POST(request: NextRequest) {
       customerName,
       customerPhone,
       customerAddress,
+      manager,
+      insuredName,
+      insuredPhone,
       itemCategory,
+      companyName,
       itemName,
       contractAmount,
       expectedRate,
       pointRate,
+      decisionPoints,
       contractDate,
-      startDate,
+      paymentTerm,
       endDate,
-      // payoutRate, // 미사용 변수 제거
-      // finalPoints, // 미사용 변수 제거
+      payoutRate,
+      finalPoints,
+      installationDate,
       dynamicFields
     } = body;
 
     // 필수 필드 검증
-    if (!customerName || !customerPhone || !itemCategory || !itemName || !contractAmount || !contractDate) {
+    if (!customerName || !customerPhone || !itemCategory || !itemName || !contractAmount || !contractDate || !paymentTerm) {
       return createBadRequestResponse('필수 입력 항목이 누락되었습니다.');
+    }
+
+    // 증권번호 필수 검증
+    if (!dynamicFields || !dynamicFields.policyNumber || dynamicFields.policyNumber.trim() === '') {
+      return createBadRequestResponse('증권번호는 수금관리에 필수 입력 항목입니다.');
     }
 
     // 날짜 유효성 검증
     const parsedContractDate = safeDateParse(contractDate);
     const parsedEndDate = safeDateParse(endDate);
+    const parsedInstallationDate = safeDateParse(installationDate);
 
     if (!parsedContractDate) {
       return createBadRequestResponse('계약일자가 유효하지 않습니다.');
@@ -76,18 +88,26 @@ export async function POST(request: NextRequest) {
         customerPhone,
         customerAddress: customerAddress || '',
         itemCategory,
+        companyName: companyName || '',
         itemName,
-        contractAmount: parseInt(contractAmount),
+        contractAmount: parseInt(contractAmount.toString().replace(/,/g, '')),
         commissionRate: 0, // 기본값
         commissionAmount: 0, // 기본값
         expectedRate: expectedRate ? parseFloat(expectedRate) : null,
         pointRate: pointRate ? parseFloat(pointRate) : null,
+        payoutRate: payoutRate ? parseFloat(payoutRate) : null,
+        finalPoints: finalPoints ? parseFloat(finalPoints) : null,
+        decisionPoints: decisionPoints ? parseFloat(decisionPoints) : null,
         contractDate: parsedContractDate,
         startDate: null,
         endDate: parsedEndDate,
+        installationDate: parsedInstallationDate,
+        insuredName: insuredName || '',
+        insuredPhone: insuredPhone || '',
         dynamicFields: JSON.stringify({
           ...(dynamicFields || {}),
-          paymentTerm: startDate
+          manager: manager || '',
+          paymentTerm: paymentTerm || ''
         }),
         status: 'ACTIVE',
         createdBy: '관리자',

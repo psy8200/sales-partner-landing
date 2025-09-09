@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 
 interface ItemSetting {
   id: string;
-  category: 'INSURANCE' | 'RENTAL' | 'INTERNET_TV' | 'FUNERAL' | 'RENTAL_MALL';
+  category: 'INSURANCE' | 'RENTAL' | 'INTERNET_TV' | 'FUNERAL' | 'RENTAL_MALL' | 'SHOPPING_MALL' | 'INSTANT_PARTNER' | null;
+  itemName?: string;
   provider: string;
   productName: string;
   paymentTerm: string;
@@ -109,7 +110,7 @@ const ItemsPage = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `아이템목록_${new Date().toISOString().split('T')[0]}.xlsx`;
+      a.download = `items_${new Date().toISOString().split('T')[0]}.xlsx`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -198,21 +199,35 @@ const ItemsPage = () => {
   };
 
   // 카테고리 한글명 변환
-  const getCategoryName = (category: string) => {
+  const getCategoryName = (item: ItemSetting) => {
+    // itemName 기반 아이템들 처리
+    if (item.itemName) {
+      if (item.itemName === 'instantpartnerjoinapply') return '즉시가입';
+      if (item.itemName === 'shoppingmallpurchaseapply') return '쇼핑구매';
+      return item.itemName;
+    }
+    
+    // 기존 category 기반 아이템들 처리
     const categoryMap: Record<string, string> = {
       'INSURANCE': '보험',
       'RENTAL': '렌탈',
       'INTERNET_TV': '인터넷/방송',
       'FUNERAL': '상조',
       'RENTAL_MALL': '렌탈몰',
+      'SHOPPING_MALL': '쇼핑몰',
+      'INSTANT_PARTNER': '즉시파트너',
     };
-    return categoryMap[category] || category;
+    return categoryMap[item.category || ''] || item.category || '기타';
   };
 
   // 필터링된 아이템
   const filteredItems = filter === 'all' 
     ? items 
-    : items.filter(item => item.category === filter);
+    : items.filter(item => {
+      if (filter === 'instantpartnerjoinapply') return item.itemName === 'instantpartnerjoinapply';
+      if (filter === 'shoppingmallpurchaseapply') return item.itemName === 'shoppingmallpurchaseapply';
+      return item.category === filter;
+    });
 
   useEffect(() => {
     fetchItems();
@@ -286,7 +301,8 @@ const ItemsPage = () => {
                   <option value="INTERNET_TV">인터넷/방송</option>
                   <option value="FUNERAL">상조</option>
                   <option value="RENTAL_MALL">렌탈몰</option>
-  
+                  <option value="instantpartnerjoinapply">즉시가입</option>
+                  <option value="shoppingmallpurchaseapply">쇼핑구매</option>
                 </select>
                 <button 
                   onClick={handleMigrateCustom}
@@ -372,6 +388,8 @@ const ItemsPage = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        item.itemName === 'instantpartnerjoinapply' ? 'bg-pink-100 text-pink-800' :
+                        item.itemName === 'shoppingmallpurchaseapply' ? 'bg-indigo-100 text-indigo-800' :
                         item.category === 'INSURANCE' ? 'bg-blue-100 text-blue-800' :
                         item.category === 'RENTAL' ? 'bg-green-100 text-green-800' :
                         item.category === 'INTERNET_TV' ? 'bg-purple-100 text-purple-800' :
@@ -379,16 +397,30 @@ const ItemsPage = () => {
                         item.category === 'RENTAL_MALL' ? 'bg-orange-100 text-orange-800' :
                         'bg-yellow-100 text-yellow-800'
                       }`}>
-                        {getCategoryName(item.category)}
+                        {getCategoryName(item)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.provider}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.productName}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.paymentTerm}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₩{item.baseAmount.toLocaleString()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.expectedRate}%</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.pointRate}%</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₩{item.pointAmount.toLocaleString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {item.provider || <span className="text-gray-400 italic">미입력</span>}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {item.productName || <span className="text-gray-400 italic">미입력</span>}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {item.paymentTerm || <span className="text-gray-400 italic">미입력</span>}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {item.baseAmount ? `₩${item.baseAmount.toLocaleString()}` : <span className="text-gray-400 italic">미입력</span>}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {item.expectedRate ? `${item.expectedRate}%` : <span className="text-gray-400 italic">미입력</span>}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {item.pointRate ? `${item.pointRate}%` : <span className="text-gray-400 italic">미입력</span>}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {item.pointAmount ? `₩${item.pointAmount.toLocaleString()}` : <span className="text-gray-400 italic">미입력</span>}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
                         <button 
