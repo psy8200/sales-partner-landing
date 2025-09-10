@@ -41,6 +41,13 @@ const PartnersPage = () => {
     bankAccount: ''
   });
 
+  // 추천인변경 모달 상태
+  const [isReferralModalOpen, setIsReferralModalOpen] = useState(false);
+  const [editingReferralMember, setEditingReferralMember] = useState<UserRow | null>(null);
+  const [referralFormData, setReferralFormData] = useState({
+    referralCode: ''
+  });
+
   const allSelected = useMemo(() => rows.length > 0 && rows.every(r => selected[r.id]), [rows, selected]);
   const selectedIds = useMemo(() => rows.filter(r => selected[r.id]).map(r => r.id), [rows, selected]);
 
@@ -219,6 +226,69 @@ const PartnersPage = () => {
     } catch (error) {
       console.error('포인트 새로고침 오류:', error);
       alert('포인트 새로고침 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 추천인변경 모달 열기
+  const handleReferralEdit = (userId: string) => {
+    const member = rows.find(r => r.id === userId);
+    if (!member) return;
+
+    setEditingReferralMember(member);
+    setReferralFormData({
+      referralCode: member.referralCode || ''
+    });
+    setIsReferralModalOpen(true);
+  };
+
+  // 추천인변경 모달 닫기
+  const handleCloseReferralModal = () => {
+    setIsReferralModalOpen(false);
+    setEditingReferralMember(null);
+    setReferralFormData({
+      referralCode: ''
+    });
+  };
+
+  // 추천인변경 완료
+  const handleReferralUpdate = async () => {
+    if (!editingReferralMember) return;
+
+    // 입력값 검증
+    if (!referralFormData.referralCode.trim()) {
+      alert('추천인코드를 입력해주세요.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/users/${editingReferralMember.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editingReferralMember.name,
+          phone: editingReferralMember.phone,
+          email: editingReferralMember.email,
+          points: editingReferralMember.totalPoints || 0,
+          referralCode: referralFormData.referralCode.trim(),
+          bankName: editingReferralMember.bankName,
+          accountHolder: editingReferralMember.name,
+          bankAccount: editingReferralMember.bankAccount,
+          role: editingReferralMember.role,
+          partnerStatus: editingReferralMember.partnerStatus
+        }),
+      });
+
+      if (response.ok) {
+        alert('추천인코드가 성공적으로 변경되었습니다.');
+        handleCloseReferralModal();
+        fetchUsers(); // 목록 새로고침
+      } else {
+        const error = await response.json();
+        alert(`추천인코드 변경 실패: ${error.error || '알 수 없는 오류'}`);
+      }
+    } catch (error) {
+      console.error('추천인코드 변경 오류:', error);
+      alert('추천인코드 변경 중 오류가 발생했습니다.');
     }
   };
 
@@ -433,6 +503,13 @@ const PartnersPage = () => {
                         >
                           포인트새로고침
                         </button>
+                        <button
+                          onClick={() => handleReferralEdit(member.id)}
+                          className="px-2 py-1 bg-purple-600 text-white rounded text-xs hover:bg-purple-700"
+                          title="추천인변경"
+                        >
+                          추천인변경
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -522,6 +599,68 @@ const PartnersPage = () => {
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
               >
                 수정완료
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 추천인변경 모달 */}
+      {isReferralModalOpen && editingReferralMember && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="text-center mb-4">
+              <div className="text-4xl mb-2">🎯</div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                추천인코드 변경
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                {editingReferralMember.name}님의 추천인코드를 변경합니다
+              </p>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  현재 추천인코드
+                </label>
+                <div className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-sm text-gray-600">
+                  {editingReferralMember.referralCode || '없음'}
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  새로운 추천인코드 *
+                </label>
+                <input
+                  type="text"
+                  value={referralFormData.referralCode}
+                  onChange={(e) => setReferralFormData(prev => ({ ...prev, referralCode: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="새로운 추천인코드를 입력하세요"
+                />
+              </div>
+              
+              <div className="bg-purple-50 p-3 rounded-md">
+                <p className="text-sm text-purple-700">
+                  💡 <strong>주의:</strong> 추천인코드 변경 시 즉시 데이터베이스에 저장됩니다.
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={handleCloseReferralModal}
+                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleReferralUpdate}
+                className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+              >
+                변경하기
               </button>
             </div>
           </div>

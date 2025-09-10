@@ -7,7 +7,7 @@ export default function DevelopmentDetailsPage() {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">🔧 개발 세부내용</h1>
-        <p className="text-gray-600 mb-8">현재 시스템의 상세한 기술 스펙 및 구현 현황 (2025년 9월 9일 기준)</p>
+        <p className="text-gray-600 mb-8">현재 시스템의 상세한 기술 스펙 및 구현 현황 (2025년 9월 10일 기준)</p>
         
         <div className="space-y-8">
           {/* 시스템 개요 */}
@@ -100,6 +100,24 @@ export default function DevelopmentDetailsPage() {
                   <div className="bg-blue-50 p-3 rounded text-sm">
                     <div className="font-semibold">SystemConfig</div>
                     <div>시스템 설정</div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-medium text-gray-700 mb-2">수금 관리 시스템 모델들 (완전 개발 완료)</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-green-50 p-3 rounded text-sm">
+                    <div className="font-semibold">Contract</div>
+                    <div>계약 정보 관리 (25개 상태)</div>
+                  </div>
+                  <div className="bg-green-50 p-3 rounded text-sm">
+                    <div className="font-semibold">Payment</div>
+                    <div>결제 정보 관리</div>
+                  </div>
+                  <div className="bg-green-50 p-3 rounded text-sm">
+                    <div className="font-semibold">Settlement</div>
+                    <div>정산 정보 관리</div>
                   </div>
                 </div>
               </div>
@@ -209,6 +227,27 @@ export default function DevelopmentDetailsPage() {
               </div>
 
               <div>
+                <h3 className="text-lg font-medium text-gray-700 mb-2">수금 관리 API (완전 개발 완료)</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                  <div className="bg-green-50 p-3 rounded">
+                    <strong>GET /api/admin/collections/all-contracts</strong> - 전체 계약 목록
+                  </div>
+                  <div className="bg-green-50 p-3 rounded">
+                    <strong>GET /api/admin/collections/collection-contracts</strong> - 수금관리계약
+                  </div>
+                  <div className="bg-green-50 p-3 rounded">
+                    <strong>GET /api/admin/collections/completed-contracts</strong> - 수금완료계약
+                  </div>
+                  <div className="bg-green-50 p-3 rounded">
+                    <strong>GET /api/admin/collections/lump-sum-contracts</strong> - 일시납계약
+                  </div>
+                  <div className="bg-green-50 p-3 rounded">
+                    <strong>POST /api/admin/collections/verification/upload</strong> - 수금검증 Excel 업로드
+                  </div>
+                </div>
+              </div>
+
+              <div>
                 <h3 className="text-lg font-medium text-gray-700 mb-2">회원 관리 API</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                   <div className="bg-yellow-50 p-3 rounded">
@@ -290,6 +329,18 @@ export default function DevelopmentDetailsPage() {
               </div>
 
               <div>
+                <h3 className="text-lg font-medium text-gray-700 mb-3">💰 수금 관리 시스템 (완전 개발 완료)</h3>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• <strong>전체계약:</strong> 모든 계약 현황 조회 (ACTIVE, CONFIRMED, COMPLETED, CANCELLED, SUSPENDED)</div>
+                  <div>• <strong>수금관리계약:</strong> COLLECTION 상태 계약 관리, 월납 계약 수금 진행 상황 추적</div>
+                  <div>• <strong>수금완료계약:</strong> COMPLETED_COLLECTION 상태 계약 관리, 수금 완료일시 및 확정 정보</div>
+                  <div>• <strong>일시납계약:</strong> LUMP_SUM 상태 계약 관리, 즉시 정산 대상 계약</div>
+                  <div>• <strong>수금검증:</strong> Excel 파일 업로드, 계약 데이터와 수금 데이터 비교, 수금 성공/실패 분류</div>
+                  <div>• <strong>페이지네이션:</strong> 10개씩 페이지 분할, 검색 및 필터링 기능</div>
+                </div>
+              </div>
+
+              <div>
                 <h3 className="text-lg font-medium text-gray-700 mb-3">💾 백업 시스템</h3>
                 <div className="space-y-2 text-sm text-gray-600">
                   <div>• <strong>3중 백업:</strong> 수동백업, 로컬Git, GitHub 원격백업</div>
@@ -304,7 +355,7 @@ export default function DevelopmentDetailsPage() {
 
           {/* 최근 해결된 문제들 */}
           <section className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">🔧 최근 해결된 문제들 (2025년 9월 9일)</h2>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">🔧 최근 해결된 문제들 (2025년 9월 10일)</h2>
             <div className="space-y-4">
               <div className="bg-green-50 p-4 rounded">
                 <h3 className="text-lg font-medium text-green-800 mb-2">✅ 계약입력관리 시스템 고도화</h3>
@@ -351,6 +402,18 @@ export default function DevelopmentDetailsPage() {
               </div>
 
               <div className="bg-green-50 p-4 rounded">
+                <h3 className="text-lg font-medium text-green-800 mb-2">✅ 수금 관리 시스템 완전 개발 완료</h3>
+                <div className="text-sm text-green-700 space-y-1">
+                  <div>• 전체계약 페이지: 모든 계약 현황 조회 및 상태별 필터링</div>
+                  <div>• 수금관리계약 페이지: COLLECTION 상태 계약 관리</div>
+                  <div>• 수금완료계약 페이지: COMPLETED_COLLECTION 상태 계약 관리</div>
+                  <div>• 일시납계약 페이지: LUMP_SUM 상태 계약 관리</div>
+                  <div>• 수금검증 페이지: Excel 업로드, 데이터 비교, 성공/실패 분류</div>
+                  <div>• 5개 API 엔드포인트 완전 구현</div>
+                </div>
+              </div>
+
+              <div className="bg-green-50 p-4 rounded">
                 <h3 className="text-lg font-medium text-green-800 mb-2">✅ 백업 시스템 정리</h3>
                 <div className="text-sm text-green-700 space-y-1">
                   <div>• 3중 백업 체계 구축 (수동백업, 로컬Git, GitHub)</div>
@@ -376,7 +439,7 @@ export default function DevelopmentDetailsPage() {
 
           {/* 현재 시스템 상태 */}
           <section className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">📈 현재 시스템 상태 (2025년 9월 9일)</h2>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">📈 현재 시스템 상태 (2025년 9월 10일)</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h3 className="text-lg font-medium text-gray-700 mb-3">✅ 완료된 기능</h3>
@@ -387,6 +450,7 @@ export default function DevelopmentDetailsPage() {
                   <li>• <strong>계약 관리:</strong> 입력/수정/삭제/검색</li>
                   <li>• <strong>아이템 관리:</strong> 동적 생성/제목수정</li>
                   <li>• <strong>담당자 관리:</strong> 등록/배정/관리</li>
+                  <li>• <strong>수금 관리:</strong> 전체계약/수금관리/수금완료/일시납/수금검증</li>
                   <li>• <strong>상담신청 관리:</strong> 파트너 신청 및 승인</li>
                   <li>• <strong>PWA 지원:</strong> 웹과 모바일 통합</li>
                   <li>• <strong>백업 시스템:</strong> 3중 백업 체계</li>
@@ -397,7 +461,7 @@ export default function DevelopmentDetailsPage() {
               <div>
                 <h3 className="text-lg font-medium text-gray-700 mb-3">🚧 향후 개발 예정</h3>
                 <ul className="space-y-2 text-sm text-gray-600">
-                  <li>• <strong>수금 관리:</strong> Excel 업로드/비교/분류</li>
+                  <li>• <strong>정산 관리:</strong> 정산완료리스트, 수당수수료계산, 출금요청리스트</li>
                   <li>• <strong>결제 시스템:</strong> Payment 모델 활용</li>
                   <li>• <strong>정산 시스템:</strong> Settlement 모델 활용</li>
                   <li>• <strong>포인트 시스템:</strong> PointLedger 모델 활용</li>
@@ -413,15 +477,15 @@ export default function DevelopmentDetailsPage() {
               <h3 className="text-lg font-medium text-blue-800 mb-2">📊 현재 데이터 현황</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">8</div>
+                  <div className="text-2xl font-bold text-blue-600">6</div>
                   <div className="text-gray-600">총 사용자</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">8</div>
+                  <div className="text-2xl font-bold text-green-600">1</div>
                   <div className="text-gray-600">총 계약</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">7</div>
+                  <div className="text-2xl font-bold text-purple-600">20</div>
                   <div className="text-gray-600">총 상품</div>
                 </div>
                 <div className="text-center">

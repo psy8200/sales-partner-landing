@@ -41,7 +41,7 @@ export default function LumpSumContractsPage() {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('CONFIRMED');
+  const [statusFilter, setStatusFilter] = useState('COMPLETED_COLLECTION');
   const [confirmedDateFilter, setConfirmedDateFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -267,7 +267,7 @@ export default function LumpSumContractsPage() {
           contract.endDate ? new Date(contract.endDate).toLocaleDateString('ko-KR') : '',
           contract.installationDate ? new Date(contract.installationDate).toLocaleDateString('ko-KR') : '',
           contract.confirmedAt ? new Date(contract.confirmedAt).toLocaleDateString('ko-KR') : '',
-          contract.status === 'CONFIRMED' || contract.status === 'LUMP_SUM' ? '수금완료' : contract.status,
+          contract.status === 'CONFIRMED' || contract.status === 'LUMP_SUM' || contract.status === 'COMPLETED_COLLECTION' ? '수금완료' : contract.status,
           contract.notes || ''
         ];
       });
@@ -471,9 +471,9 @@ export default function LumpSumContractsPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap w-20">
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            contract.status === 'CONFIRMED' || contract.status === 'LUMP_SUM' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                            contract.status === 'CONFIRMED' || contract.status === 'LUMP_SUM' || contract.status === 'COMPLETED_COLLECTION' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                           }`}>
-                            {contract.status === 'CONFIRMED' || contract.status === 'LUMP_SUM' ? '수금완료' : contract.status}
+                            {contract.status === 'CONFIRMED' || contract.status === 'LUMP_SUM' || contract.status === 'COMPLETED_COLLECTION' ? '수금완료' : contract.status}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 w-20">

@@ -68,7 +68,7 @@ const MemberEditPage = ({ params }: { params: Promise<{ id: string }> }) => {
           email: data.email || '',
           phone: data.phone || '',
           points: data.points ?? 0,
-          referralCode: data.referralCode || '', // API에서 받은 추천인코드만 사용
+          referralCode: data.referralCode || null, // API에서 받은 추천인코드만 사용 (null 유지)
           bankName: data.bankName || '',
           accountHolder: data.accountHolder || '',
           bankAccount: data.bankAccount || '',
@@ -96,8 +96,8 @@ const MemberEditPage = ({ params }: { params: Promise<{ id: string }> }) => {
         const res = await fetch('/api/admin/company-info');
         const data = await res.json();
         
-        if (data.success && data.data && data.data.referralCodeDefault) {
-          setDefaultReferralCode(data.data.referralCodeDefault);
+        if (data.success && data.companyInfo && data.companyInfo.referralCodeDefault) {
+          setDefaultReferralCode(data.companyInfo.referralCodeDefault);
         }
       } catch (error) {
         console.error('기본추천코드 로드 실패:', error);
@@ -170,7 +170,7 @@ const MemberEditPage = ({ params }: { params: Promise<{ id: string }> }) => {
         ✅ 이름: ${formData.name}
         ✅ 연락처: ${formData.phone}
         ✅ 이메일: ${formData.email}
-        ✅ 추천인코드: ${formData.referralCode}
+        ✅ 추천인코드: ${formData.referralCode || '없음'}
         
         모든 정보가 성공적으로 저장되었습니다!
       `;
@@ -368,8 +368,8 @@ const MemberEditPage = ({ params }: { params: Promise<{ id: string }> }) => {
             </label>
             <input
               type="text"
-              value={formData.referralCode}
-              onChange={(e) => setFormData({ ...formData, referralCode: e.target.value })}
+              value={formData.referralCode || ''}
+              onChange={(e) => setFormData({ ...formData, referralCode: e.target.value || null })}
               className="w-full px-3 py-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-red-50"
               placeholder={defaultReferralCode ? `기본값: ${defaultReferralCode}` : "추천인코드를 입력하세요"}
               aria-label="추천인코드 입력"

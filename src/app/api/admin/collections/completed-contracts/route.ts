@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
 
     console.log('📋 요청 파라미터:', { page, limit, search, status });
 
+    // 검색 조건 구성 - 수금완료계약은 COMPLETED_COLLECTION 상태만
     const where: Record<string, unknown> = {
       status: status
     };
@@ -31,15 +32,28 @@ export async function GET(request: NextRequest) {
 
     console.log('🔍 데이터베이스 쿼리 시작:', where);
 
+    // 계약 목록 조회
     const contracts = await prisma.contract.findMany({
       where,
-      orderBy: { confirmedAt: 'desc' },
+      orderBy: { createdAt: 'desc' },
       skip: (page - 1) * limit,
       take: limit
     });
 
     console.log('📊 조회된 계약 수:', contracts.length);
+    
+    // 계약 데이터 상세 로깅
+    contracts.forEach((contract, index) => {
+      console.log(`📋 계약 ${index + 1}:`, {
+        id: contract.id,
+        contractNumber: contract.contractNumber,
+        customerName: contract.customerName,
+        customerPhone: contract.customerPhone,
+        contractAmount: contract.contractAmount
+      });
+    });
 
+    // 전체 개수 조회
     const total = await prisma.contract.count({ where });
 
     console.log('📈 전체 계약 수:', total);

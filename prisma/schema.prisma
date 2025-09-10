@@ -472,6 +472,7 @@ model Contract {
   decisionPoints   Int?
   insuredName      String?
   insuredPhone     String?
+  referralCode     String?        // 추천인코드 필드 추가
   itemSetting      ItemSetting?   @relation(fields: [itemSettingId], references: [id])
   payments         Payment[]
 

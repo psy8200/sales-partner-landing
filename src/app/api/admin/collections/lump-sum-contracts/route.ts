@@ -3,14 +3,18 @@ import { prisma } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔍 일시납계약 API 호출 시작');
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const search = searchParams.get('search') || '';
+    const status = searchParams.get('status') || 'COMPLETED_COLLECTION';
 
-    // 검색 조건 구성 - 일시납계약은 LUMP_SUM 상태만
+    console.log('📋 요청 파라미터:', { page, limit, search, status });
+
+    // 검색 조건 구성 - 일시납계약은 COMPLETED_COLLECTION 상태만
     const where: Record<string, unknown> = {
-      status: 'LUMP_SUM'
+      status: status
     };
 
     if (search) {
@@ -26,6 +30,8 @@ export async function GET(request: NextRequest) {
       ];
     }
 
+    console.log('🔍 데이터베이스 쿼리 시작:', where);
+
     // 계약 목록 조회
     const contracts = await prisma.contract.findMany({
       where,
@@ -34,10 +40,25 @@ export async function GET(request: NextRequest) {
       take: limit
     });
 
+    console.log('📊 조회된 계약 수:', contracts.length);
+    
+    // 계약 데이터 상세 로깅
+    contracts.forEach((contract, index) => {
+      console.log(`📋 계약 ${index + 1}:`, {
+        id: contract.id,
+        contractNumber: contract.contractNumber,
+        customerName: contract.customerName,
+        customerPhone: contract.customerPhone,
+        contractAmount: contract.contractAmount
+      });
+    });
+
     // 전체 개수 조회
     const total = await prisma.contract.count({ where });
 
-    return NextResponse.json({
+    console.log('📈 전체 계약 수:', total);
+
+    const result = {
       contracts,
       pagination: {
         page,
@@ -45,12 +66,15 @@ export async function GET(request: NextRequest) {
         total,
         totalPages: Math.ceil(total / limit)
       }
-    });
+    };
+
+    console.log('✅ API 응답 준비 완료');
+    return NextResponse.json(result);
 
   } catch (error) {
-    console.error('일시납계약 목록 조회 오류:', error);
+    console.error('일시납계약 조회 오류:', error);
     return NextResponse.json(
-      { error: '서버 오류가 발생했습니다.' },
+      { error: '일시납계약 조회 중 오류가 발생했습니다.' },
       { status: 500 }
     );
   }
