@@ -66,6 +66,8 @@ const MembersPage = () => {
   const [rows, setRows] = useState<User[]>([]);
   const [total, setTotal] = useState(0);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [memberStatuses, setMemberStatuses] = useState<Record<string, string>>({});
+  const [memberPoints, setMemberPoints] = useState<Record<string, number>>({});
   const [stats, setStats] = useState<{ total: number; general: number; partner: number; partnerRate: number } | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [selectedQuestion, setSelectedQuestion] = useState<Record<string, boolean>>({});
@@ -81,6 +83,7 @@ const MembersPage = () => {
 
   const allSelected = useMemo(() => rows.length > 0 && rows.every(r => selected[r.id]), [rows, selected]);
   const selectedIds = useMemo(() => rows.filter(r => selected[r.id]).map(r => r.id), [rows, selected]);
+
 
   // 필터 옵션 가져오기
   const fetchFilterOptions = async () => {
@@ -104,15 +107,23 @@ const MembersPage = () => {
       params.set('limit', String(limit));
       if (searchTerm) params.set('q', searchTerm);
       if (status) params.set('status', status);
-      if (role) params.set('role', role);
       if (referralCodeFilter) params.set('referralCodeFilter', referralCodeFilter);
-      if (mode === 'GENERAL') params.set('role', 'GENERAL');
-      if (mode === 'MEMBER') params.set('role', 'MEMBER');
-      if (mode === 'ADMIN') params.set('role', 'ADMIN');
+      
+      // mode에 따라 role 설정 (role 파라미터 중복 방지)
+      if (mode === 'GENERAL') {
+        params.set('role', 'GENERAL');
+      } else if (mode === 'MEMBER') {
+        params.set('role', 'MEMBER');
+      } else if (mode === 'ADMIN') {
+        params.set('role', 'ADMIN');
+      } else if (role) {
+        params.set('role', role);
+      }
 
       console.log('Fetching users with mode:', mode, 'params:', params.toString());
       console.log('Current pathname:', pathname);
       console.log('Pathname includes /partners:', pathname.includes('/partners'));
+      console.log('Final API URL:', `/api/admin/users?${params.toString()}`);
 
       // 회원 전용 API 사용
       const res = await fetch(`/api/admin/users?${params.toString()}`);
@@ -121,24 +132,119 @@ const MembersPage = () => {
       if (!res.ok) {
         const errorText = await res.text();
         console.error('API error response text:', errorText);
-        throw new Error(`API 오류 (${res.status}): ${errorText}`);
+        
+        // API 오류 시 빈 데이터로 처리
+        setRows([]);
+        setTotal(0);
+        setMemberStatuses({});
+        setMemberPoints({});
+        setError(`API 오류 (${res.status}): ${errorText}`);
+        return;
       }
       
       const jsonResult = await safeJsonParse(res);
       console.log('API response:', jsonResult);
+      console.log('API response type:', typeof jsonResult);
+      console.log('API response keys:', Object.keys(jsonResult || {}));
       
-      // API가 직접 items와 total을 반환하므로 success 체크 제거
-      const data = jsonResult as unknown as { items: User[]; total: number };
+      // safeJsonParse 결과 처리
+      if (!jsonResult.success) {
+        console.error('JSON 파싱 실패:', jsonResult.error);
+        setRows([]);
+        setTotal(0);
+        setMemberStatuses({});
+        setMemberPoints({});
+        setError(`데이터 파싱 오류: ${jsonResult.error}`);
+        return;
+      }
+      
+      const data = jsonResult.data as { items: User[]; total: number };
       console.log('API response data:', data);
       
       // null 체크 추가
-      if (!data || !data.items) {
+      if (!data || !data.items || !Array.isArray(data.items)) {
         console.error('Invalid data structure:', data);
-        throw new Error('데이터 구조가 올바르지 않습니다.');
+        console.log('API response status:', res.status);
+        console.log('API response headers:', res.headers);
+        
+        // 빈 데이터로 처리하여 오류 방지
+        setRows([]);
+        setTotal(0);
+        setMemberStatuses({});
+        setMemberPoints({});
+        setError('데이터를 불러올 수 없습니다. API 응답을 확인해주세요.');
+        return;
       }
       
-      setRows(data.items);
       setTotal(data.total);
+      
+      // 파트너회원목록과 동일한 로직으로 포인트 데이터 가져오기
+      console.log('🔍 회원 목록 로드 완료:', data.items.length, '명');
+      
+      // 각 사용자의 포인트 데이터 가져오기 (파트너회원목록과 동일한 로직)
+      const usersWithPoints = await Promise.all(
+        data.items.map(async (user: User) => {
+          try {
+            console.log('🔍 포인트 API 호출 시작:', { userId: user.id, userName: user.name });
+            const pointsRes = await fetch(`/api/admin/users/${user.id}/points`);
+            console.log('📡 포인트 API 응답:', { 
+              userId: user.id, 
+              userName: user.name, 
+              status: pointsRes.status, 
+              ok: pointsRes.ok 
+            });
+            
+            if (pointsRes.ok) {
+              const pointsData = await pointsRes.json();
+              console.log('💰 포인트 데이터 상세:', { 
+                userId: user.id, 
+                userName: user.name, 
+                totalPoints: pointsData.totalPoints,
+                fullData: pointsData 
+              });
+              return { ...user, totalPoints: pointsData.totalPoints };
+            } else {
+              const errorText = await pointsRes.text();
+              console.error('❌ 포인트 API 오류:', { 
+                userId: user.id, 
+                userName: user.name, 
+                status: pointsRes.status, 
+                error: errorText 
+              });
+            }
+          } catch (error) {
+            console.error(`❌ 포인트 데이터 로드 실패 (${user.id}):`, error);
+          }
+          return { ...user, totalPoints: 0 };
+        })
+      );
+      
+      // 상태와 포인트 맵 생성
+      const statusMap: Record<string, string> = {};
+      const pointsMap: Record<string, number> = {};
+      
+      usersWithPoints.forEach((user) => {
+        if (user.role === 'GENERAL') {
+          const status = user.totalPoints >= 50000 ? '파트너승인가능' : '파트너승인대기';
+          statusMap[user.id] = status;
+          pointsMap[user.id] = user.totalPoints;
+        } else if (user.role === 'MEMBER') {
+          statusMap[user.id] = '파트너';
+          pointsMap[user.id] = 0;
+        } else if (user.role === 'ADMIN') {
+          statusMap[user.id] = user.referralCode === 'SUPER_ADMIN' ? '최고관리자' : '관리자';
+          pointsMap[user.id] = 0;
+        } else {
+          statusMap[user.id] = user.role;
+          pointsMap[user.id] = 0;
+        }
+      });
+      
+      setMemberStatuses(statusMap);
+      setMemberPoints(pointsMap);
+      setRows(usersWithPoints); // 포인트 데이터가 포함된 사용자 목록으로 설정
+      
+      console.log('✅ 파트너회원목록과 동일한 로직으로 포인트 계산 완료:', { statusMap, pointsMap });
     } catch (e: unknown) {
       console.error('Error fetching users:', e);
       setError(e instanceof Error ? e.message : '알 수 없는 오류가 발생했습니다.');
@@ -256,45 +362,9 @@ const MembersPage = () => {
     }
     console.log('Loading data for mode:', mode);
     
-    // 함수를 inline으로 정의하여 의존성 문제 해결
+    // fetchUsers 함수를 직접 호출하여 포인트 계산 로직 포함
     const loadData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const params = new URLSearchParams();
-        params.set('page', String(page));
-        params.set('limit', String(limit));
-        if (searchTerm) params.set('q', searchTerm);
-        if (mode === 'GENERAL') params.set('role', 'GENERAL');
-        if (mode === 'MEMBER') params.set('role', 'MEMBER');
-        if (mode === 'ADMIN') params.set('role', 'ADMIN');
-
-        console.log('Fetching users with mode:', mode, 'params:', params.toString());
-
-        const res = await fetch(`/api/admin/users?${params.toString()}`);
-        
-        if (!res.ok) {
-          const errorText = await res.text();
-          console.error('API error response text:', errorText);
-          throw new Error(`API 오류 (${res.status}): ${errorText}`);
-        }
-        
-        const data = await res.json();
-        console.log('API response data:', data);
-        
-        // 회원 데이터 처리
-        if (!data || !data.items) {
-          console.error('Invalid data structure:', data);
-          throw new Error('데이터 구조가 올바르지 않습니다.');
-        }
-        setRows(data.items);
-        setTotal(data.total);
-      } catch (e: unknown) {
-        console.error('Error fetching users:', e);
-        setError(e instanceof Error ? e.message : '알 수 없는 오류가 발생했습니다.');
-      } finally {
-        setLoading(false);
-      }
+      await fetchUsers();
     };
 
     loadData();
@@ -368,19 +438,6 @@ const MembersPage = () => {
     }
   };
 
-  const roleLabel = (r: string, referralCode?: string) => {
-    // 최고관리자 구분 (referralCode가 'SUPER_ADMIN'인 경우)
-    if (r === 'ADMIN' && referralCode === 'SUPER_ADMIN') {
-      return '최고관리자';
-    }
-    
-    switch (r) {
-      case 'GENERAL': return '예비파트너';
-      case 'MEMBER': return '파트너';
-      case 'ADMIN': return '관리자';
-      default: return r;
-    }
-  };
 
   const partnerStatusLabel = (s: string) => {
     switch (s) {
@@ -856,6 +913,18 @@ const MembersPage = () => {
                    ))}
                  </select>
                  
+                 {/* 새로고침 버튼 */}
+                 <button
+                   onClick={() => {
+                     setPage(1);
+                     fetchUsers();
+                   }}
+                   className="px-3 sm:px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs sm:text-sm"
+                   title="데이터 새로고침"
+                 >
+                   🔄 새로고침
+                 </button>
+                 
                  {/* 삭제버튼 */}
                  <button
                    onClick={bulkDelete}
@@ -890,17 +959,18 @@ const MembersPage = () => {
                      <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">결정포인트</th>
                    )}
                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">접속여부</th>
-                   <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">역할</th>
+                   <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
+                   <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">결정포인트</th>
                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">수정</th>
                  </tr>
                </thead>
                <tbody className="bg-white divide-y divide-gray-200">
                  {loading ? (
-                   <tr><td className="p-3 sm:p-6" colSpan={pathname.includes('/partners') ? 8 : 7}>불러오는 중...</td></tr>
+                   <tr><td className="p-3 sm:p-6" colSpan={pathname.includes('/partners') ? 9 : 8}>불러오는 중...</td></tr>
                  ) : error ? (
-                   <tr><td className="p-3 sm:p-6 text-red-600 text-xs sm:text-sm" colSpan={pathname.includes('/partners') ? 8 : 7}>{error}</td></tr>
+                   <tr><td className="p-3 sm:p-6 text-red-600 text-xs sm:text-sm" colSpan={pathname.includes('/partners') ? 9 : 8}>{error}</td></tr>
                  ) : rows.length === 0 ? (
-                   <tr><td className="p-3 sm:p-6 text-xs sm:text-sm" colSpan={pathname.includes('/partners') ? 8 : 7}>데이터가 없습니다.</td></tr>
+                   <tr><td className="p-3 sm:p-6 text-xs sm:text-sm" colSpan={pathname.includes('/partners') ? 9 : 8}>데이터가 없습니다.</td></tr>
                  ) : (
                    rows.map((member) => (
                      <tr key={member.id} className="hover:bg-gray-50">
@@ -936,14 +1006,31 @@ const MembersPage = () => {
                        </td>
                        <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                           member.role === 'ADMIN' && member.referralCode === 'SUPER_ADMIN'
+                           memberStatuses[member.id] === '최고관리자' || (member.role === 'ADMIN' && member.referralCode === 'SUPER_ADMIN')
                              ? 'bg-red-100 text-red-800' // 최고관리자: 빨간색
-                             : member.role === 'ADMIN' 
+                             : memberStatuses[member.id] === '관리자' || member.role === 'ADMIN'
                              ? 'bg-purple-100 text-purple-800' // 일반관리자: 보라색
-                             : member.role === 'MEMBER' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                             : memberStatuses[member.id] === '파트너' || member.role === 'MEMBER'
+                             ? 'bg-green-100 text-green-800' // 파트너: 초록색
+                             : memberStatuses[member.id] === '파트너승인가능'
+                             ? 'bg-green-100 text-green-800' // 파트너승인가능: 초록색
+                             : 'bg-orange-100 text-orange-800' // 파트너승인대기: 주황색
                          }`}>
-                           {roleLabel(member.role, member.referralCode)}
+                           {memberStatuses[member.id] || (member.role === 'GENERAL' ? '파트너승인대기' : member.role === 'MEMBER' ? '파트너' : member.role === 'ADMIN' ? (member.referralCode === 'SUPER_ADMIN' ? '최고관리자' : '관리자') : member.role)}
                          </span>
+                       </td>
+                       <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm">
+                         {member.role === 'GENERAL' ? (
+                           <span className={`font-semibold ${
+                             (memberPoints[member.id] || 0) >= 50000 
+                               ? 'text-green-600' // 50000p 이상: 초록색
+                               : 'text-orange-600' // 50000p 미만: 주황색
+                           }`}>
+                             {memberPoints[member.id] ? `${memberPoints[member.id].toLocaleString()}p` : '0p'}
+                           </span>
+                         ) : (
+                           <span className="text-gray-400">-</span>
+                         )}
                        </td>
                        <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm">
                          <button

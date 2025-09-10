@@ -361,7 +361,7 @@ export default function MemberHomePage() {
                       나의 기준포인트
                     </div>
                     <div className="text-lg font-bold text-blue-600">
-                      {formatNumber(user?.points || 0)}P
+                      {formatNumber(user?.finalPoints || 0)}P
                     </div>
                   </div>
                 )}

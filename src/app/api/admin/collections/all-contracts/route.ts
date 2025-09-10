@@ -7,11 +7,22 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const search = searchParams.get('search') || '';
-    const paymentTerm = searchParams.get('paymentTerm') || '';
 
-    // 검색 조건 구성 - 수금관리전체계약은 CONFIRMED 상태만
+
+    // 검색 조건 구성 - status 파라미터에 따라 필터링
+    const statusParam = searchParams.get('status') || 'CONFIRMED';
+    let statusFilter: string | string[];
+    
+    if (statusParam.includes(',')) {
+      // 여러 상태를 쉼표로 구분하여 받음 (예: COMPLETED_COLLECTION,LUMP_SUM)
+      statusFilter = statusParam.split(',');
+    } else {
+      // 단일 상태
+      statusFilter = statusParam;
+    }
+
     const where: Record<string, unknown> = {
-      status: 'CONFIRMED'
+      status: statusFilter
     };
 
     if (search) {
@@ -21,13 +32,6 @@ export async function GET(request: NextRequest) {
         { companyName: { contains: search } },
         { itemName: { contains: search } }
       ];
-    }
-
-    // 납입기간 필터 추가
-    if (paymentTerm) {
-      where.dynamicFields = {
-        contains: `"paymentTerm":"${paymentTerm}"`
-      };
     }
 
     // 계약 목록 조회

@@ -367,6 +367,8 @@ export default function ManagersPage() {
                       checked={selectedManagers.length === managers.length && managers.length > 0}
                       onChange={handleSelectAll}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      aria-label="전체 선택"
+                      title="모든 담당자를 선택/해제합니다"
                     />
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -395,6 +397,8 @@ export default function ManagersPage() {
                         checked={selectedManagers.includes(manager.id)}
                         onChange={() => handleSelectManager(manager.id)}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        aria-label={`${manager.name} 담당자 선택`}
+                        title={`${manager.name} 담당자를 선택/해제합니다`}
                       />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -433,3 +437,4 @@ export default function ManagersPage() {
     </div>
   );
 }
+

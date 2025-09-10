@@ -146,10 +146,13 @@ const MemberEditPage = ({ params }: { params: Promise<{ id: string }> }) => {
     try {
       console.log('🔍 회원 정보 수정 데이터:', formData);
       
+      // 역할 필드는 제외하고 저장 (파트너 승인처리에서만 변경)
+      const { role, ...dataToSave } = formData;
+      
       const res = await fetch(`/api/admin/users/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(dataToSave),
       });
       
       if (!res.ok) {
@@ -374,19 +377,17 @@ const MemberEditPage = ({ params }: { params: Promise<{ id: string }> }) => {
 
           </div>
 
-          {/* 관리자 전용 필드 */}
+          {/* 현재 역할 표시 (읽기 전용) */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">역할</label>
-            <select
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value as 'GENERAL' | 'MEMBER' | 'ADMIN' })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              aria-label="역할 선택"
-            >
-              <option value="GENERAL">예비파트너</option>
-              <option value="MEMBER">파트너</option>
-              <option value="ADMIN">관리자</option>
-            </select>
+            <label className="block text-sm font-medium text-gray-700 mb-1">현재 역할</label>
+            <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700">
+              {formData.role === 'GENERAL' ? '예비파트너' : 
+               formData.role === 'MEMBER' ? '파트너' : 
+               formData.role === 'ADMIN' ? '관리자' : formData.role}
+            </div>
+            <div className="text-xs text-gray-500 mt-1">
+              ※ 역할 변경은 파트너 승인처리 버튼을 통해 자동으로 처리됩니다
+            </div>
           </div>
 
           <div>
@@ -445,16 +446,18 @@ const MemberEditPage = ({ params }: { params: Promise<{ id: string }> }) => {
               <div className="absolute top-2 right-2 text-right">
                 <div className="space-y-1">
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    pointsData.totalPoints >= 50000 && formData.bankName && formData.accountHolder && formData.bankAccount
+                    pointsData.totalPoints >= 50000
                       ? 'bg-green-100 text-green-800' 
                       : 'bg-orange-100 text-orange-800'
                   }`}>
-                    {pointsData.totalPoints >= 50000 && formData.bankName && formData.accountHolder && formData.bankAccount 
+                    {pointsData.totalPoints >= 50000 
                       ? '파트너승인가능' 
                       : '파트너승인대기'}
                   </span>
                   <div className="text-xs text-gray-500">
-                    50,000P + 은행정보 = 승인
+                    {pointsData.totalPoints >= 50000 
+                      ? '50,000P 이상 - 승인 가능' 
+                      : '50,000P 미만 - 승인 대기'}
                   </div>
                 </div>
               </div>

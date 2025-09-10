@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { CreditCard, Search, Download } from 'lucide-react';
+import { CreditCard, Search } from 'lucide-react';
 
 interface Contract {
   id: string;
@@ -41,11 +41,50 @@ export default function CollectionContractsPage() {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('CONFIRMED');
+  const [confirmedDateFilter, setConfirmedDateFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [selectedContracts, setSelectedContracts] = useState<Set<string>>(new Set());
+
+  // 확정일시 필터를 위한 월별 그룹핑 목록 생성
+  const getMonthlyConfirmedDates = () => {
+    const monthlyGroups: { [key: string]: number } = {};
+    
+    contracts
+      .map(contract => contract.confirmedAt)
+      .filter(date => date)
+      .forEach(date => {
+        const dateObj = new Date(date);
+        const year = dateObj.getFullYear();
+        const month = dateObj.getMonth() + 1;
+        const monthKey = `${year}년 ${month}월`;
+        
+        monthlyGroups[monthKey] = (monthlyGroups[monthKey] || 0) + 1;
+      });
+    
+    return Object.entries(monthlyGroups)
+      .map(([month, count]) => ({ month, count }))
+      .sort((a, b) => {
+        const [yearA, monthA] = a.month.split('년 ').map(s => parseInt(s.replace(/월/g, '')));
+        const [yearB, monthB] = b.month.split('년 ').map(s => parseInt(s.replace(/월/g, '')));
+        
+        if (yearA !== yearB) return yearB - yearA;
+        return monthB - monthA;
+      });
+  };
+
+  // 확정일시 필터링된 계약 목록 (월별)
+  const filteredContracts = contracts.filter(contract => {
+    if (!confirmedDateFilter) return true;
+    
+    const contractDate = new Date(contract.confirmedAt);
+    const contractYear = contractDate.getFullYear();
+    const contractMonth = contractDate.getMonth() + 1;
+    const contractMonthKey = `${contractYear}년 ${contractMonth}월`;
+    
+    return contractMonthKey === confirmedDateFilter;
+  });
 
   // 계약 목록 조회
   const fetchContracts = useCallback(async () => {
@@ -55,7 +94,7 @@ export default function CollectionContractsPage() {
         page: currentPage.toString(),
         limit: '10',
         search: searchTerm,
-        status: statusFilter
+        status: 'COLLECTION'
       });
 
       const response = await fetch(`/api/admin/collections/collection-contracts?${params}`);
@@ -70,7 +109,7 @@ export default function CollectionContractsPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, searchTerm, statusFilter]);
+  }, [currentPage, searchTerm]);
 
   useEffect(() => {
     fetchContracts();
@@ -95,12 +134,12 @@ export default function CollectionContractsPage() {
     }
   };
 
-  const isAllSelected = contracts.length > 0 && contracts.every(contract => selectedContracts.has(contract.id));
-  const isIndeterminate = selectedContracts.size > 0 && selectedContracts.size < contracts.length;
+  const isAllSelected = filteredContracts.length > 0 && filteredContracts.every(contract => selectedContracts.has(contract.id));
+  const isIndeterminate = selectedContracts.size > 0 && selectedContracts.size < filteredContracts.length;
 
   // 계약 되돌리기 함수
   const handleRevertContract = async (contractId: string) => {
-    if (!confirm('이 계약을 계약목록으로 되돌리시겠습니까?\n계약 수정은 상담/계약관리 > 계약목록에서만 가능합니다.')) {
+    if (!confirm('이 계약을 계약목록으로 되돌리시겠습니까?')) {
       return;
     }
 
@@ -115,7 +154,7 @@ export default function CollectionContractsPage() {
 
       if (response.ok) {
         alert('계약이 계약목록으로 되돌려졌습니다.');
-        fetchContracts(); // 목록 새로고침
+        fetchContracts();
       } else {
         alert('계약 되돌리기 중 오류가 발생했습니다.');
       }
@@ -125,17 +164,102 @@ export default function CollectionContractsPage() {
     }
   };
 
-  // 일시납계약으로 이동 함수
-  const handleMoveToLumpSum = async (contractId: string) => {
-    if (!confirm('이 계약을 일시납계약으로 이동시키시겠습니까?')) {
+  // 수금확정 함수
+  const handleConfirmCollection = async (contractId: string) => {
+    if (!confirm('이 계약을 수금확정하시겠습니까?')) {
       return;
     }
 
     try {
-      // TODO: 일시납계약으로 이동하는 API 구현 필요
-      alert('일시납계약으로 이동 기능은 준비 중입니다.');
+      const response = await fetch(`/api/admin/contracts/${contractId}/confirm-collection`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert('수금확정이 완료되었습니다.');
+        
+        // 수금확정된 계약을 목록에서 제거 (즉시 UI 업데이트)
+        setContracts(prevContracts => 
+          prevContracts.filter(contract => contract.id !== contractId)
+        );
+        
+        // 선택 상태에서도 제거
+        setSelectedContracts(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(contractId);
+          return newSet;
+        });
+      } else {
+        const error = await response.json();
+        alert(error.error || '수금확정에 실패했습니다.');
+      }
     } catch (error) {
-      console.error('일시납계약 이동 오류:', error);
+      console.error('수금확정 오류:', error);
+      alert('네트워크 오류가 발생했습니다.');
+    }
+  };
+
+  // 선택된 계약들을 일괄 수금확정하는 함수
+  const handleBulkConfirmCollection = async () => {
+    if (selectedContracts.size === 0) {
+      alert('수금확정할 계약을 선택해주세요.');
+      return;
+    }
+
+    if (!confirm(`선택된 ${selectedContracts.size}개 계약을 수금확정하시겠습니까?`)) {
+      return;
+    }
+
+    try {
+      const selectedContractIds = Array.from(selectedContracts);
+      const promises = selectedContractIds.map(contractId =>
+        fetch(`/api/admin/contracts/${contractId}/confirm-collection`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      );
+
+      const responses = await Promise.all(promises);
+      const results = await Promise.all(
+        responses.map(async (res, index) => {
+          try {
+            const data = await res.json();
+            return { success: res.ok, data, contractId: selectedContractIds[index] };
+          } catch (error) {
+            console.error('JSON 파싱 오류:', error);
+            return { success: false, data: null, contractId: selectedContractIds[index] };
+          }
+        })
+      );
+
+      const successCount = results.filter(r => r.success).length;
+      const failCount = results.length - successCount;
+
+      if (successCount > 0) {
+        alert(`${successCount}개 계약이 수금확정되었습니다.${failCount > 0 ? ` (${failCount}개 실패)` : ''}`);
+        
+        // 성공한 계약들을 목록에서 제거 (즉시 UI 업데이트)
+        const successfulContractIds = results
+          .filter(r => r.success)
+          .map(r => r.contractId);
+        
+        setContracts(prevContracts => 
+          prevContracts.filter(contract => !successfulContractIds.includes(contract.id))
+        );
+        
+        // 선택 상태 초기화
+        setSelectedContracts(new Set());
+      } else {
+        alert('수금확정에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('일괄 수금확정 오류:', error);
       alert('네트워크 오류가 발생했습니다.');
     }
   };
@@ -153,7 +277,6 @@ export default function CollectionContractsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
-        {/* 헤더 */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
             <CreditCard className="h-8 w-8 text-blue-600" />
@@ -162,7 +285,6 @@ export default function CollectionContractsPage() {
           <p className="text-gray-600">확정된 계약의 수금 관리</p>
         </div>
 
-        {/* 검색 및 필터 */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
@@ -173,24 +295,56 @@ export default function CollectionContractsPage() {
                   placeholder="고객명, 계약번호, 회사명, 상품명으로 검색..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      fetchContracts();
+                    }
+                  }}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
-            <div className="flex gap-2">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                title="상태 필터 선택"
-              >
-                <option value="CONFIRMED">확정</option>
-              </select>
-            </div>
+            <button
+              onClick={() => fetchContracts()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+              title="검색"
+            >
+              <Search className="h-4 w-4" />
+              검색
+            </button>
+            <select
+              value={confirmedDateFilter}
+              onChange={(e) => setConfirmedDateFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              title="확정일시 필터 (월별)"
+            >
+              <option value="">수금해당월</option>
+              {getMonthlyConfirmedDates().map(({ month, count }) => (
+                <option key={month} value={month}>
+                  {month} ({count}건)
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={handleBulkConfirmCollection}
+              disabled={selectedContracts.size === 0}
+              className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+                selectedContracts.size === 0
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-green-600 text-white hover:bg-green-700'
+              }`}
+              title="선택된 계약들을 수금확정"
+            >
+              <span>선택수금확정</span>
+              {selectedContracts.size > 0 && (
+                <span className="bg-white text-green-600 rounded-full px-2 py-1 text-xs font-semibold">
+                  {selectedContracts.size}
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
-        {/* 계약 목록 테이블 */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -226,7 +380,7 @@ export default function CollectionContractsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {contracts.length === 0 ? (
+                {filteredContracts.length === 0 ? (
                   <tr>
                     <td colSpan={12} className="px-6 py-12 text-center text-gray-500">
                       <CreditCard className="w-12 h-12 mx-auto text-gray-300 mb-4" />
@@ -235,7 +389,7 @@ export default function CollectionContractsPage() {
                     </td>
                   </tr>
                 ) : (
-                  contracts.map((contract) => {
+                  filteredContracts.map((contract) => {
                     let dynamicFields: Record<string, unknown> = {};
                     try {
                       dynamicFields = contract.dynamicFields ? JSON.parse(contract.dynamicFields) : {};
@@ -300,19 +454,21 @@ export default function CollectionContractsPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap w-20">
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            contract.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                            contract.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' : 
+                            contract.status === 'COLLECTION' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
                           }`}>
-                            {contract.status === 'CONFIRMED' ? '확정' : contract.status}
+                            {contract.status === 'CONFIRMED' ? '수금완료' : 
+                             contract.status === 'COLLECTION' ? '수금확인중' : contract.status}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 w-20">
                           <div className="flex gap-1">
                             <button
-                              onClick={() => handleMoveToLumpSum(contract.id)}
-                              className="px-2 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
-                              title="일시납계약으로 이동"
+                              onClick={() => handleConfirmCollection(contract.id)}
+                              className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                              title="수금확정"
                             >
-                              일시납
+                              수금확정
                             </button>
                             <button
                               onClick={() => handleRevertContract(contract.id)}
@@ -331,7 +487,6 @@ export default function CollectionContractsPage() {
             </table>
           </div>
 
-          {/* 페이지네이션 */}
           {totalPages > 1 && (
             <div className="px-6 py-4 border-t border-gray-200">
               <div className="flex items-center justify-between">

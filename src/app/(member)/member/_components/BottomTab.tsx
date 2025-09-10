@@ -40,12 +40,7 @@ export function BottomTab({ activeTab = 'home', onTabChange }: BottomTabProps) {
 
   return (
     <nav 
-      className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-slate-200/40 pb-safe shadow-lg"
-      style={{ 
-        zIndex: 99999,
-        pointerEvents: 'auto',
-        touchAction: 'manipulation'
-      }}
+      className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-slate-200/40 pb-safe shadow-lg z-[99999] pointer-events-auto touch-manipulation"
     >
       <div className="flex items-center justify-around px-4 py-2">
         {tabs.map((tab) => {
@@ -69,15 +64,9 @@ export function BottomTab({ activeTab = 'home', onTabChange }: BottomTabProps) {
                 e.stopPropagation();
                 handleTabClick(tab.id);
               }}
-              className="flex flex-col items-center justify-center py-2 px-3 min-h-[44px] min-w-[44px] rounded-lg transition-all duration-200 hover:bg-gray-50 active:scale-95"
+              className="flex flex-col items-center justify-center py-2 px-3 min-h-[44px] min-w-[44px] rounded-lg transition-all duration-200 hover:bg-gray-50 active:scale-95 pointer-events-auto touch-manipulation z-[100000]"
               aria-label={tab.label}
               aria-current={isActive ? 'page' : undefined}
-              style={{ 
-                pointerEvents: 'auto',
-                touchAction: 'manipulation',
-                WebkitTapHighlightColor: 'transparent',
-                zIndex: 100000
-              }}
             >
               <Icon
                 className={`w-5 h-5 mb-1 transition-colors ${

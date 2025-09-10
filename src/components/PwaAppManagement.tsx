@@ -674,6 +674,8 @@ export const PwaAppManagement: React.FC = () => {
                     value={refreshInterval}
                     onChange={(e) => setRefreshInterval(Number(e.target.value))}
                     className="px-2 py-1 border border-gray-300 rounded text-sm"
+                    aria-label="새로고침 간격 선택"
+                    title="새로고침 간격을 선택하세요"
                   >
                     <option value={1000}>1초</option>
                     <option value={2000}>2초</option>

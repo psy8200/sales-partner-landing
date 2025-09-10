@@ -57,9 +57,17 @@ export async function GET(request: NextRequest) {
     });
 
     // 사용자의 결정포인트 계산 (어드민 포인트 API와 동일한 로직)
+    // 수금관리탭의 모든 페이지 합산:
+    // - 수금완료계약 페이지: COMPLETED_COLLECTION (완전수금확정된 계약)
+    // - 수금관리계약 페이지: COLLECTION (수금확인중인 계약)  
+    // - 일시납계약 페이지: LUMP_SUM (일시납 완료된 계약)
+    // - 전체계약 페이지: CONFIRMED (계약확정된 계약)
     const contracts = await prisma.contract.findMany({
       where: {
-        status: 'CONFIRMED', // 수금관리로 이동한 계약만
+        status: {
+          in: ['CONFIRMED', 'COLLECTION', 'LUMP_SUM', 'COMPLETED_COLLECTION'] // 모든 확정된 계약 상태 포함
+        },
+        customerName: user?.name, // 이름으로 매칭
         customerPhone: user?.phone // 전화번호로 정확한 매칭
       },
       select: {
@@ -71,11 +79,31 @@ export async function GET(request: NextRequest) {
 
     // 어드민 포인트 API와 동일한 계산 로직
     let totalFinalPoints = 0;
+    // 상태별 계약 수 계산
+    const statusCounts = contracts.reduce((acc, contract) => {
+      const status = contract.status || 'UNKNOWN';
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    console.log('🔍 회원 포인트 계산:', { 
+      userName: user?.name, 
+      userPhone: user?.phone, 
+      contractsCount: contracts.length,
+      statusCounts
+    });
+    
     contracts.forEach(contract => {
       if (contract.finalPoints) {
         totalFinalPoints += contract.finalPoints;
+        console.log('📊 계약 포인트:', { 
+          itemName: contract.itemName, 
+          finalPoints: contract.finalPoints 
+        });
       }
     });
+    
+    console.log('✅ 총 결정포인트:', totalFinalPoints);
 
     // 사용자의 추천인 수 계산 (실제 데이터 기반)
     const totalReferrals = await prisma.user.count({

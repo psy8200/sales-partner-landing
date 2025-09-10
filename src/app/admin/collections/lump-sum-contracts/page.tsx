@@ -42,6 +42,7 @@ export default function LumpSumContractsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('CONFIRMED');
+  const [confirmedDateFilter, setConfirmedDateFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -150,6 +151,154 @@ export default function LumpSumContractsPage() {
     return new Intl.NumberFormat('ko-KR').format(amount);
   };
 
+  // 필터링된 계약 목록 (검색어 + 확정일시 필터링)
+  const filteredContracts = contracts.filter(contract => {
+    // 검색어 필터링
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch = (
+        contract.customerName?.toLowerCase().includes(searchLower) ||
+        contract.contractNumber?.toLowerCase().includes(searchLower) ||
+        contract.companyName?.toLowerCase().includes(searchLower) ||
+        contract.itemName?.toLowerCase().includes(searchLower)
+      );
+      if (!matchesSearch) return false;
+    }
+
+    // 확정일시 필터링
+    if (confirmedDateFilter) {
+      if (!contract.confirmedAt) return false;
+      
+      const contractDate = new Date(contract.confirmedAt);
+      const year = contractDate.getFullYear();
+      const month = contractDate.getMonth() + 1;
+      const contractMonthKey = `${year}년 ${month}월`;
+      
+      if (contractMonthKey !== confirmedDateFilter) return false;
+    }
+
+    return true;
+  });
+
+  // 고유한 확정일시 목록 생성 (년+월별 그룹화)
+  const getMonthlyConfirmedDates = () => {
+    const monthlyGroups: { [key: string]: number } = {};
+
+    contracts
+      .map(contract => contract.confirmedAt)
+      .filter(date => date) // null/undefined 제거
+      .forEach(date => {
+        const dateObj = new Date(date);
+        const year = dateObj.getFullYear();
+        const month = dateObj.getMonth() + 1; // 0-based이므로 +1
+        const monthKey = `${year}년 ${month}월`;
+
+        monthlyGroups[monthKey] = (monthlyGroups[monthKey] || 0) + 1;
+      });
+
+    // 월별 그룹을 배열로 변환하고 최신순 정렬
+    return Object.entries(monthlyGroups)
+      .map(([month, count]) => ({ month, count }))
+      .sort((a, b) => {
+        // 년월을 파싱하여 최신순 정렬
+        const [yearA, monthA] = a.month.split('년 ').map(s => parseInt(s.replace(/월/g, '')));
+        const [yearB, monthB] = b.month.split('년 ').map(s => parseInt(s.replace(/월/g, '')));
+
+        if (yearA !== yearB) return yearB - yearA;
+        return monthB - monthA;
+      });
+  };
+
+  // 엑셀 다운로드 함수
+  const handleExcelDownload = () => {
+    try {
+      // CSV 헤더 생성
+      const headers = [
+        '계약번호',
+        '고객명',
+        '연락처',
+        '주소',
+        '카테고리',
+        '회사명',
+        '상품명',
+        '계약금액',
+        '수수료율',
+        '수수료금액',
+        '예상수익률',
+        '포인트율',
+        '지급율',
+        '최종결정포인트',
+        '계약일',
+        '시작일',
+        '종료일',
+        '설치일',
+        '확정일시',
+        '상태값',
+        '비고'
+      ];
+
+      // 데이터 행 생성
+      const rows = filteredContracts.map(contract => {
+        let dynamicFields: Record<string, unknown> = {};
+        try {
+          dynamicFields = contract.dynamicFields ? JSON.parse(contract.dynamicFields) : {};
+        } catch (error) {
+          console.error('dynamicFields 파싱 오류:', error);
+          dynamicFields = {};
+        }
+
+        return [
+          contract.contractNumber || '',
+          contract.customerName || '',
+          contract.customerPhone || '',
+          contract.customerAddress || '',
+          contract.itemCategory || '',
+          contract.companyName || '',
+          contract.itemName || '',
+          contract.contractAmount?.toLocaleString() || '',
+          `${contract.commissionRate}%` || '',
+          contract.commissionAmount?.toLocaleString() || '',
+          `${contract.expectedRate}%` || '',
+          `${contract.pointRate}%` || '',
+          `${contract.payoutRate}%` || '',
+          contract.finalPoints?.toLocaleString() || '',
+          contract.contractDate ? new Date(contract.contractDate).toLocaleDateString('ko-KR') : '',
+          contract.startDate ? new Date(contract.startDate).toLocaleDateString('ko-KR') : '',
+          contract.endDate ? new Date(contract.endDate).toLocaleDateString('ko-KR') : '',
+          contract.installationDate ? new Date(contract.installationDate).toLocaleDateString('ko-KR') : '',
+          contract.confirmedAt ? new Date(contract.confirmedAt).toLocaleDateString('ko-KR') : '',
+          contract.status === 'CONFIRMED' || contract.status === 'LUMP_SUM' ? '수금완료' : contract.status,
+          contract.notes || ''
+        ];
+      });
+
+      // CSV 내용 생성
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+
+      // BOM 추가 (한글 깨짐 방지)
+      const BOM = '\uFEFF';
+      const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+
+      // 다운로드 실행
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `일시납계약_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      alert(`${filteredContracts.length}건의 일시납계약이 엑셀 파일로 다운로드되었습니다.`);
+    } catch (error) {
+      console.error('엑셀 다운로드 오류:', error);
+      alert('엑셀 다운로드 중 오류가 발생했습니다.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
@@ -173,20 +322,42 @@ export default function LumpSumContractsPage() {
                   placeholder="고객명, 계약번호, 회사명, 상품명으로 검색..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      fetchContracts();
+                    }
+                  }}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
               </div>
             </div>
-            <div className="flex gap-2">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                title="상태 필터 선택"
-              >
-                <option value="CONFIRMED">확정</option>
-              </select>
-            </div>
+            <button
+              onClick={fetchContracts}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+            >
+              <Search className="h-4 w-4" />
+              검색
+            </button>
+            <select
+              value={confirmedDateFilter}
+              onChange={(e) => setConfirmedDateFilter(e.target.value)}
+              title="확정일시 필터"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            >
+              <option value="">전체 확정일시</option>
+              {getMonthlyConfirmedDates().map(({ month, count }) => (
+                <option key={month} value={month}>
+                  {month} ({count}건)
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={handleExcelDownload}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              엑셀다운로드
+            </button>
           </div>
         </div>
 
@@ -226,7 +397,7 @@ export default function LumpSumContractsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {contracts.length === 0 ? (
+                {filteredContracts.length === 0 ? (
                   <tr>
                     <td colSpan={12} className="px-6 py-12 text-center text-gray-500">
                       <DollarSign className="w-12 h-12 mx-auto text-gray-300 mb-4" />
@@ -235,7 +406,7 @@ export default function LumpSumContractsPage() {
                     </td>
                   </tr>
                 ) : (
-                  contracts.map((contract) => {
+                  filteredContracts.map((contract) => {
                     let dynamicFields: Record<string, unknown> = {};
                     try {
                       dynamicFields = contract.dynamicFields ? JSON.parse(contract.dynamicFields) : {};
@@ -300,28 +471,19 @@ export default function LumpSumContractsPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap w-20">
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            contract.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                            contract.status === 'CONFIRMED' || contract.status === 'LUMP_SUM' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                           }`}>
-                            {contract.status === 'CONFIRMED' ? '확정' : contract.status}
+                            {contract.status === 'CONFIRMED' || contract.status === 'LUMP_SUM' ? '수금완료' : contract.status}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 w-20">
-                          <div className="flex gap-1">
-                            <button
-                              onClick={() => handleMoveToCollection(contract.id)}
-                              className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                              title="수금관리계약으로 이동"
-                            >
-                              수금관리
-                            </button>
-                            <button
-                              onClick={() => handleRevertContract(contract.id)}
-                              className="px-2 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
-                              title="계약목록으로 되돌리기"
-                            >
-                              되돌리기
-                            </button>
-                          </div>
+                          <button
+                            onClick={() => handleRevertContract(contract.id)}
+                            className="px-2 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+                            title="계약목록으로 되돌리기"
+                          >
+                            되돌리기
+                          </button>
                         </td>
                       </tr>
                     );

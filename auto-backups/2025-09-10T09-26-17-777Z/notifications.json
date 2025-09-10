@@ -1,0 +1,76 @@
+{
+  "notifications": [
+    {
+      "id": "cmfc0m3720006ar48yh9eo5bj",
+      "userId": "cmfc0m3680000ar48vwnci0p0",
+      "type": "SYSTEM",
+      "title": "회원가입 완료",
+      "message": "회원가입이 완료되었습니다. 파트너 등록을 진행하실 수 있습니다.",
+      "status": "UNREAD",
+      "linkUrl": null,
+      "linkText": null,
+      "readAt": null,
+      "createdAt": "2025-09-09T03:52:49.838Z"
+    },
+    {
+      "id": "cmfbxyyfj0014arawp09rgk25",
+      "userId": "cmfbxyyeb000yarawn2u2a2cj",
+      "type": "SYSTEM",
+      "title": "회원가입 완료",
+      "message": "회원가입이 완료되었습니다. 파트너 등록을 진행하실 수 있습니다.",
+      "status": "UNREAD",
+      "linkUrl": null,
+      "linkText": null,
+      "readAt": null,
+      "createdAt": "2025-09-09T02:38:51.343Z"
+    },
+    {
+      "id": "cmfbxxg24000xarawesp3xxhl",
+      "userId": "cmfbxxg10000raraw5nfa7fjg",
+      "type": "SYSTEM",
+      "title": "회원가입 완료",
+      "message": "회원가입이 완료되었습니다. 파트너 등록을 진행하실 수 있습니다.",
+      "status": "UNREAD",
+      "linkUrl": null,
+      "linkText": null,
+      "readAt": null,
+      "createdAt": "2025-09-09T02:37:40.877Z"
+    },
+    {
+      "id": "cmfbxb79x000narawlp1w2z38",
+      "userId": "cmfbxb78z000haraw30j0wi0k",
+      "type": "SYSTEM",
+      "title": "회원가입 완료",
+      "message": "회원가입이 완료되었습니다. 파트너 등록을 진행하실 수 있습니다.",
+      "status": "UNREAD",
+      "linkUrl": null,
+      "linkText": null,
+      "readAt": null,
+      "createdAt": "2025-09-09T02:20:23.062Z"
+    },
+    {
+      "id": "cmfbx697n000garawfzro7ovk",
+      "userId": "cmfbx696s000aarawigvx4xox",
+      "type": "SYSTEM",
+      "title": "회원가입 완료",
+      "message": "회원가입이 완료되었습니다. 파트너 등록을 진행하실 수 있습니다.",
+      "status": "UNREAD",
+      "linkUrl": null,
+      "linkText": null,
+      "readAt": null,
+      "createdAt": "2025-09-09T02:16:32.292Z"
+    },
+    {
+      "id": "cmfbx21zy0009arawl2qouhmy",
+      "userId": "cmfbx21z50003arawod5d54wo",
+      "type": "SYSTEM",
+      "title": "회원가입 완료",
+      "message": "회원가입이 완료되었습니다. 파트너 등록을 진행하실 수 있습니다.",
+      "status": "UNREAD",
+      "linkUrl": null,
+      "linkText": null,
+      "readAt": null,
+      "createdAt": "2025-09-09T02:13:16.318Z"
+    }
+  ]
+}

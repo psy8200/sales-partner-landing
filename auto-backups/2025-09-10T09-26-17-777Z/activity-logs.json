@@ -1,0 +1,103 @@
+{
+  "activity-logs": [
+    {
+      "id": "cmfdar6ww000barn471peefbb",
+      "type": "PARTNER_APPLICATION",
+      "title": "파트너신청",
+      "description": "파트너신청 완료",
+      "userId": "cmfc0m3680000ar48vwnci0p0",
+      "metadata": "{\"applicationId\":\"cmfdar6wb0009arn4584o537o\",\"area\":\"서울구로금천구가상동1212\",\"availableDate\":\"2025-09-10\",\"availableTime\":\"17:00-18:00\"}",
+      "createdAt": "2025-09-10T01:24:30.273Z"
+    },
+    {
+      "id": "cmfdaoam60007arn411445pok",
+      "type": "PARTNER_APPLICATION",
+      "title": "파트너신청",
+      "description": "파트너신청 완료",
+      "userId": "cmfbxb78z000haraw30j0wi0k",
+      "metadata": "{\"applicationId\":\"cmfdaoalk0005arn463znbo89\",\"area\":\"서울시 구로구 가산동 1111\",\"availableDate\":\"2025-09-10\",\"availableTime\":\"16:00-17:00\"}",
+      "createdAt": "2025-09-10T01:22:15.103Z"
+    },
+    {
+      "id": "cmfcrky4n0006arzwear7pf57",
+      "type": "PARTNER_APPLICATION",
+      "title": "파트너신청",
+      "description": "파트너신청 완료",
+      "userId": "cmfbxyyeb000yarawn2u2a2cj",
+      "metadata": "{\"applicationId\":\"cmfcrky420004arzwdamilv1f\",\"area\":\"서울 강남구 서초동 545\",\"availableDate\":\"2025-09-10\",\"availableTime\":\"16:00-17:00\"}",
+      "createdAt": "2025-09-09T16:27:46.247Z"
+    },
+    {
+      "id": "cmfc1w8ab000ear48mvl9hfsb",
+      "type": "PARTNER_APPLICATION",
+      "title": "파트너신청",
+      "description": "파트너신청 완료",
+      "userId": "cmfbx696s000aarawigvx4xox",
+      "metadata": "{\"applicationId\":\"cmfc1w89q000car48t93jc1m9\",\"area\":\"서울시 강남구 양재동 11-5\",\"availableDate\":\"2025-09-09\",\"availableTime\":\"17:00-18:00\"}",
+      "createdAt": "2025-09-09T04:28:42.612Z"
+    },
+    {
+      "id": "cmfc1vgyk000aar48pglrlpg9",
+      "type": "PARTNER_APPLICATION",
+      "title": "파트너신청",
+      "description": "파트너신청 완료",
+      "userId": "cmfbx21z50003arawod5d54wo",
+      "metadata": "{\"applicationId\":\"cmfc1vgxx0008ar48w23brv55\",\"area\":\"서울 강남구 서초동 112-44\",\"availableDate\":\"2025-09-09\",\"availableTime\":\"14:00-15:00\"}",
+      "createdAt": "2025-09-09T04:28:07.197Z"
+    },
+    {
+      "id": "cmfc0m36k0002ar48ci5f5t5x",
+      "type": "USER_REGISTRATION",
+      "title": "새로운 회원이 가입했습니다",
+      "description": "박수용님이 회원으로 가입했습니다.",
+      "userId": "cmfc0m3680000ar48vwnci0p0",
+      "metadata": "{\"userName\":\"박수용\"}",
+      "createdAt": "2025-09-09T03:52:49.821Z"
+    },
+    {
+      "id": "cmfbxyyew0010araww1d86c0v",
+      "type": "USER_REGISTRATION",
+      "title": "새로운 회원이 가입했습니다",
+      "description": "박수용님이 회원으로 가입했습니다.",
+      "userId": "cmfbxyyeb000yarawn2u2a2cj",
+      "metadata": "{\"userName\":\"박수용\"}",
+      "createdAt": "2025-09-09T02:38:51.320Z"
+    },
+    {
+      "id": "cmfbxxg1l000tarawi54ecnsq",
+      "type": "USER_REGISTRATION",
+      "title": "새로운 회원이 가입했습니다",
+      "description": "박수용님이 회원으로 가입했습니다.",
+      "userId": "cmfbxxg10000raraw5nfa7fjg",
+      "metadata": "{\"userName\":\"박수용\"}",
+      "createdAt": "2025-09-09T02:37:40.857Z"
+    },
+    {
+      "id": "cmfbxb79e000jaraw2kumx0r4",
+      "type": "USER_REGISTRATION",
+      "title": "새로운 회원이 가입했습니다",
+      "description": "박수용님이 회원으로 가입했습니다.",
+      "userId": "cmfbxb78z000haraw30j0wi0k",
+      "metadata": "{\"userName\":\"박수용\"}",
+      "createdAt": "2025-09-09T02:20:23.043Z"
+    },
+    {
+      "id": "cmfbx6973000carawulxguir5",
+      "type": "USER_REGISTRATION",
+      "title": "새로운 회원이 가입했습니다",
+      "description": "박수용님이 회원으로 가입했습니다.",
+      "userId": "cmfbx696s000aarawigvx4xox",
+      "metadata": "{\"userName\":\"박수용\"}",
+      "createdAt": "2025-09-09T02:16:32.272Z"
+    },
+    {
+      "id": "cmfbx21zi0005arawastxxcdf",
+      "type": "USER_REGISTRATION",
+      "title": "새로운 회원이 가입했습니다",
+      "description": "박수용님이 회원으로 가입했습니다.",
+      "userId": "cmfbx21z50003arawod5d54wo",
+      "metadata": "{\"userName\":\"박수용\"}",
+      "createdAt": "2025-09-09T02:13:16.302Z"
+    }
+  ]
+}

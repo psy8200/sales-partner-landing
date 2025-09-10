@@ -1,15 +1,6 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
 import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
-import { lightTheme } from '../../styles/theme';
 import { useAuth } from '../../hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import SuccessModal from '../../components/native/modals/SuccessModal';
@@ -65,65 +56,67 @@ export const LoginScreen: React.FC = () => {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Sales Partner</Text>
-          <Text style={styles.subtitle}>회원 로그인</Text>
-        </View>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-blue-600 mb-2">Sales Partner</h1>
+          <p className="text-lg text-gray-600">회원 로그인</p>
+        </div>
 
-        <Card style={styles.formCard} shadow="lg">
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>전화번호 (뒤 8자리로 로그인)</Text>
-            <TextInput
-              style={styles.input}
+        <div className="bg-white p-6 shadow-lg rounded-lg">
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              전화번호 (뒤 8자리로 로그인)
+            </label>
+            <input
+              type="tel"
+              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               value={phone}
-              onChangeText={(value: string) => {
+              onChange={(e) => {
                 // 숫자와 하이픈만 허용
-                const cleanValue = value.replace(/[^0-9-]/g, '');
+                const cleanValue = e.target.value.replace(/[^0-9-]/g, '');
                 setPhone(cleanValue);
               }}
               placeholder="010-0000-0000 또는 00000000"
-              keyboardType="phone-pad"
-              autoCapitalize="none"
-              autoCorrect={false}
+              autoComplete="tel"
             />
-            <Text style={styles.helperText}>
+            <p className="text-xs text-gray-500 mt-1">
               전체 전화번호 또는 뒤 8자리 모두 입력 가능합니다
-            </Text>
-          </View>
+            </p>
+          </div>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>비밀번호</Text>
-            <TextInput
-              style={styles.input}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              비밀번호
+            </label>
+            <input
+              type="password"
+              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               value={password}
-              onChangeText={(value: string) => setPassword(value)}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="비밀번호를 입력하세요"
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
+              autoComplete="current-password"
             />
-          </View>
+          </div>
 
-          <Button
-            title="로그인"
-            onPress={handleLogin}
-            loading={isLoading}
-            style={styles.loginButton}
-          />
-        </Card>
+          <div className="w-full mt-4">
+            <Button
+              title="로그인"
+              onPress={handleLogin}
+              loading={isLoading}
+            />
+          </div>
+        </div>
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
+        <div className="text-center mt-6">
+          <p className="text-sm text-gray-600">
             계정이 없으신가요?{' '}
-            <Text style={styles.linkText}>회원가입</Text>
-          </Text>
-        </View>
-      </View>
+            <span className="text-blue-600 font-medium cursor-pointer hover:underline">
+              회원가입
+            </span>
+          </p>
+        </div>
+      </div>
 
       {/* 모달들 */}
       <SuccessModal
@@ -143,68 +136,6 @@ export const LoginScreen: React.FC = () => {
         onClose={() => setShowWarningModal(false)}
         message={modalMessage}
       />
-    </KeyboardAvoidingView>
+    </div>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: lightTheme.colors.background,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: lightTheme.spacing.lg,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: lightTheme.spacing.xxl,
-  },
-  title: {
-    fontSize: lightTheme.typography.fontSize.xxxl,
-    fontWeight: lightTheme.typography.fontWeight.bold,
-    color: lightTheme.colors.primary,
-    marginBottom: lightTheme.spacing.sm,
-  },
-  subtitle: {
-    fontSize: lightTheme.typography.fontSize.lg,
-    color: lightTheme.colors.textSecondary,
-  },
-  formCard: {
-    marginBottom: lightTheme.spacing.xl,
-  },
-  inputGroup: {
-    marginBottom: lightTheme.spacing.lg,
-  },
-  label: {
-    fontSize: lightTheme.typography.fontSize.sm,
-    fontWeight: lightTheme.typography.fontWeight.medium,
-    color: lightTheme.colors.text,
-    marginBottom: lightTheme.spacing.sm,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: lightTheme.colors.border,
-    borderRadius: lightTheme.borderRadius.md,
-    paddingHorizontal: lightTheme.spacing.md,
-    paddingVertical: lightTheme.spacing.md,
-    fontSize: lightTheme.typography.fontSize.md,
-    color: lightTheme.colors.text,
-    backgroundColor: lightTheme.colors.background,
-  },
-  loginButton: {
-    marginTop: lightTheme.spacing.md,
-  },
-  footer: {
-    alignItems: 'center',
-  },
-  footerText: {
-    fontSize: lightTheme.typography.fontSize.sm,
-    color: lightTheme.colors.textSecondary,
-  },
-  linkText: {
-    color: lightTheme.colors.primary,
-    fontWeight: lightTheme.typography.fontWeight.medium,
-  },
-});

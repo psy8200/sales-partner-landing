@@ -263,6 +263,8 @@ export default function PaymentSuccessPage() {
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    aria-label="결제 상태 필터"
+                    title="결제 상태를 선택하세요"
                   >
                     <option value="all">전체</option>
                     <option value="COMPLETED">수금완료</option>
@@ -278,6 +280,8 @@ export default function PaymentSuccessPage() {
                     value={monthFilter}
                     onChange={(e) => setMonthFilter(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    aria-label="수금월 필터"
+                    title="수금월을 선택하세요"
                   >
                     <option value="">전체</option>
                     {uniqueMonths.map(month => (
@@ -344,6 +348,8 @@ export default function PaymentSuccessPage() {
                           }}
                           onChange={(e) => handleSelectAll(e.target.checked)}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          aria-label="전체 선택"
+                          title="모든 항목을 선택/해제합니다"
                         />
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">계약번호</th>
@@ -368,6 +374,8 @@ export default function PaymentSuccessPage() {
                             checked={selectedItems.has(item.id)}
                             onChange={(e) => handleSelectItem(item.id, e.target.checked)}
                             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            aria-label={`${item.customerName} 항목 선택`}
+                            title={`${item.customerName} 항목을 선택/해제합니다`}
                           />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -417,3 +425,4 @@ export default function PaymentSuccessPage() {
     </div>
   );
 }
+

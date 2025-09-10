@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import './MobileOptimized.css';
 
 // 모바일 최적화 훅
 export const useMobileOptimization = () => {
@@ -77,13 +78,10 @@ export const MobileButton: React.FC<{
         ${sizeClasses[size]}
         ${touchClasses}
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+        ${isMobile ? 'mobile-touch-button' : 'desktop-touch-button'}
+        interactive-tap-highlight
         ${className}
       `}
-      style={{
-        // 모바일에서 터치 영역 확보
-        minWidth: isMobile ? '44px' : 'auto',
-        WebkitTapHighlightColor: 'transparent',
-      }}
     >
       {children}
     </button>
@@ -125,11 +123,9 @@ export const MobileInput: React.FC<{
         ${baseClasses}
         ${mobileClasses}
         ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}
+        ${isMobile ? 'mobile-input' : 'desktop-input'}
         ${className}
       `}
-      style={{
-        fontSize: isMobile ? '16px' : '14px', // iOS 줌 방지
-      }}
     />
   );
 };
@@ -156,11 +152,9 @@ export const MobileCard: React.FC<{
         ${interactiveClasses}
         ${touchClasses}
         ${mobileClasses}
+        ${interactive ? 'interactive-tap-highlight' : 'non-interactive-tap-highlight'}
         ${className}
       `}
-      style={{
-        WebkitTapHighlightColor: interactive ? 'transparent' : 'auto',
-      }}
     >
       {children}
     </div>
@@ -325,4 +319,5 @@ export const MobileModal: React.FC<{
     </div>
   );
 };
+
 

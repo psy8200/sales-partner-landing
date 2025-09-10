@@ -360,6 +360,8 @@ export default function ContractRequestsPage() {
                                 setRows(prev=>prev.map(x=>x.id===r.id?{...x, manager:v}:x));
                               }}
                               className="w-full px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                              aria-label="담당자 선택"
+                              title="담당자를 선택하세요"
                             >
                               <option value="">담당자 선택</option>
                               {managers.map((manager) => (

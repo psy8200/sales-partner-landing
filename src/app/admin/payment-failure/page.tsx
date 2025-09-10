@@ -387,6 +387,8 @@ export default function PaymentFailurePage() {
                       onChange={(e) => setSearchTerm(e.target.value)}
                       placeholder="고객명, 증권번호, 담당자로 검색..."
                       className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      aria-label="검색어 입력"
+                      title="고객명, 증권번호, 담당자로 검색하세요"
                     />
                   </div>
                 </div>
@@ -400,6 +402,8 @@ export default function PaymentFailurePage() {
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    aria-label="결제 상태 필터"
+                    title="결제 상태를 선택하세요"
                   >
                     <option value="all">전체</option>
                     <option value="PENDING">처리대기</option>
@@ -417,6 +421,8 @@ export default function PaymentFailurePage() {
                     value={monthFilter}
                     onChange={(e) => setMonthFilter(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    aria-label="수금월 필터"
+                    title="수금월을 선택하세요"
                   >
                     <option value="">전체</option>
                     {uniqueMonths.map(month => (
@@ -483,6 +489,8 @@ export default function PaymentFailurePage() {
                           }}
                           onChange={(e) => handleSelectAll(e.target.checked)}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          aria-label="전체 선택"
+                          title="모든 항목을 선택/해제합니다"
                         />
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">고객명</th>
@@ -505,6 +513,8 @@ export default function PaymentFailurePage() {
                             checked={selectedItems.has(item.id)}
                             onChange={(e) => handleSelectItem(item.id, e.target.checked)}
                             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            aria-label={`${item.name} 항목 선택`}
+                            title={`${item.name} 항목을 선택/해제합니다`}
                           />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -591,6 +601,8 @@ export default function PaymentFailurePage() {
                     value={editFormData.name}
                     onChange={(e) => handleEditFormChange('name', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    aria-label="고객명 입력"
+                    title="고객명을 입력하세요"
                   />
                 </div>
                 
@@ -601,6 +613,8 @@ export default function PaymentFailurePage() {
                     value={editFormData.policyNumber}
                     onChange={(e) => handleEditFormChange('policyNumber', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    aria-label="증권번호 입력"
+                    title="증권번호를 입력하세요"
                   />
                 </div>
                 
@@ -611,6 +625,8 @@ export default function PaymentFailurePage() {
                     value={editFormData.referrer}
                     onChange={(e) => handleEditFormChange('referrer', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    aria-label="추천인 입력"
+                    title="추천인을 입력하세요"
                   />
                 </div>
                 
@@ -621,6 +637,8 @@ export default function PaymentFailurePage() {
                     value={editFormData.manager}
                     onChange={(e) => handleEditFormChange('manager', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    aria-label="담당자 입력"
+                    title="담당자를 입력하세요"
                   />
                 </div>
                 
@@ -631,6 +649,8 @@ export default function PaymentFailurePage() {
                     value={editFormData.paymentAmount}
                     onChange={(e) => handleEditFormChange('paymentAmount', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    aria-label="납입금액 입력"
+                    title="납입금액을 입력하세요"
                   />
                 </div>
                 
@@ -642,6 +662,8 @@ export default function PaymentFailurePage() {
                     onChange={(e) => handleEditFormChange('paymentMonth', e.target.value)}
                     placeholder="YYYY-MM"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    aria-label="수금월 입력"
+                    title="수금월을 입력하세요"
                   />
                 </div>
               </div>
@@ -667,3 +689,4 @@ export default function PaymentFailurePage() {
     </div>
   );
 }
+

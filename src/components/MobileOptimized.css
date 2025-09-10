@@ -1,0 +1,29 @@
+/* MobileOptimized 컴포넌트용 CSS */
+
+/* 모바일 터치 영역 확보 */
+.mobile-touch-button {
+  min-width: 44px;
+}
+
+.desktop-touch-button {
+  min-width: auto;
+}
+
+/* iOS 줌 방지 */
+.mobile-input {
+  font-size: 16px;
+}
+
+.desktop-input {
+  font-size: 14px;
+}
+
+/* 터치 하이라이트 색상 */
+.interactive-tap-highlight {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.non-interactive-tap-highlight {
+  -webkit-tap-highlight-color: auto;
+}
+

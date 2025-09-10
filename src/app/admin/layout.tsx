@@ -184,11 +184,18 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     '수금관리': [
       { name: '전체계약', href: '/admin/collections/all-contracts' },
       { name: '수금관리계약', href: '/admin/collections/collection-contracts' },
+      { name: '수금완료된계약', href: '/admin/collections/completed-contracts' },
       { name: '일시납계약', href: '/admin/collections/lump-sum-contracts' },
       { name: '수금검증하기', href: '/admin/collections/verification' },
     ],
     '정산관리': [
       { name: '정산 내역', href: '/admin/settlements' },
+      { name: '정산리스트', href: '/admin/settlements/list' },
+      { name: '파트너추천리스트', href: '/admin/settlements/partner-referrals' },
+      { name: '수당수수료계산', href: '/admin/settlements/commission-calculator' },
+      { name: '출금요청리스트', href: '/admin/settlements/withdrawal-requests' },
+      { name: '정산완료리스트', href: '/admin/settlements/completed' },
+      { name: '파트너트리정보', href: '/admin/settlements/partner-tree' },
     ],
     '아이템관리': [
       { name: '아이템관리홈', href: '/admin/items', icon: '🧩' },
@@ -199,6 +206,11 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     // 수금관리 관련 경로인지 확인
     if (pathname?.startsWith('/admin/collections')) {
       return sideMenus['수금관리'] || [];
+    }
+    
+    // 정산관리 관련 경로인지 확인
+    if (pathname?.startsWith('/admin/settlements')) {
+      return sideMenus['정산관리'] || [];
     }
     
     const activeMain = mainMenu.find(m => pathname?.startsWith(m.href));

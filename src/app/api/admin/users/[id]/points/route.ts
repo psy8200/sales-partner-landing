@@ -27,13 +27,17 @@ export async function GET(
     console.log('✅ 사용자 정보 조회 성공:', { name: user.name, email: user.email });
 
     // 해당 사용자의 모든 확정된 계약 조회 (이름 + 전화번호로 정확 매칭)
-    // 수금관리탭의 모든 페이지 합산: CONFIRMED + COLLECTION + LUMP_SUM
+    // 수금관리탭의 모든 페이지 합산:
+    // - 수금완료계약 페이지: COMPLETED_COLLECTION (완전수금확정된 계약)
+    // - 수금관리계약 페이지: COLLECTION (수금확인중인 계약)  
+    // - 일시납계약 페이지: LUMP_SUM (일시납 완료된 계약)
+    // - 전체계약 페이지: CONFIRMED (계약확정된 계약)
     const contracts = await prisma.contract.findMany({
       where: {
         customerName: user.name,
         customerPhone: user.phone, // 전화번호도 일치해야 함
         status: {
-          in: ['CONFIRMED', 'COLLECTION', 'LUMP_SUM'] // 모든 확정된 계약 상태 포함
+          in: ['CONFIRMED', 'COLLECTION', 'LUMP_SUM', 'COMPLETED_COLLECTION'] // 모든 확정된 계약 상태 포함
         }
       },
       select: {
@@ -145,10 +149,18 @@ export async function GET(
       categoryPoints: Object.values(categoryPoints)
     };
     
+    // 상태별 계약 수 계산
+    const statusCounts = contracts.reduce((acc, contract) => {
+      const status = contract.status || 'UNKNOWN';
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
     console.log('✅ 포인트 API 응답:', {
       totalPoints,
       totalContracts,
-      categoryCount: Object.keys(categoryPoints).length
+      categoryCount: Object.keys(categoryPoints).length,
+      statusCounts
     });
 
     return NextResponse.json(response);
