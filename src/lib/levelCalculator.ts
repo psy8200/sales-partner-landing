@@ -1,25 +1,26 @@
 // 등급 계산 유틸리티 함수들
 import { getLevelIcon, getLevelName } from './levelIcons';
 
-// 3의 거듭제곱 기준 등급 요구사항
-const LEVEL_REQUIREMENTS = [3, 9, 27, 81, 243, 729, 2187, 6561, 19683, 59049];
+// 새로운 승급 기준 (1, 4, 10, 28, 82, 244, 730, 2188, 6562, 19684, 59050)
+const LEVEL_REQUIREMENTS = [1, 4, 10, 28, 82, 244, 730, 2188, 6562, 19684, 59050];
 
 /**
  * 총 추천인 수를 기반으로 현재 등급을 계산
  * @param totalReferrals 총 추천인 수
- * @returns 현재 등급 (0-10)
+ * @returns 현재 등급 (0-10, 'LEGEND')
  */
-export const calculateLevel = (totalReferrals: number): number => {
-  if (totalReferrals >= 59049) return 10;
-  if (totalReferrals >= 19683) return 9;
-  if (totalReferrals >= 6561) return 8;
-  if (totalReferrals >= 2187) return 7;
-  if (totalReferrals >= 729) return 6;
-  if (totalReferrals >= 243) return 5;
-  if (totalReferrals >= 81) return 4;
-  if (totalReferrals >= 27) return 3;
-  if (totalReferrals >= 9) return 2;
-  if (totalReferrals >= 3) return 1;
+export const calculateLevel = (totalReferrals: number): number | 'LEGEND' => {
+  if (totalReferrals >= 59050) return 'LEGEND';
+  if (totalReferrals >= 19684) return 10;
+  if (totalReferrals >= 6562) return 9;
+  if (totalReferrals >= 2188) return 8;
+  if (totalReferrals >= 730) return 7;
+  if (totalReferrals >= 244) return 6;
+  if (totalReferrals >= 82) return 5;
+  if (totalReferrals >= 28) return 4;
+  if (totalReferrals >= 10) return 3;
+  if (totalReferrals >= 4) return 2;
+  if (totalReferrals >= 1) return 1;
   return 0;
 };
 

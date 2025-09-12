@@ -66,8 +66,8 @@ const BenefitsPage = () => {
 
   const stageRewards = [
     {
-      stage: 3,
-      people: "3(27명)",
+      stage: 4,
+      people: "4(27명)",
       icon: "🎫",
              title: "상품권 50만원 지급",
       description: "10만원 상품권 5장 지급함",
@@ -75,8 +75,8 @@ const BenefitsPage = () => {
       color: "from-teal-400 to-cyan-500"
     },
     {
-      stage: 4,
-      people: "4(81명)",
+      stage: 5,
+      people: "5(81명)",
       icon: "🎫",
       title: "상품권 200만원 지급",
       description: "10만원 상품권 20장 지급함",
@@ -84,8 +84,8 @@ const BenefitsPage = () => {
       color: "from-green-400 to-emerald-500"
     },
     {
-      stage: 5,
-      people: "5(243명)",
+      stage: 6,
+      people: "6(243명)",
       icon: "💰",
       title: "상품권 500만원 지급",
       description: "50만원 상품권 10장 지급함",
@@ -93,8 +93,8 @@ const BenefitsPage = () => {
       color: "from-yellow-400 to-orange-500"
     },
     {
-      stage: 6,
-      people: "6(729명)",
+      stage: 7,
+      people: "7(729명)",
       icon: "✈️",
       title: "최고급동남아 3박4일 여행권 2인권 + 여행경비 500만원",
       description: "발리/몰디브/태국/등 원하는 여행지로 선택가능함",
@@ -102,8 +102,8 @@ const BenefitsPage = () => {
       color: "from-blue-400 to-cyan-500"
     },
     {
-      stage: 7,
-      people: "7(2,187명)",
+      stage: 8,
+      people: "8(2,187명)",
       icon: "🛳️",
       title: "비즈니스석 + 유럽크루즈 2인 + 여행경비 1,000만원",
       description: "지중해 / 북유렵 / 카리브해 / 동남아4인 선택가능함",
@@ -111,8 +111,8 @@ const BenefitsPage = () => {
       color: "from-purple-400 to-pink-500"
     },
     {
-      stage: 8,
-      people: "8(6,561명)",
+      stage: 9,
+      people: "9(6,561명)",
       icon: "🚗",
       title: "고급세단 벤츠 또는 동급 + 주유상품권 500만원추가지급",
       description: "(BMW5시리즈,제네시스G80, 아우디A6등 선택가능)",
@@ -120,8 +120,8 @@ const BenefitsPage = () => {
       color: "from-gray-400 to-gray-600"
     },
     {
-      stage: 9,
-      people: "9(19,683명)",
+      stage: 10,
+      people: "10(19,683명)",
       icon: "🏎️",
       title: "최고급세단 벤츠 S-Class 또는 동급 + 전용기사제공",
       description: "S-클래스, BMW 7시리즈, 제네시스 G90 동급 선택",
@@ -129,10 +129,10 @@ const BenefitsPage = () => {
       color: "from-indigo-400 to-purple-500"
     },
     {
-      stage: 10,
-      people: "10(59,049명)",
+      stage: "LEGEND",
+      people: "LEGEND(59,049명)",
       icon: "🏆",
-      title: "드림카 + 전용기사 + 법인카드 + 부사장급 임원대우",
+      title: "드림카 + 전용기사 + 법인카드 + 부회장급 임원대우",
       description: "드림카 선택 벤틀리 / 마이바흐 / 마세라티 / 람보르기니 / 포르쉐 등 선택가능",
       image: "1년 2회 해외여행제공 및 경비지원",
       color: "from-red-400 to-pink-500"
@@ -165,14 +165,14 @@ const BenefitsPage = () => {
     const currentLevel = user.currentLevel || 0;
     const nextLevel = Math.min(currentLevel + 1, 10);
     
-    // 3단계 미만이면 3단계 보너스 표시
-    if (currentLevel < 3) {
-      return stageRewards.find(reward => reward.stage === 3);
+    // 4단계 미만이면 4단계 보너스 표시
+    if (currentLevel < 4) {
+      return stageRewards.find(reward => reward.stage === 4);
     }
     
-    // 현재 등급이 10단계 이상이면 10단계 보너스 표시
+    // 현재 등급이 10단계 이상이면 LEGEND 보너스 표시
     if (currentLevel >= 10) {
-      return stageRewards.find(reward => reward.stage === 10);
+      return stageRewards.find(reward => reward.stage === "LEGEND");
     }
     
     // 다음 단계 보너스 반환
@@ -246,7 +246,7 @@ const BenefitsPage = () => {
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
                                              <h4 className="font-bold text-[color:var(--text)] text-base">
-                         LV.{currentUserBonus.stage} {currentUserBonus.title}
+                         {currentUserBonus.stage === 'LEGEND' ? 'LEGEND' : `LV.${currentUserBonus.stage}`} {currentUserBonus.title}
                        </h4>
                     </div>
                     <p className="text-sm text-[color:var(--muted)] mb-2 leading-relaxed">
@@ -268,8 +268,8 @@ const BenefitsPage = () => {
              {stageRewards.map((reward, index) => (
                                <div key={`reward-info-${index}-${reward.stage}`} className="bg-white/20 rounded-lg p-2">
                   <div className="flex items-center justify-center space-x-1 mb-1">
-                    <span className="text-lg">{getLevelIcon(reward.stage)}</span>
-                    <span className="font-bold text-sm">LV.{reward.stage}</span>
+                    <span className="text-lg">{getLevelIcon(reward.stage as number | 'LEGEND' | 'SP')}</span>
+                    <span className="font-bold text-sm">{reward.stage === 'LEGEND' ? 'LEGEND' : `LV.${reward.stage}`}</span>
                   </div>
                                      <div className="text-xs opacity-90">총파트너수 ({reward.people.split('(')[1].replace(')', '')})</div>
                 </div>
@@ -321,7 +321,7 @@ const BenefitsPage = () => {
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-2">
                                                  <h4 className="font-semibold text-[color:var(--text)] text-sm">
-                           LV.{reward.stage} {reward.title}
+                           {reward.stage === 'LEGEND' ? 'LEGEND' : `LV.${reward.stage}`} {reward.title}
                          </h4>
                       </div>
                       <p className="text-sm text-[color:var(--muted)] mb-2 leading-relaxed">

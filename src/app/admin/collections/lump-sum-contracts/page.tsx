@@ -41,7 +41,7 @@ export default function LumpSumContractsPage() {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('COMPLETED_COLLECTION');
+  const [statusFilter, setStatusFilter] = useState('LUMP_SUM');
   const [confirmedDateFilter, setConfirmedDateFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);

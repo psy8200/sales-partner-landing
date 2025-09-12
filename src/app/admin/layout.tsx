@@ -26,6 +26,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     { name: '수금관리', href: '/admin/collections/all-contracts', icon: '💳', requiredRole: null },
     { name: '정산관리', href: '/admin/settlements', icon: '💼', requiredRole: null },
     { name: '아이템관리', href: '/admin/items', icon: '🧩', requiredRole: null },
+    { name: '백업관리', href: '/admin/backup', icon: '💾', requiredRole: null },
   ];
 
   // 권한에 따라 메뉴 필터링
@@ -193,12 +194,17 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
       { name: '정산리스트', href: '/admin/settlements/list' },
       { name: '파트너추천리스트', href: '/admin/settlements/partner-referrals' },
       { name: '수당수수료계산', href: '/admin/settlements/commission-calculator' },
+      { name: '승급회원관리', href: '/admin/settlements/promotion-management' },
+      { name: '승급회원지급완료리스트', href: '/admin/settlements/payment-history' },
       { name: '출금요청리스트', href: '/admin/settlements/withdrawal-requests' },
       { name: '정산완료리스트', href: '/admin/settlements/completed' },
       { name: '파트너트리정보', href: '/admin/settlements/partner-tree' },
     ],
     '아이템관리': [
       { name: '아이템관리홈', href: '/admin/items', icon: '🧩' },
+    ],
+    '백업관리': [
+      { name: '백업관리', href: '/admin/backup', icon: '💾' },
     ],
   };
 
@@ -211,6 +217,11 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     // 정산관리 관련 경로인지 확인
     if (pathname?.startsWith('/admin/settlements')) {
       return sideMenus['정산관리'] || [];
+    }
+    
+    // 백업관리 관련 경로인지 확인
+    if (pathname?.startsWith('/admin/backup')) {
+      return sideMenus['백업관리'] || [];
     }
     
     const activeMain = mainMenu.find(m => pathname?.startsWith(m.href));

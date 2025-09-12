@@ -34,7 +34,6 @@ export default function DevelopmentDetailsPage() {
                   <li>• <strong>아이템 관리:</strong> 동적 상품 생성, 제목 수정</li>
                   <li>• <strong>담당자 관리:</strong> 담당자 배정 및 관리</li>
                   <li>• <strong>PWA 지원:</strong> 웹과 모바일 통합</li>
-                  <li>• <strong>백업 시스템:</strong> 3중 백업 체계</li>
                 </ul>
               </div>
             </div>
@@ -340,16 +339,6 @@ export default function DevelopmentDetailsPage() {
                 </div>
               </div>
 
-              <div>
-                <h3 className="text-lg font-medium text-gray-700 mb-3">💾 백업 시스템</h3>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div>• <strong>3중 백업:</strong> 수동백업, 로컬Git, GitHub 원격백업</div>
-                  <div>• <strong>수동 백업:</strong> node_modules 제외한 전체 프로젝트 백업</div>
-                  <div>• <strong>Git 백업:</strong> feature/member-home-dark 브랜치</div>
-                  <div>• <strong>GitHub 백업:</strong> 원격 저장소와 완전 동기화</div>
-                  <div>• <strong>백업 정리:</strong> 이전 백업들 자동 정리</div>
-                </div>
-              </div>
             </div>
           </section>
 
@@ -413,16 +402,6 @@ export default function DevelopmentDetailsPage() {
                 </div>
               </div>
 
-              <div className="bg-green-50 p-4 rounded">
-                <h3 className="text-lg font-medium text-green-800 mb-2">✅ 백업 시스템 정리</h3>
-                <div className="text-sm text-green-700 space-y-1">
-                  <div>• 3중 백업 체계 구축 (수동백업, 로컬Git, GitHub)</div>
-                  <div>• 이전 혼란스러운 백업들 모두 정리</div>
-                  <div>• node_modules 제외한 최적화된 백업</div>
-                  <div>• 백업 정보 API 실시간 업데이트</div>
-                  <div>• 개발가이드 백업 현황 정확한 반영</div>
-                </div>
-              </div>
 
               <div className="bg-green-50 p-4 rounded">
                 <h3 className="text-lg font-medium text-green-800 mb-2">✅ 데이터베이스 스키마 확장</h3>
@@ -453,7 +432,6 @@ export default function DevelopmentDetailsPage() {
                   <li>• <strong>수금 관리:</strong> 전체계약/수금관리/수금완료/일시납/수금검증</li>
                   <li>• <strong>상담신청 관리:</strong> 파트너 신청 및 승인</li>
                   <li>• <strong>PWA 지원:</strong> 웹과 모바일 통합</li>
-                  <li>• <strong>백업 시스템:</strong> 3중 백업 체계</li>
                   <li>• <strong>회사 정보 관리:</strong> 기본 설정</li>
                 </ul>
               </div>
@@ -538,50 +516,6 @@ export default function DevelopmentDetailsPage() {
             </div>
           </section>
 
-          {/* 백업 시스템 */}
-          <section className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">💾 백업 시스템 (3중 백업 체계)</h2>
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-medium text-gray-700 mb-2">📦 1단계 - 수동 백업</h3>
-                <div className="bg-blue-50 p-4 rounded text-sm">
-                  <div><strong>백업 디렉토리:</strong> C:\home\backup-2025-09-09_17-52-13</div>
-                  <div><strong>백업 일시:</strong> 2025년 9월 9일 오후 5:59</div>
-                  <div><strong>백업 내용:</strong> sales-partner-landing, sales-partner-mobile-app (node_modules 제외)</div>
-                  <div><strong>백업 크기:</strong> 약 2.5GB</div>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-medium text-gray-700 mb-2">🔄 2단계 - 로컬 Git 백업</h3>
-                <div className="bg-green-50 p-4 rounded text-sm">
-                  <div><strong>브랜치:</strong> feature/member-home-dark</div>
-                  <div><strong>커밋 해시:</strong> 28b6939</div>
-                  <div><strong>커밋 일시:</strong> 2025년 9월 9일 오후 6:06</div>
-                  <div><strong>커밋 메시지:</strong> "feat: 계약입력관리 시스템 고도화 및 백업 시스템 정리"</div>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-medium text-gray-700 mb-2">☁️ 3단계 - GitHub 원격 백업</h3>
-                <div className="bg-purple-50 p-4 rounded text-sm">
-                  <div><strong>원격 저장소:</strong> https://github.com/psy8200/sales-partner-landing.git</div>
-                  <div><strong>동기화 상태:</strong> 최신</div>
-                  <div><strong>마지막 푸시:</strong> 2025. 9. 9. 오후 6:06:18</div>
-                  <div><strong>백업 상태:</strong> ✅ 완료</div>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-medium text-gray-700 mb-2">🔄 백업 정리 완료</h3>
-                <div className="bg-gray-50 p-4 rounded text-sm">
-                  <div><strong>삭제된 백업:</strong> backup-2025-09-06_00-43-26, backup-2025-09-06_00-43-33, backup-2025-09-09_17-12-59</div>
-                  <div><strong>유지되는 백업:</strong> backup-2025-09-09_17-52-13</div>
-                  <div><strong>백업 정보 API:</strong> /api/admin/backup-info 실시간 업데이트</div>
-                </div>
-              </div>
-            </div>
-          </section>
         </div>
       </div>
     </div>

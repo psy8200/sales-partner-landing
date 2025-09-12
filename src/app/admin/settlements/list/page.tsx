@@ -1,4 +1,5 @@
-﻿'use client';
+﻿
+'use client';
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -21,6 +22,7 @@ interface SettlementContract {
   id: string;
   customerName: string;
   customerPhone: string;
+  myCode: string; // 내코드 필드 추가
   contractAmount: number;
   contractCount: number; // 계약건수 필드 추가
   finalPoints: number;
@@ -83,13 +85,22 @@ export default function SettlementsListPage() {
     fetchSettlementContracts();
   }, []);
 
-  // 검색어에 따른 데이터 필터링
+  // 검색어에 따른 데이터 필터링 (이름+연락처+내코드+추천인코드)
   const filteredData = contracts.filter(contract => {
     if (!filteredSearchTerm) return true;
     const searchLower = filteredSearchTerm.toLowerCase();
+    const myCode = contract.customerPhone.slice(-8); // 내코드 계산
+    
     return (
+      // 고객명으로 검색
       contract.customerName.toLowerCase().includes(searchLower) ||
+      // 연락처로 검색
       contract.customerPhone.includes(filteredSearchTerm) ||
+      // 내코드로 검색 (연락처 뒤 8자리)
+      myCode.includes(filteredSearchTerm) ||
+      // 추천인코드로 검색
+      (contract.referralCode && contract.referralCode.toLowerCase().includes(searchLower)) ||
+      // 계약건수로 검색 (기존 유지)
       contract.contractCount.toString().includes(filteredSearchTerm)
     );
   });
@@ -120,16 +131,27 @@ export default function SettlementsListPage() {
   // Excel 다운로드 함수
   const handleExcelDownload = async () => {
     try {
+      console.log('📊 Excel 다운로드 시작, 데이터 수:', filteredData.length);
+      
+      if (filteredData.length === 0) {
+        alert('다운로드할 데이터가 없습니다.');
+        return;
+      }
+
       const response = await fetch('/api/admin/settlements/export', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          data: filteredData,
+          data: filteredData.map(contract => ({
+            ...contract,
+            myCode: contract.customerPhone.slice(-8) // 연락처 뒤 8자리를 내코드로 변환
+          })),
           fields: [
             'customerName', 
             'customerPhone',
+            'myCode',
             'contractCount',
             'contractAmount',
             'finalPoints',
@@ -140,22 +162,30 @@ export default function SettlementsListPage() {
         }),
       });
 
+      console.log('📡 API 응답 상태:', response.status);
+
       if (response.ok) {
         const blob = await response.blob();
+        console.log('📄 Excel 파일 생성 완료, 크기:', blob.size, 'bytes');
+        
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `settlements_${new Date().toISOString().split('T')[0]}.xlsx`;
+        a.download = `정산리스트_${new Date().toISOString().split('T')[0]}.xlsx`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
+        
+        console.log('✅ Excel 다운로드 완료');
       } else {
-        alert('Excel 다운로드 중 오류가 발생했습니다.');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ API 오류:', response.status, errorData);
+        alert(`Excel 다운로드 중 오류가 발생했습니다. (${response.status})`);
       }
     } catch (error) {
-      console.error('Error downloading Excel:', error);
-      alert('Excel 다운로드 중 오류가 발생했습니다.');
+      console.error('❌ Excel 다운로드 오류:', error);
+      alert('Excel 다운로드 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요.');
     }
   };
 
@@ -217,12 +247,12 @@ export default function SettlementsListPage() {
           className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6"
         >
           <div className="flex flex-col lg:flex-row gap-4">
-            <div className="flex-1">
+            <div className="w-1/2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="고객명, 연락처, 계약건수로 검색..."
+                  placeholder="고객명, 연락처, 내코드, 추천인코드로 검색..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyPress={handleKeyPress}
@@ -230,7 +260,7 @@ export default function SettlementsListPage() {
                 />
               </div>
             </div>
-            <div className="flex gap-3">
+            <div className="w-1/2 flex justify-start gap-3">
               <button 
                 onClick={handleSearch}
                 className="inline-flex items-center px-4 py-2 border border-blue-600 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -277,6 +307,7 @@ export default function SettlementsListPage() {
                         ref={(input) => {
                           if (input) input.indeterminate = isIndeterminate;
                         }}
+                        aria-label="모든 계약 선택"
                         onChange={(e) => handleSelectAll(e.target.checked)}
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                       />
@@ -292,6 +323,12 @@ export default function SettlementsListPage() {
                     <div className="flex items-center gap-2">
                       <Phone className="h-4 w-4" />
                       연락처
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      내코드
                     </div>
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -341,6 +378,7 @@ export default function SettlementsListPage() {
                           type="checkbox"
                           checked={selectedContracts.has(contract.id)}
                           onChange={(e) => handleSelectContract(contract.id, e.target.checked)}
+                          aria-label={`계약 ${contract.id} 선택`}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
                       </td>
@@ -349,6 +387,9 @@ export default function SettlementsListPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{contract.customerPhone}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{contract.customerPhone.slice(-8)}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">₩{formatAmount(contract.contractAmount)}</div>
@@ -374,7 +415,7 @@ export default function SettlementsListPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={8} className="px-6 py-12 text-center">
+                    <td colSpan={9} className="px-6 py-12 text-center">
                       <div className="text-gray-500">
                         <Search className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                         <p className="text-lg font-medium">

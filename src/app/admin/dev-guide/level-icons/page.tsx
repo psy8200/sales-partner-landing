@@ -4,43 +4,45 @@ import React, { useState } from 'react';
 
 export default function LevelIconsPage() {
   const [levelDescriptions, setLevelDescriptions] = useState({
-    0: '최초 가입자',
-    1: '3명 추천 완료',
-    2: '레벨 2 달성',
-    3: '레벨 3 달성',
-    4: '레벨 4 달성',
-    5: '레벨 5 달성',
-    6: '레벨 6 달성',
-    7: '레벨 7 달성',
-    8: '레벨 8 달성',
-    9: '레벨 9 달성',
-    10: '레벨 10 달성',
-    'SP': 'SP 레벨 달성'
+    0: '최초 가입자 (기본수당만 가능)',
+    1: '1명 추천 완료 (추천수당 시작)',
+    2: '3명 추천 완료 (트리수당 시작)',
+    3: '9명 추천 완료 (매칭수당 시작)',
+    4: '27명 추천 완료',
+    5: '81명 추천 완료',
+    6: '243명 추천 완료',
+    7: '729명 추천 완료',
+    8: '2,187명 추천 완료',
+    9: '6,561명 추천 완료',
+    10: '19,683명 추천 완료',
+    'LEGEND': '59,049명 추천 완료 (부회장 임원)',
+    'SP': '관리자'
   });
 
   const levelRequirements = {
     0: '0명',
-    1: '3명',
-    2: '9명',
-    3: '27명',
-    4: '81명',
-    5: '243명',
-    6: '729명',
-    7: '2,187명',
-    8: '6,561명',
-    9: '19,683명',
-    10: '59,049명',
+    1: '1~2명',
+    2: '3~8명',
+    3: '9~26명',
+    4: '27~80명',
+    5: '81~242명',
+    6: '243~728명',
+    7: '729~2,186명',
+    8: '2,187~6,560명',
+    9: '6,561~19,682명',
+    10: '19,683~59,048명',
+    'LEGEND': '59,049명 이상',
     'SP': '관리자'
   };
 
-  const [editingLevel, setEditingLevel] = useState<number | 'SP' | null>(null);
+  const [editingLevel, setEditingLevel] = useState<number | 'LEGEND' | 'SP' | null>(null);
 
-  const handleSave = (level: number | 'SP') => {
+  const handleSave = (level: number | 'LEGEND' | 'SP') => {
     localStorage.setItem('levelDescriptions', JSON.stringify(levelDescriptions));
     setEditingLevel(null);
   };
 
-  const handleEdit = (level: number | 'SP') => {
+  const handleEdit = (level: number | 'LEGEND' | 'SP') => {
     setEditingLevel(level);
   };
 
@@ -75,10 +77,10 @@ export default function LevelIconsPage() {
                   <div key={level} className="bg-white p-4 rounded-lg border border-pink-200 shadow-sm">
                     <div className="text-center mb-2">
                       <div className="text-2xl mb-1">
-                        {level === 'SP' ? '👑' : level === '0' ? '🥚' : level === '1' ? '🐣' : 
-                         level === '2' ? '🐤' : level === '3' ? '🐔' : level === '4' ? '🦅' : 
-                         level === '5' ? '🦉' : level === '6' ? '🦅' : level === '7' ? '🦅' : 
-                         level === '8' ? '🦅' : level === '9' ? '🦅' : '🦅'}
+                        {level === 'SP' ? '🏢' : level === 'LEGEND' ? '🏢' : level === '0' ? '🥚' : level === '1' ? '🐣' : 
+                         level === '2' ? '🐤' : level === '3' ? '🦜' : level === '4' ? '🦢' : 
+                         level === '5' ? '🦚' : level === '6' ? '🦅' : level === '7' ? '💎' : 
+                         level === '8' ? '⭐' : level === '9' ? '👑' : '🏆'}
                       </div>
                       <div className="text-sm font-semibold text-gray-700">레벨 {level}</div>
                       <div className="text-xs text-gray-500 mb-2">요구: {levelRequirements[level as keyof typeof levelRequirements]}</div>
@@ -100,7 +102,7 @@ export default function LevelIconsPage() {
                         />
                         <div className="flex space-x-1">
                           <button
-                            onClick={() => handleSave(level as number | 'SP')}
+                            onClick={() => handleSave(level as number | 'LEGEND' | 'SP')}
                             className="flex-1 px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
                             title={`레벨 ${level} 설명 저장`}
                             aria-label={`레벨 ${level} 설명 저장`}
@@ -121,7 +123,7 @@ export default function LevelIconsPage() {
                       <div className="text-center">
                         <div className="text-xs text-gray-600 mb-2 min-h-[2rem]">{description}</div>
                         <button
-                          onClick={() => handleEdit(level as number | 'SP')}
+                          onClick={() => handleEdit(level as number | 'LEGEND' | 'SP')}
                           className="px-3 py-1 text-xs bg-pink-500 text-white rounded hover:bg-pink-600"
                           title={`레벨 ${level} 설명 수정`}
                           aria-label={`레벨 ${level} 설명 수정`}

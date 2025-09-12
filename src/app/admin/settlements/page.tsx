@@ -37,7 +37,7 @@ const SettlementsPage = () => {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">총 정산액</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">수금완료금액</dt>
                   <dd className="text-2xl font-semibold text-gray-900">₩2.6억</dd>
                 </dl>
               </div>
@@ -55,8 +55,8 @@ const SettlementsPage = () => {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">완료</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">89건</dd>
+                  <dt className="text-sm font-medium text-gray-500 truncate">정산요청금액</dt>
+                  <dd className="text-2xl font-semibold text-gray-900">₩1.2억</dd>
                 </dl>
               </div>
             </div>
@@ -73,8 +73,8 @@ const SettlementsPage = () => {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">진행중</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">23건</dd>
+                  <dt className="text-sm font-medium text-gray-500 truncate">정산완료금액</dt>
+                  <dd className="text-2xl font-semibold text-gray-900">₩8,500만원</dd>
                 </dl>
               </div>
             </div>
@@ -91,8 +91,8 @@ const SettlementsPage = () => {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">총 커미션</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">₩260만원</dd>
+                  <dt className="text-sm font-medium text-gray-500 truncate">정산미요청금액</dt>
+                  <dd className="text-2xl font-semibold text-gray-900">₩5,500만원</dd>
                 </dl>
               </div>
             </div>
@@ -104,7 +104,7 @@ const SettlementsPage = () => {
       <div className="bg-white shadow rounded-lg">
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">정산 목록</h2>
+            <h2 className="text-xl font-semibold text-gray-900">정산 미요청리스트</h2>
             <div className="mt-4 sm:mt-0">
               <div className="flex space-x-3">
                 <select

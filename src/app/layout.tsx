@@ -30,6 +30,11 @@ export const metadata: Metadata = {
   alternates: {
     canonical: '/',
   },
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
+  },
   openGraph: {
     title: "세일즈 파트너 랜딩 - 프리미엄 파트너십",
     description: "이미 내는 돈으로 매월 수익 창출. 전국 800+ 성공 파트너와 함께하는 안전한 네트워크",

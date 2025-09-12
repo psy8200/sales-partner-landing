@@ -4,7 +4,7 @@ import React from 'react';
 import { getLevelIcon, getLevelColor, getLevelName } from '@/lib/levelIcons';
 
 interface LevelIconProps {
-  level: number | 'SP';
+  level: number | 'LEGEND' | 'SP';
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
@@ -23,10 +23,18 @@ const LevelIcon: React.FC<LevelIconProps> = ({ level, size = 'md', className = '
     }
   };
 
+  // LEGEND는 특별하게 처리
+  const getTitle = () => {
+    if (level === 'LEGEND') {
+      return `LEGEND - ${getLevelName(level)}`;
+    }
+    return `레벨 ${level} - ${getLevelName(level)}`;
+  };
+
   return (
     <span 
       className={`inline-flex items-center justify-center ${getLevelColor(level)} ${getSizeClass(size)} ${className}`}
-      title={`레벨 ${level} - ${getLevelName(level)}`}
+      title={getTitle()}
     >
       {getLevelIcon(level)}
     </span>

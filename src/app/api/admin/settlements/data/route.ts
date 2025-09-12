@@ -18,14 +18,14 @@ export async function GET(request: NextRequest) {
 
     // 수금완료계약과 일시납계약 페이지의 데이터를 직접 복사
     // 수금완료계약 페이지: COMPLETED_COLLECTION 상태
-    // 일시납계약 페이지: COMPLETED_COLLECTION 상태
+    // 일시납계약 페이지: LUMP_SUM 상태
     // 두 페이지의 데이터를 모두 가져와서 합치기
     const completedContractsWhere = {
       status: 'COMPLETED_COLLECTION'
     };
     
     const lumpSumContractsWhere = {
-      status: 'COMPLETED_COLLECTION'
+      status: 'LUMP_SUM'
     };
 
     // 검색 조건 추가

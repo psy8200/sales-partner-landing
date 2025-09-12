@@ -30,9 +30,9 @@ export async function GET(request: NextRequest) {
  */
 async function getManualBackupInfo() {
   try {
-    // 실제 백업 디렉토리 경로 (C:\home\backup-2025-09-09_17-52-13)
+    // 고정된 백업 디렉토리 경로 (C:\home\backup-latest)
     const homeDir = path.join(process.cwd(), '..');
-    const backupDir = path.join(homeDir, 'backup-2025-09-09_17-52-13');
+    const backupDir = path.join(homeDir, 'backup-latest');
     
     if (!fs.existsSync(backupDir)) {
       return {
@@ -75,10 +75,22 @@ async function getManualBackupInfo() {
       ['package.json', 'README.md', 'vercel.json', 'env.example'].includes(file)
     );
 
+    // 백업 정보 파일에서 정보 읽기
+    let backupInfo = null;
+    const backupInfoPath = path.join(backupDir, 'backup-info.json');
+    if (fs.existsSync(backupInfoPath)) {
+      try {
+        const backupInfoContent = fs.readFileSync(backupInfoPath, 'utf8');
+        backupInfo = JSON.parse(backupInfoContent);
+      } catch (error) {
+        console.error('백업 정보 파일 읽기 실패:', error);
+      }
+    }
+
     return {
       status: 'success',
-      lastBackup: 'backup-2025-09-09_17-52-13',
-      backupDate: '2025년 9월 9일 오후 5:59',
+      lastBackup: 'backup-latest',
+      backupDate: backupInfo?.backupDate ? new Date(backupInfo.backupDate).toLocaleString('ko-KR') : '정보 없음',
       backupCount: 1,
       totalSize: Math.round(totalSize / (1024 * 1024 * 1024) * 100) / 100, // GB 단위
       backupData: {
@@ -88,7 +100,8 @@ async function getManualBackupInfo() {
         partnerApplications: 1,
         activityLogs: 0
       },
-      message: `웹프로젝트: ${hasWebProject ? '✅' : '❌'}, 모바일프로젝트: ${hasMobileProject ? '✅' : '❌'}, 루트파일: ${hasRootFiles ? '✅' : '❌'}`
+      message: `웹프로젝트: ${hasWebProject ? '✅' : '❌'}, 모바일프로젝트: ${hasMobileProject ? '✅' : '❌'}, 루트파일: ${hasRootFiles ? '✅' : '❌'}`,
+      backupInfo: backupInfo
     };
   } catch (error) {
     return {
@@ -141,7 +154,7 @@ async function getGitInfo() {
     return {
       status: 'success',
       currentBranch,
-      lastCommit: `${commitHash} - psy875872, 32 minutes ago : feat: 계약입력관리 시스템 고도화 및 백업 시스템 정리`,
+      lastCommit,
       commitHash,
       commitTime,
       modifiedFiles,
@@ -193,11 +206,11 @@ async function getGitHubInfo() {
     return {
       status: 'success',
       remoteUrl,
-      isUpToDate: true, // 현재 최신 상태
-      hasUnpushedCommits: false,
-      hasUnpulledCommits: false,
+      isUpToDate,
+      hasUnpushedCommits,
+      hasUnpulledCommits,
       lastPushTime,
-      syncStatus: 'up_to_date'
+      syncStatus: isUpToDate ? 'up_to_date' : hasUnpushedCommits ? 'ahead' : hasUnpulledCommits ? 'behind' : 'unknown'
     };
   } catch (error) {
     return {

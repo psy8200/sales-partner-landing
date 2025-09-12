@@ -653,6 +653,7 @@ enum PaymentType {
 
 enum PaymentStatus {
   PENDING
+  PAYMENT_REQUESTED  // 지급요청 상태 추가
   PAID
   OVERDUE
   CANCELLED
@@ -830,4 +831,85 @@ model ProfileChangeRequest {
   @@index([status])
   @@index([createdAt])
   @@index([processedBy])
+}
+
+// 승급 회원 테이블
+model PromotionMember {
+  id                String           @id @default(cuid())
+  userId            String
+  userName          String
+  userPhone         String
+  myCode            String           // 내코드 (연락처 뒤 8자리)
+  referralCode      String?
+  
+  // 승급 정보
+  previousLevel     Int
+  currentLevel      Int
+  totalReferrals    Int              // 총 추천인원 (직접+간접)
+  directReferrals   Int              // 직접 추천인원
+  indirectReferrals Int              // 간접 추천인원
+  promotionDate     DateTime
+  
+  // 선물 정보
+  giftContent       String           // 선물 내용
+  giftAmount        Float?           // 선물 금액 (상품권/여행경비)
+  giftType          GiftType         // 선물 타입
+  
+  // 지급 관리
+  paymentStatus     PaymentStatus    @default(PENDING)
+  paymentDate       DateTime?
+  processedBy       String?
+  memo              String?
+  
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+}
+
+// 선물 타입 열거형
+enum GiftType {
+  GIFT_CARD  // 상품권 (4-6단계)
+  TRAVEL     // 여행권 (7-8단계)
+  CAR        // 차량 (9-10단계)
+  LEGEND     // LEGEND (드림카 + 기타)
+}
+
+// 지급 상태는 기존 PaymentStatus 열거형 사용
+// PENDING, PAID, OVERDUE, CANCELLED, REFUNDED
+
+// 승급회원 지급완료 내역 테이블
+model PaymentHistory {
+  id                String           @id @default(cuid())
+  userId            String
+  userName          String
+  userPhone         String
+  myCode            String           // 내코드 (연락처 뒤 8자리)
+  referralCode      String?
+  
+  // 승급 정보 (지급 당시 스냅샷)
+  previousLevel     Int
+  currentLevel      Int
+  totalReferrals    Int              // 총 추천인원 (직접+간접)
+  directReferrals   Int              // 직접 추천인원
+  indirectReferrals Int              // 간접 추천인원
+  promotionDate     DateTime
+  
+  // 선물 정보
+  giftContent       String           // 지급한 선물 내용
+  giftAmount        Float?           // 지급한 선물 금액
+  giftType          GiftType         // 선물 타입
+  
+  // 지급 정보
+  paymentDate       DateTime         // 실제 지급일시
+  processedBy       String           // 처리자
+  memo              String?          // 메모
+  
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([userId])
+  @@index([userPhone])
+  @@index([myCode])
+  @@index([paymentDate])
+  @@index([processedBy])
+  @@index([currentLevel])
 }

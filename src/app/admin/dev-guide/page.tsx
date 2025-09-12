@@ -1,64 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
 
-interface BackupInfo {
-  manual: {
-    status: string;
-    lastBackup?: string;
-    backupDate?: string;
-    backupCount?: number;
-    totalSize?: number;
-    backupData?: {
-      users: number;
-      contracts: number;
-      items: number;
-      partnerApplications: number;
-      activityLogs: number;
-    };
-    message?: string;
-  };
-  git: {
-    status: string;
-    currentBranch?: string;
-    lastCommit?: string;
-    modifiedFiles?: number;
-    untrackedFiles?: number;
-    totalChanges?: number;
-    message?: string;
-  };
-  github: {
-    status: string;
-    remoteUrl?: string;
-    isUpToDate?: boolean;
-    hasUnpushedCommits?: boolean;
-    hasUnpulledCommits?: boolean;
-    lastPushTime?: string;
-    syncStatus?: string;
-    message?: string;
-  };
-}
 
 export default function DevGuidePage() {
-  const [backupInfo, setBackupInfo] = useState<BackupInfo | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchBackupInfo();
-  }, []);
-
-  const fetchBackupInfo = async () => {
-    try {
-      const response = await fetch('/api/admin/backup-info');
-      const data = await response.json();
-      setBackupInfo(data);
-    } catch (error) {
-      console.error('백업 정보 로드 실패:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -105,6 +51,7 @@ export default function DevGuidePage() {
                 <div className="space-y-3 text-sm text-green-800">
                   <div>• <strong>회원 관리:</strong> 일반/파트너/관리자 분리</div>
                   <div>• <strong>파트너 신청:</strong> 상담신청 및 승인 시스템</div>
+                  <div>• <strong>정산관리 시스템:</strong> 계약/추천/승급/지급 관리</div>
                   <div>• <strong>포인트 시스템:</strong> 적립 및 사용 관리</div>
                   <div>• <strong>관리자 대시보드:</strong> 통계 및 관리 기능</div>
                 </div>
@@ -126,6 +73,8 @@ export default function DevGuidePage() {
                 </div>
                 <div className="space-y-3 text-sm text-purple-800">
                   <div>• <strong>User:</strong> 회원 정보 및 권한 관리</div>
+                  <div>• <strong>Contract:</strong> 계약 정보 및 정산 데이터</div>
+                  <div>• <strong>PaymentHistory:</strong> 승급 지급완료 내역</div>
                   <div>• <strong>PartnerApplication:</strong> 파트너 신청 관리</div>
                   <div>• <strong>CompanyInfo:</strong> 회사 정보 관리</div>
                   <div>• <strong>ActivityLog:</strong> 활동 로그 관리</div>
@@ -148,6 +97,8 @@ export default function DevGuidePage() {
                 </div>
                 <div className="space-y-3 text-sm text-orange-800">
                   <div>• <strong>인증:</strong> 로그인/로그아웃/세션 관리</div>
+                  <div>• <strong>정산관리:</strong> 데이터 조회/엑셀 다운로드</div>
+                  <div>• <strong>승급관리:</strong> 승급 처리/지급 완료</div>
                   <div>• <strong>회원:</strong> CRUD 작업 및 권한 관리</div>
                   <div>• <strong>파트너:</strong> 신청 및 승인 처리</div>
                   <div>• <strong>관리자:</strong> 대시보드 및 통계</div>
@@ -169,10 +120,12 @@ export default function DevGuidePage() {
                   <h2 className="text-xl font-semibold text-red-900">최근 업데이트</h2>
                 </div>
                 <div className="space-y-3 text-sm text-red-800">
+                  <div>• <strong>정산관리 시스템:</strong> 4개 페이지 완성</div>
+                  <div>• <strong>승급시스템:</strong> 자동 등급 계산 및 지급 관리</div>
+                  <div>• <strong>엑셀 다운로드:</strong> xlsx 패키지 통합</div>
+                  <div>• <strong>PaymentHistory:</strong> 지급완료 내역 관리</div>
                   <div>• <strong>파트너 승인:</strong> 시스템 완성</div>
                   <div>• <strong>인증 개선:</strong> adminSession 통일</div>
-                  <div>• <strong>스키마 안정화:</strong> 필드 추가 완료</div>
-                  <div>• <strong>하드코딩 제거:</strong> 동적 데이터 관리</div>
                 </div>
                 <div className="mt-4">
                   <Link 
@@ -207,97 +160,119 @@ export default function DevGuidePage() {
               </div>
             </div>
 
-            {/* 백업 정보 섹션 */}
+            {/* 정산관리 시스템 섹션 */}
             <div className="mt-8">
               <div className="flex items-center mb-6">
-                <div className="text-2xl mr-3">💾</div>
-                <h2 className="text-2xl font-semibold text-gray-900">백업 시스템 현황</h2>
-                <button 
-                  onClick={fetchBackupInfo}
-                  className="ml-4 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
-                >
-                  새로고침
-                </button>
+                <div className="text-2xl mr-3">💰</div>
+                <h2 className="text-2xl font-semibold text-gray-900">정산관리 시스템</h2>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* 수동 백업 정보 */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* 정산리스트 */}
                 <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
                   <div className="flex items-center mb-4">
-                    <div className="text-lg mr-2">📁</div>
-                    <h3 className="text-lg font-semibold text-blue-900">수동 백업</h3>
+                    <div className="text-lg mr-2">📊</div>
+                    <h3 className="text-lg font-semibold text-blue-900">정산리스트</h3>
                   </div>
-                  {loading ? (
-                    <div className="text-sm text-blue-700">로딩 중...</div>
-                  ) : backupInfo?.manual.status === 'success' ? (
-                    <div className="space-y-2 text-sm text-blue-800">
-                      <div>• <strong>최근 백업:</strong> {backupInfo.manual.lastBackup}</div>
-                      <div>• <strong>백업 일시:</strong> {backupInfo.manual.backupDate ? new Date(backupInfo.manual.backupDate).toLocaleString('ko-KR') : 'N/A'}</div>
-                      <div>• <strong>백업 개수:</strong> {backupInfo.manual.backupCount}개</div>
-                      <div>• <strong>백업 크기:</strong> {backupInfo.manual.totalSize}KB</div>
-                      <div>• <strong>백업 상태:</strong> ✅ 완료</div>
-                      {backupInfo.manual.backupData && (
-                        <div>• <strong>백업 내용:</strong> 사용자 {backupInfo.manual.backupData.users}명, 계약 {backupInfo.manual.backupData.contracts}건, 상품 {backupInfo.manual.backupData.items}개</div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-sm text-red-600">
-                      ❌ {backupInfo?.manual.message || '백업 정보를 가져올 수 없습니다.'}
-                    </div>
-                  )}
+                  <div className="space-y-2 text-sm text-blue-800">
+                    <div>• <strong>검색 기능:</strong> 이름+연락처+내코드+추천인코드</div>
+                    <div>• <strong>내코드 필드:</strong> 연락처 뒤 8자리 자동 생성</div>
+                    <div>• <strong>엑셀 다운로드:</strong> 선택된 데이터 내보내기</div>
+                    <div>• <strong>반응형 레이아웃:</strong> 50% 검색바 + 50% 버튼 영역</div>
+                    <div>• <strong>실시간 데이터:</strong> 계약 데이터 기반 정산 정보</div>
+                  </div>
                 </div>
 
-                {/* Git 백업 정보 */}
+                {/* 파트너추천리스트 */}
                 <div className="bg-green-50 p-6 rounded-lg border border-green-200">
                   <div className="flex items-center mb-4">
-                    <div className="text-lg mr-2">🌿</div>
-                    <h3 className="text-lg font-semibold text-green-900">Git 백업</h3>
+                    <div className="text-lg mr-2">👥</div>
+                    <h3 className="text-lg font-semibold text-green-900">파트너추천리스트</h3>
                   </div>
-                  {loading ? (
-                    <div className="text-sm text-green-700">로딩 중...</div>
-                  ) : backupInfo?.git.status === 'success' ? (
-                    <div className="space-y-2 text-sm text-green-800">
-                      <div>• <strong>현재 브랜치:</strong> {backupInfo.git.currentBranch}</div>
-                      <div>• <strong>마지막 커밋:</strong> {backupInfo.git.lastCommit}</div>
-                      <div>• <strong>수정된 파일:</strong> {backupInfo.git.modifiedFiles}개</div>
-                      <div>• <strong>추적되지 않은 파일:</strong> {backupInfo.git.untrackedFiles}개</div>
-                      <div>• <strong>총 변경사항:</strong> {backupInfo.git.totalChanges}개</div>
-                    </div>
-                  ) : (
-                    <div className="text-sm text-red-600">
-                      ❌ {backupInfo?.git.message || 'Git 정보를 가져올 수 없습니다.'}
-                    </div>
-                  )}
+                  <div className="space-y-2 text-sm text-green-800">
+                    <div>• <strong>사용자 검색:</strong> 전화번호로 파트너 조회</div>
+                    <div>• <strong>추천 체계:</strong> 직접/간접 추천인원 계산</div>
+                    <div>• <strong>매칭 시스템:</strong> 추천인코드 기반 매칭</div>
+                    <div>• <strong>등급 표시:</strong> 아이콘 + 추천인원 수</div>
+                    <div>• <strong>2560px 최적화:</strong> 대형 모니터 지원</div>
+                  </div>
                 </div>
 
-                {/* GitHub 백업 정보 */}
+                {/* 승급회원관리 */}
                 <div className="bg-purple-50 p-6 rounded-lg border border-purple-200">
                   <div className="flex items-center mb-4">
-                    <div className="text-lg mr-2">☁️</div>
-                    <h3 className="text-lg font-semibold text-purple-900">GitHub 백업</h3>
+                    <div className="text-lg mr-2">🏆</div>
+                    <h3 className="text-lg font-semibold text-purple-900">승급회원관리</h3>
                   </div>
-                  {loading ? (
-                    <div className="text-sm text-purple-700">로딩 중...</div>
-                  ) : backupInfo?.github.status === 'success' ? (
-                    <div className="space-y-2 text-sm text-purple-800">
-                      <div>• <strong>원격 저장소:</strong> {backupInfo.github.remoteUrl}</div>
-                      <div>• <strong>동기화 상태:</strong> {
-                        backupInfo.github.syncStatus === 'up_to_date' ? '✅ 최신' :
-                        backupInfo.github.syncStatus === 'ahead' ? '⬆️ 앞서감' :
-                        backupInfo.github.syncStatus === 'behind' ? '⬇️ 뒤처짐' : '❓ 알 수 없음'
-                      }</div>
-                      <div>• <strong>마지막 푸시:</strong> {backupInfo.github.lastPushTime || 'N/A'}</div>
-                      <div>• <strong>푸시 대기:</strong> {backupInfo.github.hasUnpushedCommits ? '⚠️ 있음' : '✅ 없음'}</div>
-                      <div>• <strong>풀 대기:</strong> {backupInfo.github.hasUnpulledCommits ? '⚠️ 있음' : '✅ 없음'}</div>
-                    </div>
-                  ) : (
-                    <div className="text-sm text-red-600">
-                      ❌ {backupInfo?.github.message || 'GitHub 정보를 가져올 수 없습니다.'}
-                    </div>
-                  )}
+                  <div className="space-y-2 text-sm text-purple-800">
+                    <div>• <strong>자동 등급 계산:</strong> 직접+간접 추천인원 기반</div>
+                    <div>• <strong>승급 조건:</strong> 0→1(1명), 1→2(4명), 2→3(10명)...</div>
+                    <div>• <strong>지급 상태:</strong> 대기중/지급요청/지급완료/취소</div>
+                    <div>• <strong>선물 관리:</strong> 등급별 선물 내용 자동 설정</div>
+                    <div>• <strong>실시간 업데이트:</strong> PaymentHistory 연동</div>
+                  </div>
+                </div>
+
+                {/* 승급회원지급완료리스트 */}
+                <div className="bg-orange-50 p-6 rounded-lg border border-orange-200">
+                  <div className="flex items-center mb-4">
+                    <div className="text-lg mr-2">📋</div>
+                    <h3 className="text-lg font-semibold text-orange-900">승급회원지급완료리스트</h3>
+                  </div>
+                  <div className="space-y-2 text-sm text-orange-800">
+                    <div>• <strong>지급 내역 관리:</strong> 완료된 승급 지급 기록</div>
+                    <div>• <strong>선택 및 삭제:</strong> 체크박스로 다중 선택</div>
+                    <div>• <strong>엑셀 다운로드:</strong> 선택된 데이터 내보내기</div>
+                    <div>• <strong>메모 관리:</strong> 개별 메모 입력 및 저장</div>
+                    <div>• <strong>필터링:</strong> 등급별/선물타입별 조회</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 기술적 특징 */}
+              <div className="mt-6 bg-gray-50 p-6 rounded-lg border border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">🔧 기술적 특징</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">데이터베이스 설계</h4>
+                    <ul className="space-y-1">
+                      <li>• PaymentHistory 모델 추가</li>
+                      <li>• Prisma 마이그레이션 완료</li>
+                      <li>• 인덱스 최적화</li>
+                      <li>• ENUM 타입 활용 (GiftType, PaymentStatus)</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">API 개발</h4>
+                    <ul className="space-y-1">
+                      <li>• RESTful API 설계</li>
+                      <li>• 에러 처리 및 로깅</li>
+                      <li>• 엑셀 다운로드 (xlsx 패키지)</li>
+                      <li>• 실시간 데이터 동기화</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">UI/UX 개선</h4>
+                    <ul className="space-y-1">
+                      <li>• 일관된 디자인 시스템</li>
+                      <li>• 반응형 레이아웃</li>
+                      <li>• 직관적인 사용자 인터페이스</li>
+                      <li>• 로딩 상태 및 에러 처리</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">핵심 기능</h4>
+                    <ul className="space-y-1">
+                      <li>• 실시간 데이터 동기화</li>
+                      <li>• 추천 체계 관리</li>
+                      <li>• 승급 시스템</li>
+                      <li>• 데이터 내보내기</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
+
           </div>
         </div>
       </div>

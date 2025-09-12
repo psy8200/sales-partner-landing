@@ -8,11 +8,11 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const search = searchParams.get('search') || '';
-    const status = searchParams.get('status') || 'COMPLETED_COLLECTION';
+    const status = searchParams.get('status') || 'LUMP_SUM';
 
     console.log('📋 요청 파라미터:', { page, limit, search, status });
 
-    // 검색 조건 구성 - 일시납계약은 COMPLETED_COLLECTION 상태만
+    // 검색 조건 구성 - 일시납계약은 LUMP_SUM 상태만
     const where: Record<string, unknown> = {
       status: status
     };
