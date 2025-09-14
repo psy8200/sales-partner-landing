@@ -152,33 +152,57 @@ const mockTreeData: TreeNode = {
 
 export default function PartnerTreePage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [treeData, setTreeData] = useState<TreeNode>(mockTreeData);
+  const [treeData, setTreeData] = useState<TreeNode | null>(null);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchedUser, setSearchedUser] = useState<any>(null);
+  const [statistics, setStatistics] = useState<any>(null);
 
-  // 검색 필터링
-  const filteredTreeData = React.useMemo(() => {
-    if (!searchTerm) return treeData;
+  // 검색 실행 함수
+  const handleSearch = async () => {
+    if (!searchTerm.trim()) return;
     
-    const filterNode = (node: TreeNode): TreeNode | null => {
-      const matchesSearch = node.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           node.phone.includes(searchTerm);
+    setIsSearching(true);
+    
+    try {
+      console.log('🔍 파트너 트리 검색 시작:', searchTerm);
       
-      const filteredChildren = node.children
-        .map(child => filterNode(child))
-        .filter((child): child is TreeNode => child !== null);
+      const response = await fetch(`/api/admin/settlements/partner-tree?search=${encodeURIComponent(searchTerm)}&maxDepth=5`);
+      const result = await response.json();
       
-      if (matchesSearch || filteredChildren.length > 0) {
-        return {
-          ...node,
-          children: filteredChildren
-        };
+      if (result.success) {
+        setTreeData(result.data.treeData);
+        setSearchedUser(result.data.searchedUser);
+        setStatistics(result.data.statistics);
+        setExpandedNodes(new Set());
+        
+        console.log('✅ 트리 데이터 로드 성공:', result.data);
+      } else {
+        console.error('❌ 검색 실패:', result.error);
+        alert('검색 중 오류가 발생했습니다: ' + result.error);
       }
-      
-      return null;
-    };
-    
-    return filterNode(treeData) || treeData;
-  }, [treeData, searchTerm]);
+    } catch (error) {
+      console.error('❌ API 호출 오류:', error);
+      alert('검색 중 오류가 발생했습니다.');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // 새로고침 함수
+  const handleRefresh = () => {
+    setSearchTerm('');
+    setTreeData(null);
+    setSearchedUser(null);
+    setStatistics(null);
+    setExpandedNodes(new Set());
+    setIsSearching(false);
+  };
+
+  // 검색 필터링 (실제 데이터에서는 API에서 필터링하므로 여기서는 단순히 반환)
+  const filteredTreeData = React.useMemo(() => {
+    return treeData;
+  }, [treeData]);
 
   // 노드 확장/축소
   const toggleNode = (nodeId: string) => {
@@ -231,22 +255,18 @@ export default function PartnerTreePage() {
             <div className="text-sm text-gray-900">{node.phone}</div>
           </td>
           <td className="px-6 py-4 whitespace-nowrap">
-            <div className="text-sm text-gray-900">
-              {new Date(node.joinDate).toLocaleDateString('ko-KR')}
-            </div>
-          </td>
-          <td className="px-6 py-4 whitespace-nowrap">
-            <div className="text-sm text-gray-900">{node.contracts}건</div>
-          </td>
-          <td className="px-6 py-4 whitespace-nowrap">
             <div className="text-sm font-medium text-green-600">
-              {new Intl.NumberFormat('ko-KR').format(node.points)}p
+              {new Intl.NumberFormat('ko-KR').format(node.points * 6)}p
             </div>
           </td>
           <td className="px-6 py-4 whitespace-nowrap">
             <div className="text-sm text-gray-900">
-              <div>직접: {node.directReferrals}명</div>
-              <div className="text-xs text-gray-500">총: {node.totalReferrals}명</div>
+              {node.totalReferrals}명
+            </div>
+          </td>
+          <td className="px-6 py-4 whitespace-nowrap">
+            <div className="text-sm font-medium text-blue-600">
+              {new Intl.NumberFormat('ko-KR').format(node.points * 3.5)}p
             </div>
           </td>
           <td className="px-6 py-4 whitespace-nowrap">
@@ -303,24 +323,46 @@ export default function PartnerTreePage() {
           className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6"
         >
           <div className="flex flex-col lg:flex-row gap-4">
-            <div className="flex-1">
+            {/* 검색바 - 풀사이즈의 30% */}
+            <div className="w-full lg:w-[30%]">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="회원명, 연락처로 검색..."
+                  placeholder="회원명, 연락처 또는 내코드로 검색..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSearch();
+                    }
+                  }}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
+            {/* 검색바 우측 버튼들 */}
             <div className="flex gap-3">
+              <button 
+                onClick={handleSearch}
+                disabled={isSearching}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSearching ? (
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Search className="h-4 w-4 mr-2" />
+                )}
+                {isSearching ? '검색중...' : '검색'}
+              </button>
               <button className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
                 <Filter className="h-4 w-4 mr-2" />
                 필터
               </button>
-              <button className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+              <button 
+                onClick={handleRefresh}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              >
                 <RefreshCw className="h-4 w-4 mr-2" />
                 새로고침
               </button>
@@ -359,26 +401,20 @@ export default function PartnerTreePage() {
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      가입일
-                    </div>
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      계약수
-                    </div>
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
                       <Target className="h-4 w-4" />
-                      포인트
+                      포인트합계
                     </div>
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4" />
                       추천수
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">💰</span>
+                      트리수당
                     </div>
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -390,36 +426,65 @@ export default function PartnerTreePage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {renderTreeNode(filteredTreeData)}
+                {filteredTreeData ? renderTreeNode(filteredTreeData) : (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                      <div className="flex flex-col items-center gap-2">
+                        <span className="text-4xl">🔍</span>
+                        <span className="text-lg font-medium">회원을 검색해주세요</span>
+                        <span className="text-sm">회원명, 연락처 또는 내코드로 검색하세요</span>
+                      </div>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
         </motion.div>
 
         {/* 트리 정보 요약 */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🏆</span>
-              <span className="text-sm font-medium text-blue-900">
-                트리 요약: 총 {treeData.totalReferrals}명 (직접 추천 {treeData.directReferrals}명) - {getLevelIconInfo(treeData.level).name} {treeData.level === 'LEGEND' ? 'LEGEND' : `${treeData.level}단계`}
-              </span>
+        {statistics && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🏆</span>
+                <span className="text-sm font-medium text-blue-900">
+                  트리 요약: 총 {statistics.totalMembers}명 - {searchedUser ? getLevelIconInfo(searchedUser.level).name : ''} {searchedUser && searchedUser.level === 'LEGEND' ? 'LEGEND' : searchedUser ? `${searchedUser.level}단계` : ''}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => {
+                    // 전체 확장 로직
+                    if (treeData) {
+                      const allNodeIds = new Set<string>();
+                      const collectNodeIds = (node: TreeNode) => {
+                        allNodeIds.add(node.id);
+                        node.children.forEach(collectNodeIds);
+                      };
+                      collectNodeIds(treeData);
+                      setExpandedNodes(allNodeIds);
+                    }
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+                >
+                  전체 확장
+                </button>
+                <button 
+                  onClick={() => setExpandedNodes(new Set())}
+                  className="px-4 py-2 border border-blue-600 text-blue-600 text-sm font-medium rounded-lg hover:bg-blue-50"
+                >
+                  전체 축소
+                </button>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <button className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
-                전체 확장
-              </button>
-              <button className="px-4 py-2 border border-blue-600 text-blue-600 text-sm font-medium rounded-lg hover:bg-blue-50">
-                전체 축소
-              </button>
-            </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        )}
       </div>
     </div>
   );

@@ -191,16 +191,35 @@ async function getGitHubInfo() {
     const hasUnpushedCommits = statusOutput.includes('Your branch is ahead');
     const hasUnpulledCommits = statusOutput.includes('Your branch is behind');
 
-    // 마지막 푸시 시간 (정확한 형식으로)
-    let lastPushTime = '2025. 9. 9. 오후 6:06:18';
+    // 마지막 푸시 시간 (reflog에서 실제 푸시 시간 조회)
+    let lastPushTime = '정보 없음';
     try {
-      const lastPush = execSync('git log -1 --pretty=format:"%cd" --date=format:"%Y. %m. %d. %H:%M:%S"', {
+      // reflog에서 push 명령어 찾기
+      const reflogOutput = execSync('git reflog --date=format:"%Y. %m. %d. %H:%M:%S"', {
         encoding: 'utf8',
         cwd: process.cwd()
-      }).trim();
-      lastPushTime = lastPush;
-    } catch {
-      // 푸시 정보를 가져올 수 없는 경우 기본값 사용
+      });
+      
+      const lines = reflogOutput.split('\n');
+      const pushLine = lines.find(line => line.includes('push'));
+      
+      if (pushLine) {
+        // reflog 형식: "abc1234 HEAD@{2025. 09. 12. 13:52:00}: push: ..."
+        const timeMatch = pushLine.match(/(\d{4}\. \d{2}\. \d{2}\. \d{2}:\d{2}:\d{2})/);
+        if (timeMatch) {
+          lastPushTime = timeMatch[1];
+        }
+      } else {
+        // push 기록이 없으면 최근 커밋 시간 사용
+        const lastCommit = execSync('git log -1 --pretty=format:"%cd" --date=format:"%Y. %m. %d. %H:%M:%S"', {
+          encoding: 'utf8',
+          cwd: process.cwd()
+        }).trim();
+        lastPushTime = lastCommit;
+      }
+    } catch (error) {
+      console.error('푸시 시간 조회 실패:', error);
+      lastPushTime = '조회 실패';
     }
 
     return {

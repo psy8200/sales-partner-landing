@@ -1,8 +1,9 @@
 // 등급 계산 유틸리티 함수들
 import { getLevelIcon, getLevelName } from './levelIcons';
 
-// 새로운 승급 기준 (1, 4, 10, 28, 82, 244, 730, 2188, 6562, 19684, 59050)
-const LEVEL_REQUIREMENTS = [1, 4, 10, 28, 82, 244, 730, 2188, 6562, 19684, 59050];
+// 새로운 승급 기준 (레벨별 최소 요구사항)
+// 인덱스 0: 레벨 0 (0명), 인덱스 1: 레벨 1 (1명), 인덱스 2: 레벨 2 (4명), ...
+const LEVEL_REQUIREMENTS = [0, 1, 4, 10, 28, 82, 244, 730, 2188, 6562, 19684, 59050];
 
 /**
  * 총 추천인 수를 기반으로 현재 등급을 계산
@@ -31,7 +32,8 @@ export const calculateLevel = (totalReferrals: number): number | 'LEGEND' => {
  */
 export const getNextLevelRequirement = (currentLevel: number): number => {
   if (currentLevel >= 10) return 0; // 최고 등급
-  return LEVEL_REQUIREMENTS[currentLevel] || 0;
+  // 다음 등급의 요구사항을 반환 (currentLevel + 1)
+  return LEVEL_REQUIREMENTS[currentLevel + 1] || 0;
 };
 
 /**
@@ -53,8 +55,9 @@ export const getRemainingReferrals = (currentLevel: number, totalReferrals: numb
  */
 export const getUserLevelInfo = (totalReferrals: number) => {
   const currentLevel = calculateLevel(totalReferrals);
-  const nextRequirement = getNextLevelRequirement(currentLevel);
-  const remaining = getRemainingReferrals(currentLevel, totalReferrals);
+  const currentLevelNum = typeof currentLevel === 'number' ? currentLevel : 10;
+  const nextRequirement = getNextLevelRequirement(currentLevelNum);
+  const remaining = getRemainingReferrals(currentLevelNum, totalReferrals);
   
   return {
     currentLevel,

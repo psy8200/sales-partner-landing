@@ -150,3 +150,4 @@ function getDirectorySize(dirPath: string): number {
   
   return size;
 }
+

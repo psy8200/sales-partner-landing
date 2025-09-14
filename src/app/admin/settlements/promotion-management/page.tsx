@@ -176,7 +176,7 @@ export default function PromotionManagementPage() {
             if (isPaid) {
               // 지급 완료된 회원: 다음 승급을 위한 필요 인원수 표시
               const nextLevel = typeof currentLevel === 'number' ? currentLevel + 1 : 10;
-              const nextLevelRequirement = getNextLevelRequirement(nextLevel);
+              const nextLevelRequirement = getNextLevelRequirement(currentLevelNum);
               const neededForNext = Math.max(0, nextLevelRequirement - totalReferrals);
               memo = `다음 승급까지: ${neededForNext}명 필요`;
               paymentStatus = 'PENDING' as const;
@@ -188,7 +188,7 @@ export default function PromotionManagementPage() {
               console.log(`🎯 ${customer.customerName}(${myCode}): 승급완료 → 지급요청 상태`);
             } else {
               // 승급 조건 미달성
-              const needed = getNextLevelRequirement(currentLevelNum + 1) - totalReferrals;
+              const needed = getNextLevelRequirement(currentLevelNum) - totalReferrals;
               memo = needed > 0 ? `다음 승급까지: ${needed}명 필요` : `최고등급`;
               paymentStatus = 'PENDING' as const;
               console.log(`⏳ ${customer.customerName}(${myCode}): 승급조건 미달성 → 다음 승급까지 ${needed}명 필요`);
