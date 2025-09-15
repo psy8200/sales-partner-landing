@@ -107,7 +107,70 @@ const SettlementPage = () => {
       try {
         console.log('🔍 정산 요약 조회 시작:', user.name, user.phone);
         
-        // 기본값 먼저 설정
+        // SettlementRecord 데이터 조회
+        const response = await fetch(`/api/mypage/settlement-summary?userName=${encodeURIComponent(user.name)}&userPhone=${encodeURIComponent(user.phone)}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ 정산 요약 조회 성공:', data);
+          
+          if (data.success && data.data) {
+            const { summary, settlements } = data.data;
+            
+            // 포인트 요약 업데이트
+            setPointSummary({
+              basicSalary: summary.totalBasicCommission || 0,
+              recruitmentBonus: summary.totalRecruitmentCommission || 0,
+              indirectBonus: summary.totalIndirectCommission || 0,
+              dividendIncome: summary.totalDividendCommission || 0,
+              total: summary.totalCommission || 0,
+              withdrawable: summary.withdrawableAmount || 0,
+              scheduled: summary.scheduledAmount || 0,
+              totalPaid: summary.totalPaid || 0,
+            });
+            
+            // 정산 이력 업데이트
+            setSettlementHistory(settlements || []);
+            
+            console.log('📊 정산 데이터 업데이트 완료:', {
+              total: summary.totalCommission,
+              withdrawable: summary.withdrawableAmount,
+              scheduled: summary.scheduledAmount,
+              historyCount: settlements?.length || 0
+            });
+          } else {
+            console.log('⚠️ API 응답에서 데이터를 찾을 수 없음');
+            // 기본값 설정
+            setPointSummary({
+              basicSalary: 0,
+              recruitmentBonus: 0,
+              indirectBonus: 0,
+              dividendIncome: 0,
+              total: 0,
+              withdrawable: 0,
+              scheduled: 0,
+              totalPaid: 0,
+            });
+            setSettlementHistory([]);
+          }
+        } else {
+          console.log('⚠️ API 호출 실패, 기본값으로 진행');
+          // 기본값 설정
+          setPointSummary({
+            basicSalary: 0,
+            recruitmentBonus: 0,
+            indirectBonus: 0,
+            dividendIncome: 0,
+            total: 0,
+            withdrawable: 0,
+            scheduled: 0,
+            totalPaid: 0,
+          });
+          setSettlementHistory([]);
+        }
+      } catch (error) {
+        console.error('정산 요약 조회 실패:', error);
+        // 네트워크 에러 등이 발생해도 기본값으로 계속 진행
         setPointSummary({
           basicSalary: 0,
           recruitmentBonus: 0,
@@ -119,36 +182,6 @@ const SettlementPage = () => {
           totalPaid: 0,
         });
         setSettlementHistory([]);
-        
-        // 서버 DB에서 정산 데이터 조회 (userId로 조회)
-        const response = await fetch('/api/mypage/settlement-summary', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: user.id
-          }),
-        });
-        
-        console.log('📡 API 응답 상태:', response.status);
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('✅ 정산 요약 조회 성공:', data);
-          
-          if (data.success && data.data) {
-            setPointSummary(data.data);
-            setSettlementHistory(data.data.settlementHistory || []);
-          }
-        } else {
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-          console.error('정산 요약 조회 실패:', response.status, errorData);
-          // 에러가 발생해도 기본값으로 계속 진행
-        }
-      } catch (error) {
-        console.error('정산 요약 조회 실패:', error);
-        // 네트워크 에러 등이 발생해도 기본값으로 계속 진행
       } finally {
         setLoading(false);
       }
@@ -306,7 +339,7 @@ const SettlementPage = () => {
                   💰 정산 관리
                 </h1>
                 <p className="text-sm text-gray-600">
-                  {user.name}님의 수익 정산 현황
+                  당월지급내역 5일이후출금가능
                 </p>
               </div>
               <div className="text-right">
@@ -327,10 +360,18 @@ const SettlementPage = () => {
         
         {/* 수당 현황 카드 */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <Banknote className="h-5 w-5 mr-2 text-green-600" />
-            수당 현황
-          </h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+              <Banknote className="h-5 w-5 mr-2 text-green-600" />
+              수당 현황
+            </h2>
+            <button
+              onClick={handleSettlementRequest}
+              className="px-3 py-1.5 text-sm bg-blue-500 text-white font-medium rounded-md hover:bg-blue-600 transition-colors duration-200"
+            >
+              출금신청하기
+            </button>
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="text-center p-3 bg-blue-50 rounded-lg">
               <p className="text-blue-600 text-sm font-medium">기본수당</p>
@@ -358,29 +399,21 @@ const SettlementPage = () => {
             </div>
           </div>
           
-          {/* 총 수당 요약 */}
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <div className="flex justify-between items-center">
-              <span className="text-lg font-semibold text-gray-900">총 수당</span>
-              <span className="text-2xl font-bold text-green-600">
-                {formatNumber(
-                  (pointSummary?.basicSalary || 0) + 
-                  (pointSummary?.recruitmentBonus || 0) + 
-                  (pointSummary?.indirectBonus || 0) + 
-                  (pointSummary?.dividendIncome || 0)
-                )}P
-              </span>
-            </div>
+          {/* 출금 안내 텍스트 */}
+          <div className="mt-4 pt-3 border-t border-gray-200">
+            <p className="text-xs text-gray-500 text-center flex items-center justify-center">
+              <span className="w-1 h-1 bg-gray-500 rounded-full mr-2"></span>
+              출금신청시 소득세 3.3%골제후 익일11시지급합니다.
+            </p>
+            <p className="text-xs text-gray-500 text-center flex items-center justify-center mt-1">
+              <span className="w-1 h-1 bg-gray-500 rounded-full mr-2"></span>
+              출금요청은 월 1회가능합니다. 5일~30일까지
+            </p>
           </div>
         </div>
 
-        {/* 정산 신청 버튼 */}
-        {user.role === 'MEMBER' && pointSummary && (
-          (pointSummary.basicSalary || 0) + 
-          (pointSummary.recruitmentBonus || 0) + 
-          (pointSummary.indirectBonus || 0) + 
-          (pointSummary.dividendIncome || 0)
-        ) > 0 && (
+        {/* 정산 신청 버튼 - 항상 표시 */}
+        {user.role === 'MEMBER' && (
           <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
             <div className="text-center">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -400,40 +433,6 @@ const SettlementPage = () => {
           </div>
         )}
 
-        {/* 계좌 정보 */}
-        {user.role === 'MEMBER' && (
-          <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <FileText className="h-5 w-5 mr-2 text-blue-600" />
-              등록된 계좌 정보
-            </h2>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm font-medium text-gray-600">은행</span>
-                <span className="text-sm font-semibold text-gray-900">
-                  {user.bankName || '미등록'}
-                </span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm font-medium text-gray-600">계좌번호</span>
-                <span className="text-sm font-semibold text-gray-900">
-                  {user.bankAccount && user.bankAccount.length >= 8 
-                    ? `${user.bankAccount.slice(0, 4)}****${user.bankAccount.slice(-4)}` 
-                    : '미등록'}
-                </span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm font-medium text-gray-600">예금주</span>
-                <span className="text-sm font-semibold text-gray-900">
-                  {user.accountHolder || '미등록'}
-                </span>
-              </div>
-            </div>
-            <button className="w-full mt-4 py-2 px-4 border border-blue-600 text-blue-600 font-medium rounded-lg hover:bg-blue-50 transition-colors">
-              계좌 정보 수정
-            </button>
-          </div>
-        )}
 
         {/* 정산 내역 */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">

@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/db';
 
-const prisma = new PrismaClient();
+export const runtime = 'nodejs'; // Prisma 사용을 위해 Node.js 런타임 필수
+
+// BigInt 직렬화 처리 함수
+function jsonSafe(data: unknown) {
+  return JSON.parse(
+    JSON.stringify(data, (_, v) => (typeof v === 'bigint' ? Number(v) : v))
+  );
+}
 
 // 정산 완료 데이터 저장 API
 export async function POST(request: NextRequest) {
@@ -13,7 +20,14 @@ export async function POST(request: NextRequest) {
     
     console.log('📊 저장할 데이터:', {
       selectedItemsCount: selectedItems?.length || 0,
-      processedBy
+      processedBy,
+      firstItem: selectedItems?.[0] ? {
+        id: selectedItems[0].id,
+        userName: selectedItems[0].userName,
+        userPhone: selectedItems[0].userPhone,
+        settlementYearMonth: selectedItems[0].settlementYearMonth,
+        hasAllFields: !!(selectedItems[0].userName && selectedItems[0].userPhone)
+      } : null
     });
     
     if (!selectedItems || selectedItems.length === 0) {
@@ -28,6 +42,12 @@ export async function POST(request: NextRequest) {
     
     for (const item of selectedItems) {
       try {
+        console.log('🔍 처리 중인 항목:', {
+          userName: item.userName,
+          userPhone: item.userPhone,
+          settlementYearMonth: item.settlementYearMonth
+        });
+        
         // 기존 레코드가 있는지 확인 (이름 + 연락처 + 정산년월로 중복 체크)
         const existingRecord = await prisma.settlementRecord.findFirst({
           where: {
@@ -38,20 +58,21 @@ export async function POST(request: NextRequest) {
         });
         
         if (existingRecord) {
-          // 기존 레코드 업데이트
+          console.log('📝 기존 레코드 업데이트:', existingRecord.id);
+          // 기존 레코드 업데이트 (필수 필드 확인 및 기본값 설정)
           const updatedRecord = await prisma.settlementRecord.update({
             where: { id: existingRecord.id },
             data: {
-              finalPoints: item.finalPoints,
-              sumPoints: item.sumPoints,
-              currentLevel: item.currentLevel,
-              basicCommission: item.basicCommission,
-              recruitmentCommission: item.recruitmentCommission,
-              indirectCommission: item.indirectCommission,
-              dividendBasicCommission: item.dividendBasicCommission,
-              dividendLevelCommission: item.dividendLevelCommission,
-              totalCommission: item.totalCommission,
-              paymentStatus: item.paymentStatus,
+              finalPoints: item.finalPoints || 0,
+              sumPoints: item.sumPoints || 0,
+              currentLevel: item.currentLevel || 1,
+              basicCommission: item.basicCommission || 0,
+              recruitmentCommission: item.recruitmentCommission || 0,
+              indirectCommission: item.indirectCommission || 0,
+              dividendBasicCommission: item.dividendBasicCommission || 0,
+              dividendLevelCommission: item.dividendLevelCommission || 0,
+              totalCommission: item.totalCommission || 0,
+              paymentStatus: item.paymentStatus || 'PENDING',
               requestStatus: '정산가능', // 확인저장시 정산가능으로 변경
               processedBy: processedBy || 'admin',
               processedAt: new Date(),
@@ -62,22 +83,23 @@ export async function POST(request: NextRequest) {
           savedRecords.push(updatedRecord);
           console.log('✅ 기존 레코드 업데이트:', updatedRecord.id);
         } else {
-          // 새 레코드 생성
+          console.log('🆕 새 레코드 생성');
+          // 새 레코드 생성 (필수 필드 확인 및 기본값 설정)
           const newRecord = await prisma.settlementRecord.create({
             data: {
-              userName: item.userName,
-              userPhone: item.userPhone,
-              finalPoints: item.finalPoints,
-              sumPoints: item.sumPoints,
-              currentLevel: item.currentLevel,
-              basicCommission: item.basicCommission,
-              recruitmentCommission: item.recruitmentCommission,
-              indirectCommission: item.indirectCommission,
-              dividendBasicCommission: item.dividendBasicCommission,
-              dividendLevelCommission: item.dividendLevelCommission,
-              totalCommission: item.totalCommission,
-              settlementYearMonth: item.settlementYearMonth,
-              paymentStatus: item.paymentStatus,
+              userName: item.userName || 'Unknown',
+              userPhone: item.userPhone || '00000000000',
+              finalPoints: item.finalPoints || 0,
+              sumPoints: item.sumPoints || 0,
+              currentLevel: item.currentLevel || 1,
+              basicCommission: item.basicCommission || 0,
+              recruitmentCommission: item.recruitmentCommission || 0,
+              indirectCommission: item.indirectCommission || 0,
+              dividendBasicCommission: item.dividendBasicCommission || 0,
+              dividendLevelCommission: item.dividendLevelCommission || 0,
+              totalCommission: item.totalCommission || 0,
+              settlementYearMonth: item.settlementYearMonth || new Date().toISOString().slice(0, 7),
+              paymentStatus: item.paymentStatus || 'PENDING',
               requestStatus: '정산가능', // 확인저장시 정산가능으로 변경
               processedBy: processedBy || 'admin',
               processedAt: new Date()
@@ -88,32 +110,42 @@ export async function POST(request: NextRequest) {
           console.log('✅ 새 레코드 생성:', newRecord.id);
         }
       } catch (error) {
-        console.error('❌ 개별 레코드 저장 실패:', error);
+        console.error('❌ 개별 레코드 저장 실패:', {
+          item: item.userName,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined
+        });
         // 개별 실패는 로그만 남기고 계속 진행
       }
     }
     
     console.log('🎉 정산 완료 데이터 저장 완료:', savedRecords.length, '건');
     
-    return NextResponse.json({
+    // 저장된 건수가 0이어도 성공으로 처리 (데이터는 0으로 표시)
+    const successResponse = {
       success: true,
       message: `${savedRecords.length}건의 정산 데이터가 저장되었습니다.`,
       data: {
         savedCount: savedRecords.length,
-        records: savedRecords
+        records: jsonSafe(savedRecords)
       }
-    });
+    };
+    console.log('✅ 저장 완료 응답:', successResponse);
+    return NextResponse.json(successResponse);
     
   } catch (error) {
     console.error('❌ 정산 완료 데이터 저장 실패:', error);
     
-    return NextResponse.json({
+    const errorResponse = {
       success: false,
       message: '정산 데이터 저장 중 오류가 발생했습니다.',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+      error: error instanceof Error ? error.message : 'Unknown error',
+      details: error instanceof Error ? error.stack : undefined
+    };
+    console.log('❌ 예외 발생 응답:', errorResponse);
+    return NextResponse.json(errorResponse, { status: 500 });
   } finally {
-    await prisma.$disconnect();
+    // await prisma.$disconnect(); // @/lib/db에서 관리하므로 제거
   }
 }
 
@@ -156,6 +188,6 @@ export async function GET(request: NextRequest) {
       error: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   } finally {
-    await prisma.$disconnect();
+    // await prisma.$disconnect(); // @/lib/db에서 관리하므로 제거
   }
 }

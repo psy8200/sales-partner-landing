@@ -188,6 +188,48 @@ export default function CompletedSettlementsPage() {
     setFilteredSearchTerm(searchTerm);
   };
 
+  // 정산완료내역보내기 핸들러
+  const handleSendCompleted = async () => {
+    if (commissionData.length === 0) {
+      alert('전송할 정산완료 데이터가 없습니다.');
+      return;
+    }
+
+    const confirmSend = confirm(`현재 테이블의 ${commissionData.length}명의 정산완료내역을 회원 페이지로 보내시겠습니까?`);
+    if (!confirmSend) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      const response = await fetch('/api/admin/settlements/send-completed', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          completedData: commissionData, // 현재 테이블에 표시된 모든 데이터 전송
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(`정산완료내역이 성공적으로 전송되었습니다. (${result.sentCount}명)`);
+        // 데이터 새로고침
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        alert(`오류가 발생했습니다: ${error.message || error.error}`);
+      }
+    } catch (error) {
+      console.error('정산완료내역 전송 오류:', error);
+      alert('정산완료내역 전송 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 확인저장 핸들러 (선택된 항목들을 서버에 저장하고 정산가능으로 변경)
   const handleRefresh = async () => {
     if (selectedItems.length === 0) {
@@ -221,8 +263,11 @@ export default function CompletedSettlementsPage() {
       });
 
       const result = await response.json();
+      console.log('🔍 API 응답 결과:', result);
+      console.log('🔍 응답 상태:', response.status);
+      console.log('🔍 응답 헤더:', response.headers);
       
-      if (result.success) {
+      if (result.success && result.data.savedCount > 0) {
         // 서버 저장 성공시 로컬 데이터도 업데이트
         const updatedData = commissionData.map(item => {
           if (selectedItems.includes(item.id)) {
@@ -246,7 +291,9 @@ export default function CompletedSettlementsPage() {
         alert(`✅ ${result.data.savedCount}개 항목이 서버에 저장되고 정산가능으로 변경되었습니다.`);
         console.log('✅ 서버 저장 완료:', result);
       } else {
-        alert(`❌ 저장 실패: ${result.message}`);
+        // 저장 실패 또는 0개 저장
+        const errorMessage = result.message || result.error || '서버에 저장되지 않았습니다.';
+        alert(`❌ 저장 실패: ${errorMessage}`);
         console.error('❌ 서버 저장 실패:', result);
       }
     } catch (error) {
@@ -430,6 +477,13 @@ export default function CompletedSettlementsPage() {
               >
                 <RefreshCw className="w-4 h-4 mr-1" />
                 확인저장
+              </button>
+              <button
+                onClick={handleSendCompleted}
+                className="inline-flex items-center px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm"
+              >
+                <DollarSign className="w-4 h-4 mr-1" />
+                정산완료내역보내기
               </button>
               <button
                 onClick={handleDeleteSelected}
