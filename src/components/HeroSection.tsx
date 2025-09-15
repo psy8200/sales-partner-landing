@@ -1,12 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import ProfitCalculatorModal from './ProfitCalculatorModal';
 
 const HeroSection = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const handleSignup = () => {
     window.open('/signup', '_blank', 'width=520,height=800,scrollbars=yes,resizable=yes');
   };
+  
   const handleOpenCalc = () => {
-    window.open('/profit-structure', '_blank', 'width=1100,height=800,scrollbars=yes,resizable=yes');
+    setIsModalOpen(true);
   };
 
   return (
@@ -119,7 +123,11 @@ const HeroSection = () => {
 
        </div>
 
-      
+      {/* 수익 계산 모달 */}
+      <ProfitCalculatorModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+      />
     </section>
   );
 };

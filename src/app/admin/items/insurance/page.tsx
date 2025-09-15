@@ -21,7 +21,7 @@ const InsuranceItemsPage = () => {
   const [baseAmount, setBaseAmount] = useState<string>('');
   const [expectedRate, setExpectedRate] = useState<string>('');
   const [pointRate, setPointRate] = useState<string>('');
-  const [pageTitle, setPageTitle] = useState('보험상담신청'); // 기본값
+  const [pageTitle, setPageTitle] = useState('보험상담설정'); // 기본값
 
   const monthlyRate = useMemo(() => {
     const exp = parseFloat(expectedRate || '0');
@@ -42,7 +42,7 @@ const InsuranceItemsPage = () => {
 
   const [rows, setRows] = useState<InsuranceRow[]>([]);
 
-  // 페이지 제목을 서버에서 가져오기
+  // 페이지 제목을 서버에서 가져오기 (하드코딩된 제목)
   React.useEffect(() => {
     fetch('/api/admin/sidebar-items/%2Fadmin%2Fitems%2Finsurance')
       .then(r => r.json())
@@ -134,7 +134,7 @@ const InsuranceItemsPage = () => {
            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
              <div>
                <label className="block text-xs font-medium text-gray-700 mb-1">보험사</label>
-               <input value={insurer} onChange={(e)=>setInsurer(e.target.value)} placeholder="예: 삼성생명" title="보험사" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+               <input value={insurer} onChange={(e)=>setInsurer(e.target.value)} placeholder="예: 세일즈보험" title="보험사" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
              </div>
              <div>
                <label className="block text-xs font-medium text-gray-700 mb-1">상품명</label>

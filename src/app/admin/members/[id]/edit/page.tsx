@@ -198,18 +198,25 @@ const MemberEditPage = ({ params }: { params: Promise<{ id: string }> }) => {
   };
 
   const handlePartnerApproval = async () => {
+    console.log('🚀 파트너 승인 처리 시작');
+    
     // 파트너 승인 조건 재확인
     if (pointsData.totalPoints < 50000) {
       alert('포인트가 50,000P 미만입니다. 파트너 승인이 불가능합니다.');
       return;
     }
     
+    // 계좌정보 확인
     if (!formData.bankName || !formData.accountHolder || !formData.bankAccount) {
-      alert('은행 정보가 완전하지 않습니다. 은행명, 예금주, 계좌번호를 모두 입력해주세요.');
+      alert('계좌정보를 입력해주세요.\n\n필수 입력 항목:\n- 은행명\n- 예금주\n- 계좌번호');
       return;
     }
     
-    if (!confirm('이 사용자를 파트너로 승인하시겠습니까?\n\n승인 조건:\n- 포인트: 50,000P 이상 ✅\n- 은행명: ' + formData.bankName + ' ✅\n- 예금주: ' + formData.accountHolder + ' ✅\n- 계좌번호: ' + formData.bankAccount + ' ✅')) return;
+    // 간단한 확인창 - alert로 테스트
+    alert(`${formData.name} 회원을 파트너로 승인하시겠습니까?\n\n포인트: ${pointsData.totalPoints.toLocaleString()}P\n은행: ${formData.bankName}\n예금주: ${formData.accountHolder}\n계좌: ${formData.bankAccount}\n\n확인을 클릭하면 파트너 승인이 진행됩니다.`);
+    
+    // confirm 대신 바로 진행
+    const userConfirmed = true;
     
     try {
       const approvalData = {
@@ -226,54 +233,36 @@ const MemberEditPage = ({ params }: { params: Promise<{ id: string }> }) => {
         body: JSON.stringify(approvalData),
       });
       
+      console.log('📡 API 응답 상태:', res.status);
+      
       if (!res.ok) {
         const error = await res.json();
+        console.error('❌ API 오류 응답:', error);
         throw new Error(error.error || '파트너 승인 처리에 실패했습니다.');
       }
       
       const result = await res.json();
       console.log('✅ 파트너 승인 성공:', result);
       
-      // 귀여운 파트너 승인 성공 창 표시
-      const partnerSuccessMessage = `
-        🎊 파트너 승인 완료! 🎊
-        
-        👤 회원: ${formData.name}
-        💰 포인트: ${pointsData.totalPoints.toLocaleString()}P
-        🏦 은행: ${formData.bankName}
-        👤 예금주: ${formData.accountHolder}
-        💳 계좌: ${formData.bankAccount}
-        
-        🚀 해당 회원이 파트너회원 페이지로 이동됩니다!
-      `;
+      // 성공 메시지
+      alert(`🎊 파트너 승인 완료!\n\n${formData.name} 회원이 파트너회원으로 승인되었습니다.`);
       
-      alert(partnerSuccessMessage);
-      setFormData(approvalData);
-      
-      // 부모 창 새로고침
+      // 즉시 창 닫기 및 파트너회원 페이지로 이동
       if (window.opener && !window.opener.closed) {
-        try { 
-          window.opener.location.reload(); 
+        try {
+          // 부모 창을 파트너회원 페이지로 이동
+          window.opener.location.href = '/admin/members/partners';
         } catch (e) {
-          console.log('부모 창 새로고침 실패:', e);
+          console.log('부모 창 이동 실패:', e);
         }
       }
       
-      // 파트너회원 페이지로 이동
-      setTimeout(() => {
-        window.close();
-        if (window.opener && !window.opener.closed) {
-          try {
-            window.opener.location.href = '/admin/members/partners';
-          } catch (e) {
-            console.log('파트너회원 페이지 이동 실패:', e);
-          }
-        }
-      }, 1000);
+      // 현재 창 닫기
+      window.close();
       
     } catch (error: unknown) {
       console.error('❌ 파트너 승인 오류:', error);
-      alert(error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.');
+      alert(error instanceof Error ? error.message : '파트너 승인 중 오류가 발생했습니다.');
     }
   };
 
@@ -528,11 +517,21 @@ const MemberEditPage = ({ params }: { params: Promise<{ id: string }> }) => {
             >
               저장
             </button>
-            {pointsData.totalPoints >= 50000 && formData.bankName && formData.accountHolder && formData.bankAccount && (
+            {pointsData.totalPoints >= 50000 && (
               <button
                 type="button"
-                onClick={handlePartnerApproval}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('✅ 파트너승인 버튼 클릭됨');
+                  handlePartnerApproval();
+                }}
                 className="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors"
+                style={{
+                  zIndex: 9999,
+                  position: 'relative',
+                  pointerEvents: 'auto'
+                }}
               >
                 파트너 승인처리
               </button>

@@ -25,8 +25,9 @@ export async function GET(request: NextRequest) {
     
     const items = await prisma.itemSetting.findMany({ where, orderBy: { createdAt: 'desc' } });
     return NextResponse.json({ items });
-  } catch {
-    return NextResponse.json({ error: '목록 조회 실패' }, { status: 500 });
+  } catch (error) {
+    console.error('ItemSetting 조회 오류:', error);
+    return NextResponse.json({ error: '목록 조회 실패: ' + (error instanceof Error ? error.message : '알 수 없는 오류') }, { status: 500 });
   }
 }
 
@@ -55,21 +56,20 @@ export async function POST(request: NextRequest) {
     // 기존 방식: category 기반 (하위 호환성)
     const created = await prisma.itemSetting.create({
       data: {
-        category: body.category || null,
-        customId: body.customId && body.customId.trim() !== '' ? body.customId.trim() : null,
-        itemName: body.itemName && body.itemName.trim() !== '' ? body.itemName.trim() : null,
-        provider: body.provider && body.provider.trim() !== '' ? body.provider.trim() : null,
-        productName: body.productName && body.productName.trim() !== '' ? body.productName.trim() : null,
-        paymentTerm: body.paymentTerm && body.paymentTerm.trim() !== '' ? body.paymentTerm.trim() : null,
-        baseAmount: body.baseAmount ? Number(body.baseAmount) : null,
-        expectedRate: body.expectedRate ? Number(body.expectedRate) : null,
-        pointRate: body.pointRate ? Number(body.pointRate) : null,
-        pointAmount: body.pointAmount ? Number(body.pointAmount) : null,
+        category: body.category,
+        provider: body.provider.trim(),
+        productName: body.productName.trim(),
+        paymentTerm: body.paymentTerm.trim(),
+        baseAmount: Number(body.baseAmount),
+        expectedRate: Number(body.expectedRate),
+        pointRate: Number(body.pointRate),
+        pointAmount: Number(body.pointAmount),
       },
     });
     return NextResponse.json({ item: created });
-  } catch {
-    return NextResponse.json({ error: '등록 실패' }, { status: 500 });
+  } catch (error) {
+    console.error('ItemSetting 생성 오류:', error);
+    return NextResponse.json({ error: '등록 실패: ' + (error instanceof Error ? error.message : '알 수 없는 오류') }, { status: 500 });
   }
 }
 

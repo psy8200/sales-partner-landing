@@ -59,6 +59,15 @@ export async function DELETE(request: NextRequest) {
 
     console.log('📤 삭제할 관리자 ID들:', adminIds);
 
+    // 먼저 관련된 AdminLoginLog 삭제
+    await prisma.adminLoginLog.deleteMany({
+      where: {
+        adminId: {
+          in: adminIds
+        }
+      }
+    });
+
     // 관리자 삭제
     const deleteResult = await prisma.admin.deleteMany({
       where: {

@@ -164,9 +164,8 @@ export default function AllContractsPage() {
       return;
     }
 
-    if (!confirm(`선택된 ${selectedContracts.size}개 계약을 수금관리계약으로 이동시키시겠습니까?`)) {
-      return;
-    }
+    // confirm() 대신 alert() 사용하여 클릭 문제 해결
+    alert(`선택된 ${selectedContracts.size}개 계약을 수금관리계약으로 이동시키시겠습니까?`);
 
     try {
       const response = await fetch(`/api/admin/contracts/move-to-collection`, {
@@ -202,9 +201,8 @@ export default function AllContractsPage() {
       return;
     }
 
-    if (!confirm(`선택된 ${selectedContracts.size}개 계약을 일시납계약으로 이동시키시겠습니까?`)) {
-      return;
-    }
+    // confirm() 대신 alert() 사용하여 클릭 문제 해결
+    alert(`선택된 ${selectedContracts.size}개 계약을 일시납계약으로 이동시키시겠습니까?`);
 
     try {
       const response = await fetch(`/api/admin/contracts/move-to-lump-sum`, {

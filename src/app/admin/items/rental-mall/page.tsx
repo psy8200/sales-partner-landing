@@ -21,7 +21,7 @@ const RentalMallItemsPage = () => {
   const [baseAmount, setBaseAmount] = useState<string>('');
   const [expectedRate, setExpectedRate] = useState<string>('');
   const [pointRate, setPointRate] = useState<string>('');
-  const [pageTitle, setPageTitle] = useState('렌탈몰분양신청'); // 기본값
+  const [pageTitle, setPageTitle] = useState('렌탈몰분양가입설정'); // 기본값
 
   const monthlyRate = useMemo(() => {
     const exp = parseFloat(expectedRate || '0');
@@ -42,7 +42,7 @@ const RentalMallItemsPage = () => {
 
   const [rows, setRows] = useState<RentalMallRow[]>([]);
 
-  // 페이지 제목을 서버에서 가져오기
+  // 페이지 제목을 서버에서 가져오기 (하드코딩된 제목)
   React.useEffect(() => {
     fetch('/api/admin/sidebar-items/%2Fadmin%2Fitems%2Frental-mall')
       .then(r => r.json())
@@ -130,11 +130,11 @@ const RentalMallItemsPage = () => {
       {/* 설정바 */}
       <div className="bg-white shadow rounded-lg">
         <div className="p-4 space-y-4">
-          {/* 1줄: 렌탈사 / 상품명 / 납입기간 / 기준금액 / 지급율 */}
+          {/* 1줄: 분양처 / 상품명 / 납입기간 / 기준금액 / 지급율 */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">렌탈사</label>
-              <input value={rentalCompany} onChange={(e)=>setRentalCompany(e.target.value)} placeholder="예: 세일즈렌탈" title="렌탈사" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+              <label className="block text-xs font-medium text-gray-700 mb-1">분양처</label>
+              <input value={rentalCompany} onChange={(e)=>setRentalCompany(e.target.value)} placeholder="예: 세일즈분양" title="분양처" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">상품명</label>

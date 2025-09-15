@@ -90,10 +90,18 @@ model Consultation {
   memo          String?
   result        String?
   rating        Int?
+  
+  // 상담 관리용 추가 필드들
+  expectedAmount    Int?              // 예상 계약 금액
+  followUpDate      DateTime?         // 후속 상담 예정일
+  contractCreated   Boolean           @default(false) // 계약 생성 여부
+  contractId        String?           // 연결된 계약 ID
+  
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
   applications  Application[]
   user          User?              @relation(fields: [userId], references: [id])
+  contract      Contract?          @relation(fields: [contractId], references: [id])
 
   @@index([userId])
   @@index([status])
@@ -101,6 +109,8 @@ model Consultation {
   @@index([assignedTo])
   @@index([createdAt])
   @@index([scheduledDate])
+  @@index([contactPhone])
+  @@index([contractId])
 }
 
 model Application {
@@ -475,6 +485,7 @@ model Contract {
   referralCode     String?        // 추천인코드 필드 추가
   itemSetting      ItemSetting?   @relation(fields: [itemSettingId], references: [id])
   payments         Payment[]
+  consultations    Consultation[] // 상담 관계 추가
 
   @@index([contractNumber])
   @@index([customerName])
@@ -913,3 +924,4 @@ model PaymentHistory {
   @@index([processedBy])
   @@index([currentLevel])
 }
+

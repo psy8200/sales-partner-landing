@@ -521,6 +521,7 @@ const MembersPage = () => {
     }
   };
 
+
   
 
   
@@ -952,8 +953,14 @@ const MembersPage = () => {
                    </th>
                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">연락처</th>
+                   {!pathname.includes('/partners') && (
+                     <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">내코드</th>
+                   )}
                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이메일주소</th>
                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">추천인코드</th>
+                   {pathname.includes('/partners') && (
+                     <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">내코드</th>
+                   )}
                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">가입일</th>
                    {pathname.includes('/partners') && (
                      <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">결정포인트</th>
@@ -961,7 +968,7 @@ const MembersPage = () => {
                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">접속여부</th>
                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">결정포인트</th>
-                   <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">수정</th>
+                   <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">관리</th>
                  </tr>
                </thead>
                <tbody className="bg-white divide-y divide-gray-200">
@@ -982,10 +989,16 @@ const MembersPage = () => {
                        </td>
                        <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{member.name}</td>
                        <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{member.phone}</td>
+                       {!pathname.includes('/partners') && (
+                         <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{member.phone?.slice(-8) || '-'}</td>
+                       )}
                        <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{member.email}</td>
                        <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
                          {member.referralCode || '-'}
                        </td>
+                       {pathname.includes('/partners') && (
+                         <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{member.phone?.slice(-8) || '-'}</td>
+                       )}
                        <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{safeDateFormat(member.createdAt)}</td>
                        {pathname.includes('/partners') && (
                          <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{safeNumberFormat(member.points)}P</td>
@@ -1034,8 +1047,18 @@ const MembersPage = () => {
                        </td>
                        <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm">
                          <button
-                           onClick={() => window.open(`/admin/members/${member.id}/edit`, '_blank', 'width=720,height=720,scrollbars=yes,resizable=yes')}
+                           onClick={(e) => {
+                             e.preventDefault();
+                             e.stopPropagation();
+                             console.log('🔧 수정 버튼 클릭됨:', member.id);
+                             window.open(`/admin/members/${member.id}/edit`, '_blank', 'width=720,height=720,scrollbars=yes,resizable=yes');
+                           }}
                            className="px-2 sm:px-3 py-1 border rounded hover:bg-gray-50 text-xs sm:text-sm"
+                           style={{
+                             zIndex: 9999,
+                             position: 'relative',
+                             pointerEvents: 'auto'
+                           }}
                            aria-label="수정"
                            title="수정"
                          >

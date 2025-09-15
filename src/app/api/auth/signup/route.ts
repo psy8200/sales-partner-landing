@@ -47,6 +47,18 @@ export async function POST(request: NextRequest) {
       return createBadRequestResponse('이미 등록된 전화번호입니다.');
     }
     
+    // 이름 + 전화번호 조합 중복 확인
+    const existingNamePhone = await prisma.user.findFirst({
+      where: { 
+        name: validatedData.name,
+        phone: validatedData.phone 
+      },
+    });
+    
+    if (existingNamePhone) {
+      return createBadRequestResponse('이미 등록된 이름과 전화번호 조합입니다.');
+    }
+    
     // 비밀번호 해시화
     const hashedPassword = await bcrypt.hash(validatedData.password, 12);
     

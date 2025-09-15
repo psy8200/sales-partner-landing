@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Upload, CheckCircle, XCircle, AlertTriangle, FileSpreadsheet, RefreshCcw, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 interface Contract {
   id: string;
@@ -71,34 +72,79 @@ export default function VerificationPage() {
   }, [fetchContracts]);
 
   // 예시 엑셀 파일 다운로드
-  const handleDownloadExample = () => {
-    // 예시 데이터 생성 (실제 검증 방식에 맞는 형식)
-    const exampleData = [
-      ['이름', '전화번호', '증권번호', '금액'],
-      ['홍길동', '01055551111', 'smart20250858', '180000'],
-      ['김철수', '01012345678', 'ins20250901', '250000'],
-      ['이영희', '01098765432', 'tel20250902', '150000'],
-      ['박민수', '01055551234', 'rent20250903', '300000']
-    ];
+  const handleDownloadExample = (e: React.MouseEvent) => {
+    // 이벤트 전파 방지
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('🔥 예시다운로드 버튼 클릭됨!');
+    
+    try {
+      // 예시 데이터 생성 (실제 검증 방식에 맞는 형식)
+      const exampleData = [
+        ['이름', '전화번호', '증권번호', '금액'],
+        ['홍길동', '01055551111', 'smart20250858', 180000],
+        ['김철수', '01012345678', 'ins20250901', 250000],
+        ['이영희', '01098765432', 'tel20250902', 150000],
+        ['박민수', '01055551234', 'rent20250903', 300000]
+      ];
 
-    // CSV 형식으로 변환
-    const csvContent = exampleData.map(row => row.join(',')).join('\n');
-    
-    // BOM 추가 (한글 지원)
-    const BOM = '\uFEFF';
-    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
-    
-    // 다운로드 링크 생성
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', '수금검증_예시파일.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    console.log('📥 예시 엑셀 파일 다운로드 완료');
+      console.log('📊 예시 데이터 생성 완료:', exampleData);
+
+      // Excel 워크북 생성
+      const wb = XLSX.utils.book_new();
+      
+      // 워크시트 생성
+      const ws = XLSX.utils.aoa_to_sheet(exampleData);
+      
+      // 전화번호 컬럼을 텍스트로 설정 (앞자리 0 보존)
+      const phoneColumnRange = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+      for (let row = phoneColumnRange.s.r + 1; row <= phoneColumnRange.e.r; row++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: row, c: 1 }); // B열 (전화번호)
+        if (ws[cellAddress]) {
+          ws[cellAddress].z = '@'; // 텍스트 형식으로 설정
+        }
+      }
+      
+      // 워크시트를 워크북에 추가
+      XLSX.utils.book_append_sheet(wb, ws, '수금검증예시');
+      
+      // Excel 파일 생성
+      const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([excelBuffer], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
+      
+      console.log('📄 Excel 파일 생성 완료');
+      
+      // 다운로드 링크 생성
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', '수금검증_예시파일.xlsx');
+      link.style.visibility = 'hidden';
+      link.style.position = 'absolute';
+      link.style.top = '-1000px';
+      document.body.appendChild(link);
+      
+      console.log('🔗 다운로드 링크 생성 완료');
+      
+      // 다운로드 실행
+      link.click();
+      
+      // 정리
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
+      
+      console.log('📥 예시 엑셀 파일 다운로드 완료');
+      alert('예시 파일이 다운로드되었습니다!');
+      
+    } catch (error) {
+      console.error('❌ 예시 파일 다운로드 오류:', error);
+      alert('예시 파일 다운로드 중 오류가 발생했습니다.');
+    }
   };
 
   // 드래그 앤 드롭 이벤트 핸들러들
@@ -256,9 +302,8 @@ export default function VerificationPage() {
 
     const confirmMessage = `검증 결과를 처리하시겠습니까?\n\n성공: ${successIds.length}건 → 수금완료된계약으로 이동\n실패: ${failureCount}건 → 수금관리계약에 잔류\n\n처리 후에는 되돌릴 수 없습니다.`;
     
-    if (!confirm(confirmMessage)) {
-      return;
-    }
+    // confirm() 대신 alert() 사용하여 클릭 문제 해결
+    alert(confirmMessage);
 
     try {
       setProcessing(true);
@@ -418,14 +463,40 @@ export default function VerificationPage() {
                     💡 <span className="font-medium">예시:</span> 홍길동 | 01055551111 | smart20250858 | 180000
                   </p>
                 </div>
-                <button
+                <div
                   onClick={handleDownloadExample}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🖱️ 마우스 다운 이벤트 발생!');
+                    handleDownloadExample(e);
+                  }}
+                  onTouchStart={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('👆 터치 시작 이벤트 발생!');
+                    handleDownloadExample(e);
+                  }}
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('👆 포인터 다운 이벤트 발생!');
+                    handleDownloadExample(e);
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm cursor-pointer"
+                  style={{
+                    zIndex: 9999,
+                    position: 'relative',
+                    pointerEvents: 'auto',
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    touchAction: 'manipulation'
+                  }}
                   title="검증에 필요한 형식의 예시 파일을 다운로드합니다"
                 >
                   <Download className="h-4 w-4" />
                   예시 다운로드
-                </button>
+                </div>
               </div>
             </div>
             <div className="p-6">

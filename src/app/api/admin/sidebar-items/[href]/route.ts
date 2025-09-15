@@ -28,11 +28,13 @@ export async function GET(
     } else {
       // 데이터베이스에 없으면 기본 제목 반환
       const defaultTitles: { [key: string]: string } = {
-        '/admin/items/insurance': '보험상담신청',
-        '/admin/items/rental': '렌탈상품신청',
-        '/admin/items/internet-tv': '인터넷+TV 결합상품신청',
-        '/admin/items/funeral': '상조결합상품신청',
-        '/admin/items/rental-mall': '렌탈몰분양신청'
+        '/admin/items/insurance': '보험상담설정',
+        '/admin/items/rental': '렌탈제품구매설정',
+        '/admin/items/internet-tv': '인터넷+TV설정',
+        '/admin/items/funeral': '상조결합상품설정',
+        '/admin/items/rental-mall': '렌탈몰분양가입설정',
+        '/admin/items/immediate-join': '즉시가입신청설정',
+        '/admin/items/shopping-mall': '쇼핑몰구매설정'
       };
 
       return NextResponse.json({

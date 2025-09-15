@@ -21,62 +21,22 @@ import {
 // 출금 요청 데이터 타입 정의
 interface WithdrawalRequest {
   id: string;
-  requestNumber: string;
   userName: string;
   userPhone: string;
-  requestAmount: number;
-  requestDate: string;
+  finalPoints: number; // 결정포인트
+  basicSalary: number; // 기본수당
+  recruitmentBonus: number; // 모집수당
+  indirectBonus: number; // 간접수당
+  basicDividend: number; // 기본배당
+  gradeDividend: number; // 배당등급별
+  totalAmount: number; // 총지급액
+  settlementMonth: string; // 정산월
+  requestInfo: string; // 요청정보
   status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'REJECTED';
 }
 
-// 목업 데이터
-const mockWithdrawalRequests: WithdrawalRequest[] = [
-  {
-    id: '1',
-    requestNumber: 'WR001',
-    userName: '김철수',
-    userPhone: '010-1111-1234',
-    requestAmount: 500000,
-    requestDate: '2025-01-10',
-    status: 'PENDING'
-  },
-  {
-    id: '2',
-    requestNumber: 'WR002',
-    userName: '이영희',
-    userPhone: '010-2222-5678',
-    requestAmount: 300000,
-    requestDate: '2025-01-09',
-    status: 'PROCESSING'
-  },
-  {
-    id: '3',
-    requestNumber: 'WR003',
-    userName: '박민수',
-    userPhone: '010-3333-9012',
-    requestAmount: 800000,
-    requestDate: '2025-01-08',
-    status: 'COMPLETED'
-  },
-  {
-    id: '4',
-    requestNumber: 'WR004',
-    userName: '최지영',
-    userPhone: '010-4444-3456',
-    requestAmount: 200000,
-    requestDate: '2025-01-07',
-    status: 'REJECTED'
-  },
-  {
-    id: '5',
-    requestNumber: 'WR005',
-    userName: '정수현',
-    userPhone: '010-5555-7890',
-    requestAmount: 650000,
-    requestDate: '2025-01-06',
-    status: 'PENDING'
-  }
-];
+// 목업 데이터 (실제 데이터로 교체 예정)
+const mockWithdrawalRequests: WithdrawalRequest[] = [];
 
 export default function WithdrawalRequestsPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -87,7 +47,7 @@ export default function WithdrawalRequestsPage() {
   const filteredRequests = mockWithdrawalRequests.filter(request =>
     request.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     request.userPhone.includes(searchTerm) ||
-    request.requestNumber.toLowerCase().includes(searchTerm.toLowerCase())
+    request.settlementMonth.includes(searchTerm)
   );
 
   // 선택 관련 함수들
@@ -233,7 +193,7 @@ export default function WithdrawalRequestsPage() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="출금번호, 회원명, 연락처로 검색..."
+                  placeholder="회원명, 연락처, 정산월로 검색..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -280,12 +240,6 @@ export default function WithdrawalRequestsPage() {
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      출금번호
-                    </div>
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
                       <User className="h-4 w-4" />
                       회원명
                     </div>
@@ -299,25 +253,61 @@ export default function WithdrawalRequestsPage() {
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     <div className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4" />
-                      요청금액
+                      결정포인트
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-4 w-4" />
+                      기본수당
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-4 w-4" />
+                      모집수당
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-4 w-4" />
+                      간접수당
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-4 w-4" />
+                      기본배당
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-4 w-4" />
+                      배당등급별
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-4 w-4" />
+                      총지급액
                     </div>
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
-                      요청일
+                      정산월
                     </div>
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      상태
+                      <AlertCircle className="h-4 w-4" />
+                      요청정보
                     </div>
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     <div className="flex items-center gap-2">
                       <MoreHorizontal className="h-4 w-4" />
-                      액션
+                      정산관리
                     </div>
                   </th>
                 </tr>
@@ -325,7 +315,7 @@ export default function WithdrawalRequestsPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredRequests.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan={13} className="px-6 py-12 text-center text-gray-500">
                       <div className="flex flex-col items-center gap-2">
                         <DollarSign className="h-8 w-8 text-gray-400" />
                         <span>검색 결과가 없습니다.</span>
@@ -340,12 +330,9 @@ export default function WithdrawalRequestsPage() {
                           type="checkbox"
                           checked={selectedItems.has(request.id)}
                           onChange={(e) => handleSelectItem(request.id, e.target.checked)}
-                          aria-label={`항목 ${request.id} 선택`}
+                          aria-label={`${request.userName} 선택`}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{request.requestNumber}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{request.userName}</div>
@@ -354,13 +341,31 @@ export default function WithdrawalRequestsPage() {
                         <div className="text-sm text-gray-900">{request.userPhone}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-green-600">₩{formatAmount(request.requestAmount)}</div>
+                        <div className="text-sm font-medium text-blue-600">{formatAmount(request.finalPoints)}P</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{formatDate(request.requestDate)}</div>
+                        <div className="text-sm font-medium text-gray-900">₩{formatAmount(request.basicSalary)}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(request.status)}
+                        <div className="text-sm font-medium text-gray-900">₩{formatAmount(request.recruitmentBonus)}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">₩{formatAmount(request.indirectBonus)}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">₩{formatAmount(request.basicDividend)}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">₩{formatAmount(request.gradeDividend)}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-bold text-green-600">₩{formatAmount(request.totalAmount)}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{request.settlementMonth}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{request.requestInfo}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getActionButtons(request.status)}

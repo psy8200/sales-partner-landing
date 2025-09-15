@@ -37,6 +37,11 @@ export async function PATCH(
         // 상담완료는 상태값만 변경, 다른 필드는 건드리지 않음
         processedBy = undefined; // processedBy 필드 업데이트 안함
         break;
+      case 'reassign':
+        status = 'PENDING';
+        // 배정변경: 담당자 정보를 초기화하여 다시 선택할 수 있도록 함
+        processedBy = null;
+        break;
       default:
         return Response.json({ error: '잘못된 액션입니다.' }, { status: 400 });
     }
@@ -44,11 +49,11 @@ export async function PATCH(
     // 상담신청 상태 업데이트
     const currentTime = new Date();
     const updateData: any = {
-      status: status as 'ASSIGNED' | 'COMPLETED',
+      status: status as 'PENDING' | 'ASSIGNED' | 'COMPLETED',
       processedAt: currentTime,
     };
     
-    // processedBy가 있을 때만 업데이트 (상담완료 시에는 기존 값 유지)
+    // processedBy가 undefined가 아닐 때만 업데이트 (상담완료 시에는 기존 값 유지)
     if (processedBy !== undefined) {
       updateData.processedBy = processedBy;
     }

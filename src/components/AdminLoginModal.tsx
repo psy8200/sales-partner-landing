@@ -131,14 +131,6 @@ const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClose }) =>
             </button>
           </form>
 
-          {/* 테스트 계정 정보 */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-md">
-            <h4 className="text-sm font-medium text-gray-900 mb-2">테스트 계정</h4>
-            <div className="text-sm text-gray-600 space-y-1">
-              <div>전화번호 뒤 8자리: 12345678</div>
-              <div>비밀번호: 87587200</div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

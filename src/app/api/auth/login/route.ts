@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
     if (user.role === 'ADMIN') {
       await prisma.adminLoginLog.create({
         data: {
-          userId: user.id,
+          adminId: user.id,
           email: user.email,
           name: user.name,
           action: 'LOGIN',

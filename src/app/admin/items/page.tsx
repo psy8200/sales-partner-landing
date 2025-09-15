@@ -24,7 +24,6 @@ const ItemsPage = () => {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [downloading, setDownloading] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [migrating, setMigrating] = useState(false);
 
   // 아이템 목록 조회
   const fetchItems = async () => {
@@ -124,38 +123,6 @@ const ItemsPage = () => {
     }
   };
 
-  // CUSTOM을 RENTAL_MALL로 마이그레이션
-  const handleMigrateCustom = async () => {
-    if (!confirm('CUSTOM 카테고리를 RENTAL_MALL로 변경하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.')) {
-      return;
-    }
-
-    try {
-      setMigrating(true);
-      const response = await fetch('/api/admin/items/migrate-custom', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || '마이그레이션에 실패했습니다.');
-      }
-
-      const result = await response.json();
-      
-      // 목록 새로고침
-      await fetchItems();
-      
-      alert(result.message);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : '마이그레이션 중 오류가 발생했습니다.');
-    } finally {
-      setMigrating(false);
-    }
-  };
 
   // 선택된 아이템 일괄 삭제
   const handleBulkDelete = async () => {
@@ -304,17 +271,6 @@ const ItemsPage = () => {
                   <option value="instantpartnerjoinapply">즉시가입</option>
                   <option value="shoppingmallpurchaseapply">쇼핑구매</option>
                 </select>
-                <button 
-                  onClick={handleMigrateCustom}
-                  disabled={migrating}
-                  className={`px-4 py-2 rounded-md transition-colors ${
-                    migrating
-                      ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                      : 'bg-orange-600 text-white hover:bg-orange-700'
-                  }`}
-                >
-                  {migrating ? '변경 중...' : 'CUSTOM→렌탈몰 변경'}
-                </button>
                 <button 
                   onClick={handleDownload}
                   disabled={selectedItems.length === 0 || downloading}

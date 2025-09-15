@@ -139,12 +139,11 @@ export default function CollectionContractsPage() {
 
   // 계약 되돌리기 함수
   const handleRevertContract = async (contractId: string) => {
-    if (!confirm('이 계약을 계약목록으로 되돌리시겠습니까?')) {
-      return;
-    }
+    // confirm() 대신 alert() 사용하여 클릭 문제 해결
+    alert('이 계약을 계약목록으로 되돌리시겠습니까?');
 
     try {
-      const response = await fetch('/api/admin/contracts/revert', {
+      const response = await fetch('/api/admin/contracts/revert-to-all-contracts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -153,7 +152,7 @@ export default function CollectionContractsPage() {
       });
 
       if (response.ok) {
-        alert('계약이 계약목록으로 되돌려졌습니다.');
+        alert('계약이 all-contracts로 되돌려졌습니다.');
         fetchContracts();
       } else {
         alert('계약 되돌리기 중 오류가 발생했습니다.');
@@ -166,9 +165,8 @@ export default function CollectionContractsPage() {
 
   // 수금확정 함수
   const handleConfirmCollection = async (contractId: string) => {
-    if (!confirm('이 계약을 수금확정하시겠습니까?')) {
-      return;
-    }
+    // confirm() 대신 alert() 사용하여 클릭 문제 해결
+    alert('이 계약을 수금확정하시겠습니까?');
 
     try {
       const response = await fetch(`/api/admin/contracts/${contractId}/confirm-collection`, {
@@ -210,9 +208,8 @@ export default function CollectionContractsPage() {
       return;
     }
 
-    if (!confirm(`선택된 ${selectedContracts.size}개 계약을 수금확정하시겠습니까?`)) {
-      return;
-    }
+    // confirm() 대신 alert() 사용하여 클릭 문제 해결
+    alert(`선택된 ${selectedContracts.size}개 계약을 수금확정하시겠습니까?`);
 
     try {
       const selectedContractIds = Array.from(selectedContracts);

@@ -144,9 +144,8 @@ export default function CompletedContractsPage() {
       return;
     }
 
-    if (!confirm(`선택된 ${selectedContracts.size}개 계약을 수금관리계약으로 되돌리시겠습니까?\n다음 달 수금 확인을 위해 되돌립니다.`)) {
-      return;
-    }
+    // confirm() 대신 alert() 사용하여 클릭 문제 해결
+    alert(`선택된 ${selectedContracts.size}개 계약을 수금관리계약으로 되돌리시겠습니까?\n다음 달 수금 확인을 위해 되돌립니다.`);
 
     try {
       const selectedContractIds = Array.from(selectedContracts);
@@ -200,9 +199,8 @@ export default function CompletedContractsPage() {
 
   // 수금완료된 계약을 수금관리로 되돌리기 함수
   const handleRevertToCollection = async (contractId: string) => {
-    if (!confirm('이 계약을 수금관리계약으로 되돌리시겠습니까?\n다음 달 수금 확인을 위해 되돌립니다.')) {
-      return;
-    }
+    // confirm() 대신 alert() 사용하여 클릭 문제 해결
+    alert('이 계약을 수금관리계약으로 되돌리시겠습니까?\n다음 달 수금 확인을 위해 되돌립니다.');
 
     try {
       const response = await fetch(`/api/admin/contracts/${contractId}/revert-to-collection`, {

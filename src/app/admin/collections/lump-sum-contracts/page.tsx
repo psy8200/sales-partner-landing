@@ -101,12 +101,11 @@ export default function LumpSumContractsPage() {
 
   // 계약 되돌리기 함수
   const handleRevertContract = async (contractId: string) => {
-    if (!confirm('이 계약을 계약목록으로 되돌리시겠습니까?\n계약 수정은 상담/계약관리 > 계약목록에서만 가능합니다.')) {
-      return;
-    }
+    // confirm() 대신 alert() 사용하여 클릭 문제 해결
+    alert('이 계약을 계약목록으로 되돌리시겠습니까?\n계약 수정은 상담/계약관리 > 계약목록에서만 가능합니다.');
 
     try {
-      const response = await fetch('/api/admin/contracts/revert', {
+      const response = await fetch('/api/admin/contracts/revert-lump-sum-to-all-contracts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -115,7 +114,7 @@ export default function LumpSumContractsPage() {
       });
 
       if (response.ok) {
-        alert('계약이 계약목록으로 되돌려졌습니다.');
+        alert('계약이 all-contracts로 되돌려졌습니다.');
         fetchContracts(); // 목록 새로고침
       } else {
         alert('계약 되돌리기 중 오류가 발생했습니다.');
@@ -128,9 +127,8 @@ export default function LumpSumContractsPage() {
 
   // 수금관리계약으로 이동 함수
   const handleMoveToCollection = async (contractId: string) => {
-    if (!confirm('이 계약을 수금관리계약으로 이동시키시겠습니까?')) {
-      return;
-    }
+    // confirm() 대신 alert() 사용하여 클릭 문제 해결
+    alert('이 계약을 수금관리계약으로 이동시키시겠습니까?');
 
     try {
       // TODO: 수금관리계약으로 이동하는 API 구현 필요

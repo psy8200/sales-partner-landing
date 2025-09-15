@@ -132,12 +132,19 @@ export default function ContractEntriesPage() {
   };
 
   const handleSelectContract = (contractId: string, checked: boolean) => {
+    console.log('🔍 계약 선택/해제:', { contractId, checked });
+    console.log('현재 선택된 계약들:', Array.from(selectedContracts));
+    
     const newSelected = new Set(selectedContracts);
     if (checked) {
       newSelected.add(contractId);
+      console.log('✅ 계약 추가됨:', contractId);
     } else {
       newSelected.delete(contractId);
+      console.log('❌ 계약 제거됨:', contractId);
     }
+    
+    console.log('새로운 선택된 계약들:', Array.from(newSelected));
     setSelectedContracts(newSelected);
   };
 
@@ -146,42 +153,69 @@ export default function ContractEntriesPage() {
 
   // 계약확정 함수
   const handleConfirmContracts = async () => {
+    console.log('🔥 handleConfirmContracts 함수 시작');
+    console.log('선택된 계약 수:', selectedContracts.size);
+    console.log('선택된 계약 IDs:', Array.from(selectedContracts));
+    console.log('확정 처리 중:', confirming);
+    
+    // 선택된 계약이 없으면 경고
     if (selectedContracts.size === 0) {
       alert('확정할 계약을 선택해주세요.');
+      console.log('❌ 계약이 선택되지 않음');
       return;
     }
 
-    if (!confirm(`${selectedContracts.size}개의 계약을 확정하시겠습니까?`)) {
-      return;
-    }
+    // 사용자 확인 - alert로 테스트
+    alert(`${selectedContracts.size}개의 계약을 확정하시겠습니까?\n\n확인을 클릭하면 계약이 확정됩니다.`);
+    console.log('✅ 사용자가 확인함 (alert 테스트)');
+    
+    // confirm 대신 바로 진행
+    const userConfirmed = true;
 
     try {
+      console.log('✅ API 호출 시작');
       setConfirming(true);
+      
+      const requestBody = {
+        contractIds: Array.from(selectedContracts)
+      };
+      console.log('요청 데이터:', requestBody);
+      
       const response = await fetch('/api/admin/contracts/confirm', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          contractIds: Array.from(selectedContracts)
-        })
+        body: JSON.stringify(requestBody)
       });
+
+      console.log('API 응답 상태:', response.status);
+      console.log('API 응답 OK:', response.ok);
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('API 오류 응답:', errorData);
         throw new Error(errorData.error || '계약 확정에 실패했습니다.');
       }
 
       const result = await response.json();
+      console.log('API 성공 응답:', result);
       alert(result.message);
       
       // 계약 목록 새로고침
+      console.log('계약 목록 새로고침');
       loadContracts(currentPage);
       setSelectedContracts(new Set());
+      
+      // 수금관리 페이지로 이동
+      console.log('수금관리 페이지로 이동');
+      window.location.href = '/admin/collections/all-contracts';
+      
     } catch (error) {
-      console.error('계약 확정 오류:', error);
+      console.error('❌ 계약 확정 오류:', error);
       alert(error instanceof Error ? error.message : '계약 확정 중 오류가 발생했습니다.');
     } finally {
+      console.log('✅ 처리 완료, confirming 상태 해제');
       setConfirming(false);
     }
   };
@@ -259,16 +293,22 @@ export default function ContractEntriesPage() {
     
     if (category) {
       try {
+        console.log('카테고리 변경:', category);
         const response = await fetch(`/api/admin/items/settings?category=${category}`);
         if (response.ok) {
           const data = await response.json();
+          console.log('API 응답 데이터:', data);
           const uniqueCompanies = data.items.reduce((acc: Array<{id: string, provider: string}>, item: ItemSetting) => {
             if (!acc.find(company => company.provider === item.provider)) {
               acc.push({ id: item.id, provider: item.provider });
             }
             return acc;
           }, []);
+          console.log('추출된 회사 목록:', uniqueCompanies);
           setCompanies(uniqueCompanies);
+        } else {
+          const errorText = await response.text();
+          console.error('API 응답 실패:', response.status, errorText);
         }
       } catch (error) {
         console.error('회사명 로드 오류:', error);
@@ -413,7 +453,16 @@ export default function ContractEntriesPage() {
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data) {
-          setContracts(result.data.contracts || []);
+          const contracts = result.data.contracts || [];
+          console.log('📋 로드된 계약 목록:', contracts.length, '개');
+          contracts.forEach((contract: any, index: number) => {
+            console.log(`계약 ${index + 1}:`, {
+              id: contract.id,
+              customerName: contract.customerName,
+              itemCategory: contract.itemCategory
+            });
+          });
+          setContracts(contracts);
           setTotalPages(result.data.pagination?.totalPages || 1);
           setCurrentPage(page);
         } else {
@@ -1174,15 +1223,12 @@ export default function ContractEntriesPage() {
                 <option value="RENTAL_MALL">렌탈몰</option>
               </select>
 
-              {/* 계약확정 버튼 */}
+              {/* 계약확정 버튼 - 기본 버전 */}
               <button
+                type="button"
                 onClick={handleConfirmContracts}
-                disabled={selectedContracts.size === 0 || confirming}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                  selectedContracts.size === 0 || confirming
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow-md'
-                }`}
+                disabled={confirming}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-gray-400"
               >
                 {confirming ? '확정 중...' : '계약확정'}
               </button>

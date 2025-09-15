@@ -12,8 +12,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ members: [], total: 0 });
     }
 
-    // 파트너신청한 고객들만 검색하도록 수정
-    // PartnerApplication과 연결된 User 정보를 검색
+    // 모든 회원 검색 (일반회원 + 파트너회원)
     const userWhereCondition: Record<string, unknown> = {
       name: {
         contains: query.trim()
@@ -27,30 +26,24 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    // 파트너신청한 사용자들만 검색 (User 테이블에서 PartnerApplication이 있는 사용자들)
+    // 모든 사용자 검색 (파트너신청 여부와 관계없이)
     const totalCount = await prisma.user.count({
-      where: {
-        ...userWhereCondition,
-        partnerApplications: {
-          some: {} // 파트너신청이 하나라도 있는 사용자들
-        }
-      }
+      where: userWhereCondition
     });
 
-    // 파트너신청한 사용자들의 정보 검색 (최대 20개 결과)
+    // 모든 사용자들의 정보 검색 (최대 20개 결과)
     const users = await prisma.user.findMany({
-      where: {
-        ...userWhereCondition,
-        partnerApplications: {
-          some: {} // 파트너신청이 하나라도 있는 사용자들
-        }
-      },
+      where: userWhereCondition,
       select: {
         id: true,
         name: true,
         phone: true,
         address: true,
         addressDetail: true,
+        bankName: true,
+        bankAccount: true,
+        accountHolder: true,
+        role: true,
         partnerApplications: {
           select: {
             processedBy: true
@@ -79,6 +72,10 @@ export async function GET(request: NextRequest) {
       phone: user.phone,
       address: user.address,
       addressDetail: user.addressDetail,
+      bankName: user.bankName,
+      accountNumber: user.bankAccount,
+      accountHolder: user.accountHolder,
+      role: user.role,
       manager: user.partnerApplications[0]?.processedBy || ''
     }));
 
@@ -88,9 +85,9 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Partner customer search error:', error);
+    console.error('Member search error:', error);
     return NextResponse.json(
-      { error: '파트너신청 고객 검색 중 오류가 발생했습니다.' },
+      { error: '회원 검색 중 오류가 발생했습니다.' },
       { status: 500 }
     );
   }
