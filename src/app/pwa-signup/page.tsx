@@ -17,8 +17,19 @@ async function getDefaultReferralCode() {
   }
 }
 
-export default async function PwaSignupPage() {
+export default async function PwaSignupPage({
+  searchParams,
+}: {
+  searchParams: { ref?: string }
+}) {
   const defaultReferralCode = await getDefaultReferralCode();
+  
+  // URL 파라미터에서 추천인코드 추출
+  const referralCodeFromUrl = searchParams?.ref || '';
+  
+  // URL 파라미터가 있으면 우선 사용, 없으면 기본값 사용
+  const finalReferralCode = referralCodeFromUrl || defaultReferralCode || "";
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4 sm:p-6">
       <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-10 w-full max-w-sm sm:max-w-lg md:max-w-2xl">
@@ -32,9 +43,14 @@ export default async function PwaSignupPage() {
             />
           </h1>
           <p className="text-gray-700 text-sm font-medium">회원가입으로 평생연금을 만드세요~!!</p>
+          {referralCodeFromUrl && (
+            <p className="text-green-600 text-sm font-medium mt-2">
+              🎉 추천인코드가 자동으로 입력되었습니다: {referralCodeFromUrl}
+            </p>
+          )}
         </div>
         <PwaSignupForm 
-          defaultReferralCode={defaultReferralCode || ""}
+          defaultReferralCode={finalReferralCode}
           phonePlaceholder="010-1234-5678"
           referralPlaceholder="추천인코드를 입력하세요"
         />

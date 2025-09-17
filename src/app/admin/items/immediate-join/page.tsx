@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { ItemSetting } from '@/types';
+// import { ItemSetting } from '@/types'; // ItemSetting 타입이 정의되지 않음
 
 type ImmediateJoinRow = {
   id: string;
@@ -61,7 +61,7 @@ const ImmediateJoinItemsPage = () => {
       .then(r=>r.json())
       .then(d=>{
         if (d?.items) {
-          setRows(d.items.map((x: ItemSetting)=>({
+          setRows(d.items.map((x: any)=>({
             id: x.id,
             rentalCompany: x.provider,
             productName: x.productName,

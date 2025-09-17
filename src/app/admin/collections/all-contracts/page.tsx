@@ -57,9 +57,13 @@ export default function AllContractsPage() {
         page: currentPage.toString(),
         limit: '10',
         search: searchTerm,
-        status: statusFilter,
-        paymentTerm: paymentTermFilter
+        status: statusFilter
       });
+
+      // 납입기간 필터 추가
+      if (paymentTermFilter) {
+        params.append('paymentTerm', paymentTermFilter);
+      }
 
       const response = await fetch(`/api/admin/collections/all-contracts?${params}`);
       if (response.ok) {
@@ -68,29 +72,18 @@ export default function AllContractsPage() {
         setTotalPages(data.pagination.totalPages);
         setTotal(data.pagination.total);
         
-        // 사용 가능한 납입기간 추출
-        const paymentTerms = new Set<string>();
-        data.contracts.forEach((contract: Contract) => {
-          try {
-            const dynamicFields = contract.dynamicFields ? JSON.parse(contract.dynamicFields) : {};
-            const paymentTerm = dynamicFields.paymentTerm;
-            if (paymentTerm && paymentTerm.trim() !== '') {
-              paymentTerms.add(paymentTerm);
+        // 사용 가능한 납입기간 목록 추출
+        const paymentTerms = Array.from(new Set(
+          data.contracts.map((contract: Contract) => {
+            try {
+              const dynamicFields = contract.dynamicFields ? JSON.parse(contract.dynamicFields) : {};
+              return dynamicFields.paymentTerm;
+            } catch {
+              return null;
             }
-          } catch (error) {
-            console.error('dynamicFields 파싱 오류:', error);
-          }
-        });
-        
-        // 납입기간을 정렬하여 설정
-        const sortedPaymentTerms = Array.from(paymentTerms).sort((a, b) => {
-          // 숫자 추출하여 정렬
-          const numA = parseInt(a.replace(/\D/g, '')) || 0;
-          const numB = parseInt(b.replace(/\D/g, '')) || 0;
-          return numA - numB;
-        });
-        
-        setAvailablePaymentTerms(sortedPaymentTerms);
+          }).filter(Boolean)
+        ));
+        setAvailablePaymentTerms(paymentTerms as string[]);
       }
     } catch (error) {
       console.error('계약 목록 조회 오류:', error);
@@ -265,6 +258,12 @@ export default function AllContractsPage() {
                  )}
                </p>
              </div>
+            <div className="flex items-center space-x-3">
+              <button className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                <Download className="w-4 h-4 mr-2" />
+                내보내기
+              </button>
+            </div>
           </div>
         </div>
 
@@ -284,7 +283,10 @@ export default function AllContractsPage() {
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <button className="flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+              <button 
+                onClick={() => fetchContracts()}
+                className="flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+              >
                 <Search className="w-4 h-4 mr-2" />
                 검색
               </button>
@@ -400,6 +402,7 @@ export default function AllContractsPage() {
                              contract.itemCategory === 'RENTAL_MALL' ? 'bg-orange-100 text-orange-800' :
                              contract.itemCategory === 'INSTANT_PARTNER' ? 'bg-pink-100 text-pink-800' :
                              contract.itemCategory === 'SHOPPING_MALL' ? 'bg-indigo-100 text-indigo-800' :
+                             contract.itemCategory === 'IMMEDIATE_JOIN' ? 'bg-cyan-100 text-cyan-800' :
                              'bg-yellow-100 text-yellow-800'
                            }`}>
                              {contract.itemCategory === 'INSURANCE' ? '보험' :
@@ -408,7 +411,9 @@ export default function AllContractsPage() {
                               contract.itemCategory === 'FUNERAL' ? '상조' :
                               contract.itemCategory === 'RENTAL_MALL' ? '렌탈몰' :
                               contract.itemCategory === 'INSTANT_PARTNER' ? '즉시파트너' :
-                              contract.itemCategory === 'SHOPPING_MALL' ? '쇼핑몰' : contract.itemCategory}
+                              contract.itemCategory === 'SHOPPING_MALL' ? '쇼핑몰' :
+                              contract.itemCategory === 'IMMEDIATE_JOIN' ? '즉시가입' :
+                              contract.itemCategory}
                            </span>
                          </td>
                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 w-28">

@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const search = searchParams.get('search') || '';
-
+    const paymentTerm = searchParams.get('paymentTerm') || '';
 
     // 검색 조건 구성 - status 파라미터에 따라 필터링
     const statusParam = searchParams.get('status') || 'CONFIRMED';
@@ -24,6 +24,13 @@ export async function GET(request: NextRequest) {
     const where: Record<string, unknown> = {
       status: statusFilter
     };
+
+    // 납입기간 필터 추가
+    if (paymentTerm) {
+      where.dynamicFields = {
+        contains: `"paymentTerm":"${paymentTerm}"`
+      };
+    }
 
     if (search) {
       where.OR = [

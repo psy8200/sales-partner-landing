@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const category = searchParams.get('category') as 'INSURANCE' | 'RENTAL' | 'INTERNET_TV' | 'FUNERAL' | 'RENTAL_MALL' | 'CUSTOM' | null;
+    const category = searchParams.get('category') as 'INSURANCE' | 'RENTAL' | 'INTERNET_TV' | 'FUNERAL' | 'RENTAL_MALL' | 'SHOPPING_MALL' | 'INSTANT_PARTNER' | 'IMMEDIATE_JOIN' | 'CUSTOM' | null;
     const customId = searchParams.get('customId');
     const itemName = searchParams.get('itemName');
     

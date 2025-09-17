@@ -350,7 +350,7 @@ export default function CommissionCalculationPage() {
   };
 
   // 승인완료 처리 함수 (승인됨 회원들을 정산완료 페이지로 이동)
-  const handleCompleteApproval = () => {
+  const handleCompleteApproval = async () => {
     // 승인됨 상태인 회원들만 필터링
     const approvedMembers = commissionData.filter(item => item.paymentStatus === 'PAID');
     
@@ -359,32 +359,90 @@ export default function CommissionCalculationPage() {
       return;
     }
 
-    // 정산완료 페이지용 데이터로 변환 (현재 테이블의 모든 컬럼값을 정확하게 복사)
-    const completedData = approvedMembers.map(member => ({
-      id: member.id,
-      userName: member.userName,
-      userPhone: member.userPhone,
-      finalPoints: member.finalPoints,
-      sumPoints: member.sumPoints,
-      currentLevel: member.currentLevel,
-      basicCommission: member.basicCommission,
-      recruitmentCommission: member.recruitmentCommission,
-      indirectCommission: member.indirectCommission,
-      dividendBasicCommission: member.dividendBasicCommission,
-      dividendLevelCommission: member.dividendLevelCommission,
-      totalCommission: member.totalCommission,
-      settlementYearMonth: member.settlementYearMonth,
-      paymentStatus: member.paymentStatus,
-      createdAt: member.createdAt,
-      updatedAt: new Date().toISOString()
-    }));
+    try {
+      console.log('🔄 승인완료 처리 시작:', approvedMembers.length, '명');
 
-    // 정산완료 페이지 데이터에 추가 (복사만, 원본 데이터는 유지)
-    const existingCompletedData = JSON.parse(localStorage.getItem('completedSettlements') || '[]');
-    const updatedCompletedData = [...existingCompletedData, ...completedData];
-    localStorage.setItem('completedSettlements', JSON.stringify(updatedCompletedData));
+      // 정산완료 페이지용 데이터로 변환 (현재 테이블의 모든 컬럼값을 정확하게 복사)
+      const completedData = approvedMembers.map(member => ({
+        id: member.id,
+        userName: member.userName,
+        userPhone: member.userPhone,
+        finalPoints: member.finalPoints,
+        sumPoints: member.sumPoints,
+        currentLevel: member.currentLevel,
+        basicCommission: member.basicCommission,
+        recruitmentCommission: member.recruitmentCommission,
+        indirectCommission: member.indirectCommission,
+        dividendBasicCommission: member.dividendBasicCommission,
+        dividendLevelCommission: member.dividendLevelCommission,
+        totalCommission: member.totalCommission,
+        settlementYearMonth: member.settlementYearMonth,
+        paymentStatus: 'PAID' as const,
+        requestStatus: '지급완료' as const, // 승인완료 시 지급완료로 설정
+        createdAt: member.createdAt,
+        updatedAt: new Date().toISOString()
+      }));
 
-    alert(`${approvedMembers.length}명의 승인된 회원이 정산완료 페이지로 복사되었습니다.`);
+      // 🔥 데이터베이스에 저장하는 API 호출
+      const response = await fetch('/api/admin/settlements/completed', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          completedData: completedData
+        })
+      });
+
+      const result = await response.json();
+      console.log('🔍 승인완료 API 응답:', result);
+
+      if (result.success) {
+        // 서버 저장 성공시 로컬 데이터도 업데이트 (지급완료 상태로 변경)
+        const updatedData = commissionData.map(item => {
+          if (approvedMembers.some(member => member.id === item.id)) {
+            return {
+              ...item,
+              requestStatus: '지급완료' as const,
+              paymentStatus: 'PAID' as const
+            };
+          }
+          return item;
+        });
+        setCommissionData(updatedData);
+        saveToStorage(updatedData);
+
+        // 중복 정보 포함한 성공 메시지
+        const savedCount = result.data.savedCount || 0;
+        const skippedCount = result.data.skippedCount || 0;
+        const totalRequested = result.data.totalRequested || approvedMembers.length;
+        
+        if (savedCount > 0) {
+          let message = `✅ 정산완료 처리 완료!\n`;
+          message += `• 총 요청: ${totalRequested}명\n`;
+          message += `• 새로 저장: ${savedCount}명\n`;
+          if (skippedCount > 0) {
+            message += `• 중복으로 건너뛰기: ${skippedCount}명`;
+          }
+          alert(message);
+        } else {
+          alert(`⚠️ 모든 데이터가 중복으로 건너뛰어졌습니다. (${skippedCount}건)`);
+        }
+        
+        console.log('✅ 승인완료 처리 완료:', {
+          총요청: totalRequested,
+          새로저장: savedCount,
+          중복건너뛰기: skippedCount
+        });
+      } else {
+        const errorMessage = result.message || result.error || '서버에 저장되지 않았습니다.';
+        alert(`❌ 저장 실패: ${errorMessage}`);
+        console.error('❌ 승인완료 저장 실패:', result);
+      }
+    } catch (error) {
+      console.error('❌ 승인완료 처리 오류:', error);
+      alert('승인완료 처리 중 오류가 발생했습니다.');
+    }
   };
 
   // 수당 계산 함수 (지급여부 상태값 보존)

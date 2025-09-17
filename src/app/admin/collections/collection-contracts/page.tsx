@@ -420,6 +420,7 @@ export default function CollectionContractsPage() {
                             contract.itemCategory === 'RENTAL_MALL' ? 'bg-orange-100 text-orange-800' :
                             contract.itemCategory === 'INSTANT_PARTNER' ? 'bg-pink-100 text-pink-800' :
                             contract.itemCategory === 'SHOPPING_MALL' ? 'bg-indigo-100 text-indigo-800' :
+                            contract.itemCategory === 'IMMEDIATE_JOIN' ? 'bg-cyan-100 text-cyan-800' :
                             'bg-yellow-100 text-yellow-800'
                           }`}>
                             {contract.itemCategory === 'INSURANCE' ? '보험' :
@@ -428,7 +429,9 @@ export default function CollectionContractsPage() {
                              contract.itemCategory === 'FUNERAL' ? '상조' :
                              contract.itemCategory === 'RENTAL_MALL' ? '렌탈몰' :
                              contract.itemCategory === 'INSTANT_PARTNER' ? '즉시파트너' :
-                             contract.itemCategory === 'SHOPPING_MALL' ? '쇼핑몰' : contract.itemCategory}
+                             contract.itemCategory === 'SHOPPING_MALL' ? '쇼핑몰' :
+                             contract.itemCategory === 'IMMEDIATE_JOIN' ? '즉시가입' :
+                             contract.itemCategory}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 w-28">

@@ -13,7 +13,8 @@ import {
   Gift, 
   Clock,
   Home,
-  Menu
+  Menu,
+  Info
 } from 'lucide-react';
 
 import { getLevelIcon } from '@/lib/levelIcons';
@@ -58,6 +59,7 @@ interface StatsData {
   monthlyExpectedIncome?: { value: number };
   cashback?: { value: number };
   referralIncome?: { value: number };
+  totalPaidPoints?: number;
 }
 
 interface Inquiry {
@@ -133,6 +135,92 @@ export default function MemberHomePage() {
         if (response.ok) {
           const data = await response.json();
           setUser(data.user); // user 객체 안에서 사용자 데이터 가져오기
+          
+          // 정확한 추천인 수 조회 및 등급 계산
+          if (data.user?.name && data.user?.phone) {
+            try {
+              const referralsResponse = await fetch(`/api/mypage/referrals?userName=${encodeURIComponent(data.user.name)}&userPhone=${encodeURIComponent(data.user.phone)}`);
+              if (referralsResponse.ok) {
+                const referralsData = await referralsResponse.json();
+                console.log('✅ PWA 정확한 추천인 수 조회 성공:', referralsData);
+                
+                const totalReferrals = referralsData.data?.totalReferrals || 0;
+                
+                // 새로운 승급기준 API 호출
+                try {
+                  const levelResponse = await fetch(`/api/mypage/level-info?userName=${encodeURIComponent(data.user.name)}&userPhone=${encodeURIComponent(data.user.phone)}`);
+                  if (levelResponse.ok) {
+                    const levelData = await levelResponse.json();
+                    console.log('✅ PWA 승급기준 정보 조회 성공:', levelData);
+                    
+                    if (levelData.success && levelData.data) {
+                      setUser(prev => ({
+                        ...prev,
+                        totalReferrals: totalReferrals,
+                        directReferrals: referralsData.data?.directReferrals || 0,
+                        indirectReferrals: referralsData.data?.indirectReferrals || 0,
+                        level: levelData.data.currentLevel,
+                        levelName: levelData.data.levelName,
+                        levelIcon: levelData.data.levelIcon,
+                        currentLevel: levelData.data.currentLevelNum,
+                        remainingReferrals: levelData.data.remainingReferrals,
+                        isMaxLevel: levelData.data.isMaxLevel
+                      }));
+                      return; // 성공적으로 설정했으면 종료
+                    }
+                  }
+                } catch (error) {
+                  console.error('PWA 승급기준 정보 조회 오류:', error);
+                }
+                
+                // API 실패 시 기존 방식 사용 (fallback)
+                const calculateLevel = (referrals: number) => {
+                  if (referrals >= 1000) return { level: 'LEGEND', name: '레전드', icon: '👑' };
+                  if (referrals >= 500) return { level: 9, name: '다이아몬드', icon: '💎' };
+                  if (referrals >= 300) return { level: 8, name: '플래티넘', icon: '🏆' };
+                  if (referrals >= 200) return { level: 7, name: '골드', icon: '🥇' };
+                  if (referrals >= 100) return { level: 6, name: '실버', icon: '🥈' };
+                  if (referrals >= 50) return { level: 5, name: '브론즈', icon: '🥉' };
+                  if (referrals >= 30) return { level: 4, name: '루비', icon: '💎' };
+                  if (referrals >= 20) return { level: 3, name: '에메랄드', icon: '💚' };
+                  if (referrals >= 10) return { level: 2, name: '사파이어', icon: '💙' };
+                  if (referrals >= 5) return { level: 1, name: '아메시스트', icon: '💜' };
+                  return { level: 0, name: '알', icon: '🥚' };
+                };
+                
+                const levelInfo = calculateLevel(totalReferrals);
+                
+                // 다음 등급까지 필요한 추천인 수 계산
+                const getNextLevelRequirement = (currentReferrals: number) => {
+                  const requirements = [5, 10, 20, 30, 50, 100, 200, 300, 500, 1000];
+                  for (const req of requirements) {
+                    if (currentReferrals < req) {
+                      return req - currentReferrals;
+                    }
+                  }
+                  return 0; // 최고 등급
+                };
+                
+                const remainingReferrals = getNextLevelRequirement(totalReferrals);
+                const isMaxLevel = totalReferrals >= 1000;
+                
+                setUser(prev => ({
+                  ...prev,
+                  totalReferrals: totalReferrals,
+                  directReferrals: referralsData.data?.directReferrals || 0,
+                  indirectReferrals: referralsData.data?.indirectReferrals || 0,
+                  level: levelInfo.level,
+                  levelName: levelInfo.name,
+                  levelIcon: levelInfo.icon,
+                  currentLevel: typeof levelInfo.level === 'number' ? levelInfo.level : 10,
+                  remainingReferrals: remainingReferrals,
+                  isMaxLevel: isMaxLevel
+                }));
+              }
+            } catch (error) {
+              console.error('PWA 추천인 수 조회 오류:', error);
+            }
+          }
         } else {
           // PWA 환경 감지하여 적절한 로그인 페이지로 이동
           const isPwaEnvironment = window.parent !== window || window.location.pathname.includes('/pwa-');
@@ -153,10 +241,21 @@ export default function MemberHomePage() {
 
     const fetchPointSummary = async () => {
       try {
-        const response = await fetch('/api/points/summary');
+        // 파트너회원목록과 동일한 결정포인트 계산 API 호출
+        const response = await fetch('/api/mypage/points');
         if (response.ok) {
           const data = await response.json();
-          setPointSummary(data);
+          console.log('✅ PWA 포인트 조회 성공:', data);
+          
+          // pointSummary 상태 업데이트 (기존 구조 유지)
+          setPointSummary({
+            total: data.data?.totalPoints || 0, // 파트너회원목록의 결정포인트와 동일
+            withdrawable: data.data?.totalPoints || 0,
+            scheduled: 0,
+            totalPaid: 0
+          });
+        } else {
+          console.error('포인트 조회 실패:', response.status);
         }
       } catch (error) {
         console.error('포인트 요약 조회 실패:', error);
@@ -170,17 +269,21 @@ export default function MemberHomePage() {
   useEffect(() => {
     if (!user) return;
 
-    const fetchStatsData = async () => {
-      try {
-        const response = await fetch('/api/mypage/stats');
-        if (response.ok) {
-          const data = await response.json();
-          setStatsData(data);
-        }
-      } catch (error) {
-        console.error('통계 데이터 조회 실패:', error);
-      }
-    };
+        const fetchStatsData = async () => {
+          try {
+            const response = await fetch('/api/mypage/stats');
+            if (response.ok) {
+              const data = await response.json();
+              console.log('✅ PWA 통계 데이터 조회 성공:', data);
+              console.log('✅ PWA totalPaidPoints:', data.stats?.totalPaidPoints);
+              setStatsData(data.stats || {});
+            } else {
+              console.error('통계 데이터 조회 실패:', response.status);
+            }
+          } catch (error) {
+            console.error('통계 데이터 조회 실패:', error);
+          }
+        };
 
     fetchStatsData();
   }, [user]);
@@ -361,7 +464,7 @@ export default function MemberHomePage() {
                       나의 기준포인트
                     </div>
                     <div className="text-lg font-bold text-blue-600">
-                      {formatNumber(user?.finalPoints || 0)}P
+                      {formatNumber(pointSummary.total || 0)}P
                     </div>
                   </div>
                 )}
@@ -389,13 +492,21 @@ export default function MemberHomePage() {
           }}
         >
           <div className="flex justify-between items-center">
-            <p className="text-[color:var(--text)] text-base font-semibold">이번달 지급수익</p>
+            <p className="text-[color:var(--text)] text-base font-semibold">총누적수당지급액</p>
             <div className="text-right">
               <span className="text-[color:var(--text)] text-xl font-bold tabular-nums">
-                {user?.role === 'MEMBER' 
-                  ? formatNumber((pointSummary.total || user?.points || 0) + (statsData?.monthlyExpectedIncome?.value || 0) + inquiries.filter(i => i.status === 'PENDING').length)
-                  : '0'
-                }P
+                {(() => {
+                  const value = user?.role === 'MEMBER' 
+                    ? formatNumber(statsData?.totalPaidPoints || 0)
+                    : '0';
+                  console.log('🔍 PWA 총누적수당지급액 표시:', {
+                    userRole: user?.role,
+                    statsData: statsData,
+                    totalPaidPoints: statsData?.totalPaidPoints,
+                    displayValue: value
+                  });
+                  return value;
+                })()}P
               </span>
             </div>
           </div>
@@ -406,106 +517,49 @@ export default function MemberHomePage() {
           )}
         </div>
 
-        {/* 요약 카드 */}
-        <div 
-          className={`bg-[color:var(--card)] border border-slate-200/40 rounded-[var(--radius-card)] shadow-sm p-4 transition-all duration-200 ${
-            user?.role === 'MEMBER' 
-              ? 'opacity-100' 
-              : 'opacity-40 cursor-pointer hover:opacity-60'
-          }`}
-          onClick={() => {
-            if (user?.role !== 'MEMBER') {
-              setShowPartnerModal(true);
-            }
-          }}
-        >
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            {/* 캐쉬백 */}
-            <div>
-              <p className="text-blue-600 text-sm mb-1 font-medium">캐쉬백</p>
-              <div className="text-right">
-                <span className="text-[color:var(--text)] text-lg font-bold tabular-nums">
-                  {user?.role === 'MEMBER' 
-                    ? formatNumber(pointSummary.total || user?.points || 0)
-                    : '0'
-                  }P
-                </span>
-              </div>
+        {/* 지급수당의 종류 설명 박스 */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h3 className="text-sm font-semibold text-blue-800 mb-3 flex items-center">
+            <Info className="h-4 w-4 mr-2" />
+            지급수당의 종류
+          </h3>
+          <div className="space-y-2 text-sm text-blue-700">
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+              <span><strong>기본수당:</strong> 상담완료후 매월 기준포인트 X 30%</span>
             </div>
-
-            {/* 트리수당 */}
-            <div>
-              <p className="text-green-600 text-sm mb-1 font-medium">트리수당</p>
-              <div className="text-right">
-                <span className="text-[color:var(--text)] text-lg font-bold tabular-nums">
-                  {user?.role === 'MEMBER' 
-                    ? formatNumber(statsData?.monthlyExpectedIncome?.value || 0)
-                    : '0'
-                  }P
-                </span>
-              </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+              <span><strong>모집수당:</strong> 소개로 가입한 회원의포인트 X 20%</span>
             </div>
-
-            {/* 추천수당 */}
-            <div>
-              <p className="text-purple-600 text-sm mb-1 font-medium">추천수당</p>
-              <div className="text-right">
-                <span className="text-[color:var(--text)] text-lg font-bold tabular-nums">
-                  {user?.role === 'MEMBER' 
-                    ? formatNumber(inquiries.filter(i => i.status === 'PENDING').length)
-                    : '0'
-                  }P
-                </span>
-              </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+              <span><strong>간접수당:</strong> 소개의 소개로 회원의포인트 X 10%</span>
             </div>
-
-            {/* 추천매칭 */}
-            <div>
-              <p className="text-orange-600 text-sm mb-1 font-medium">추천매칭</p>
-              <div className="text-right">
-                <span className="text-[color:var(--text)] text-lg font-bold tabular-nums">
-                  0P
-                </span>
-              </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
+              <span><strong>배당수익:</strong> 모든회원기본배당 + 실적연동배당</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
+              <span><strong>지급방법:</strong> 전월정산 당월5일부터 출금가능함</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-indigo-500 rounded-full mr-2"></div>
+              <span><strong>지급시기:</strong> 기준포인트발생후 24개월간지급함</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-pink-500 rounded-full mr-2"></div>
+              <span><strong>추가지급:</strong> 우수회원 특별혜택보너스지급함</span>
             </div>
           </div>
-          {user?.role !== 'MEMBER' && (
-            <div className="text-center text-xs text-blue-600 font-medium">
-              💡 파트너회원 전용 기능
-            </div>
-          )}
         </div>
 
         {/* 정보 카드 */}
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-3">
-            <div 
-              className={`bg-[color:var(--card)] border border-slate-200/40 rounded-[var(--radius-card)] shadow-sm p-4 transition-all duration-200 ${
-                user?.role === 'MEMBER' 
-                  ? 'opacity-100' 
-                  : 'opacity-40 cursor-pointer hover:opacity-60'
-              }`}
-              onClick={() => {
-                if (user?.role !== 'MEMBER') {
-                  setShowPartnerModal(true);
-                }
-              }}
-            >
-              <p className="text-[color:var(--muted)] text-sm mb-1">총 누적지급 수수료</p>
-              <p className="text-[color:var(--text)] text-lg font-bold tabular-nums">
-                {user?.role === 'MEMBER' 
-                  ? formatNumber((pointSummary.total || user?.points || 0) + (statsData?.monthlyExpectedIncome?.value || 0) + inquiries.filter(i => i.status === 'PENDING').length)
-                  : '0'
-                }P
-              </p>
-              {user?.role !== 'MEMBER' && (
-                <div className="mt-2 text-xs text-blue-600 font-medium">
-                  💡 파트너회원 전용 기능
-                </div>
-              )}
-            </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div 
                 className={`bg-[color:var(--card)] border border-slate-200/40 rounded-[var(--radius-card)] shadow-sm p-4 transition-all duration-200 ${
                   user?.role === 'MEMBER' 
@@ -518,12 +572,38 @@ export default function MemberHomePage() {
                   }
                 }}
               >
-                <p className="text-[color:var(--muted)] text-sm mb-1">이번달추천인수</p>
-                <p className="text-[color:var(--text)] text-lg font-bold tabular-nums">
+                <p className="text-[color:var(--muted)] text-sm mb-1">1차추천</p>
+                <p className="text-[color:var(--text)] text-lg font-bold tabular-nums text-right">
                   {user?.role === 'MEMBER' 
-                    ? (user?.monthlyReferrals || 0)
+                    ? (user?.directReferrals || 0)
                     : '0'
-                  }명
+                  }<span className="text-sm">명</span>
+                </p>
+                {user?.role !== 'MEMBER' && (
+                  <div className="mt-1 text-xs text-blue-600 font-medium">
+                    💡 파트너 전용
+                  </div>
+                )}
+              </div>
+
+              <div 
+                className={`bg-[color:var(--card)] border border-slate-200/40 rounded-[var(--radius-card)] shadow-sm p-4 transition-all duration-200 ${
+                  user?.role === 'MEMBER' 
+                    ? 'opacity-100' 
+                    : 'opacity-40 cursor-pointer hover:opacity-60'
+                }`}
+                onClick={() => {
+                  if (user?.role !== 'MEMBER') {
+                    setShowPartnerModal(true);
+                  }
+                }}
+              >
+                <p className="text-[color:var(--muted)] text-sm mb-1">2차추천</p>
+                <p className="text-[color:var(--text)] text-lg font-bold tabular-nums text-right">
+                  {user?.role === 'MEMBER' 
+                    ? (user?.indirectReferrals || 0)
+                    : '0'
+                  }<span className="text-sm">명</span>
                 </p>
                 {user?.role !== 'MEMBER' && (
                   <div className="mt-1 text-xs text-blue-600 font-medium">
@@ -545,11 +625,11 @@ export default function MemberHomePage() {
                 }}
               >
                 <p className="text-[color:var(--muted)] text-sm mb-1">총추천인수</p>
-                <p className="text-[color:var(--text)] text-lg font-bold tabular-nums">
+                <p className="text-[color:var(--text)] text-lg font-bold tabular-nums text-right">
                   {user?.role === 'MEMBER' 
                     ? (user?.totalReferrals || 0)
                     : '0'
-                  }명
+                  }<span className="text-sm">명</span>
                 </p>
                 {user?.role !== 'MEMBER' && (
                   <div className="mt-1 text-xs text-blue-600 font-medium">
@@ -559,31 +639,32 @@ export default function MemberHomePage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-[color:var(--card)] border border-slate-200/40 rounded-[var(--radius-card)] shadow-sm p-3">
-                <p className="text-[color:var(--muted)] text-sm mb-1">현재등급</p>
-                <div className="flex items-center space-x-2">
-                  <span className="text-2xl">{user?.levelIcon || '🥚'}</span>
-                  <p className="text-[color:var(--text)] text-lg font-bold tabular-nums">
-                    {user?.levelName || '알'}
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-[color:var(--card)] border border-slate-200/40 rounded-[var(--radius-card)] shadow-sm p-3">
+            <div className="grid grid-cols-1 gap-3">
+              <div className="bg-[color:var(--card)] border border-slate-200/40 rounded-[var(--radius-card)] shadow-sm p-4">
                 <p className="text-[color:var(--muted)] text-sm mb-1">승급기준</p>
                 <div className="flex items-center justify-between">
-                  <p className="text-[color:var(--text)] text-sm font-medium tabular-nums">
-                    {user?.isMaxLevel ? '최고등급' : `다음승급까지 ${user?.remainingReferrals || 0}명`}
-                  </p>
-                  {!user?.isMaxLevel && (
-                    <span className="text-2xl opacity-60">
-                      {user?.currentLevel !== undefined ? getLevelIcon(user.currentLevel + 1) : '🥚'}
+                  <div className="flex items-center space-x-2">
+                    <span className="text-[color:var(--text)] text-lg font-bold">
+                      {user?.levelIcon || '⭐'}
                     </span>
-                  )}
+                    <span className="text-[color:var(--text)] text-sm font-medium">
+                      {user?.levelName || '브론즈'}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[color:var(--text)] text-base font-bold">
+                      {user?.isMaxLevel ? 'MAX' : `${user?.remainingReferrals || 0}명`}
+                    </p>
+                    {!user?.isMaxLevel && (
+                      <p className="text-[color:var(--muted)] text-xs">
+                        다음 등급까지
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
+
           </div>
         </div>
 

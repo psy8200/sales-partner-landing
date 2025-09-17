@@ -1053,12 +1053,7 @@ const MembersPage = () => {
                              console.log('🔧 수정 버튼 클릭됨:', member.id);
                              window.open(`/admin/members/${member.id}/edit`, '_blank', 'width=720,height=720,scrollbars=yes,resizable=yes');
                            }}
-                           className="px-2 sm:px-3 py-1 border rounded hover:bg-gray-50 text-xs sm:text-sm"
-                           style={{
-                             zIndex: 9999,
-                             position: 'relative',
-                             pointerEvents: 'auto'
-                           }}
+                           className="relative [z-index:9999] [pointer-events:auto] px-2 sm:px-3 py-1 border rounded hover:bg-gray-50 text-xs sm:text-sm"
                            aria-label="수정"
                            title="수정"
                          >

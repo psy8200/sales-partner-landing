@@ -1,13 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   DollarSign, 
-  Calendar, 
   Download, 
-  Clock, 
-  CheckCircle, 
   AlertCircle,
   TrendingUp,
   Users,
@@ -18,20 +15,9 @@ import {
 } from 'lucide-react';
 import { BottomTab } from '../(member)/member/_components/BottomTab';
 import { formatNumber } from '@/lib/utils';
+import WithdrawalRequestModal from '@/components/WithdrawalRequestModal';
+import PointAddModal from '@/components/PointAddModal';
 
-// 정산 데이터 타입 정의
-interface SettlementData {
-  id: string;
-  month: string;
-  totalAmount: number;
-  basicSalary: number;
-  recruitmentBonus: number;
-  indirectBonus: number;
-  dividendIncome: number;
-  status: 'PENDING' | 'PAID' | 'CANCELLED';
-  requestDate: string;
-  completedDate?: string;
-}
 
 // 포인트 요약 타입
 interface PointSummary {
@@ -43,6 +29,9 @@ interface PointSummary {
   withdrawable: number; // 출금 가능
   scheduled: number; // 정산 예정
   totalPaid: number; // 지급 완료
+  contractBasedPoints: number; // 계약 기반 포인트
+  remainingPoints: number; // 잔여포인트 (UserSettlementRecord에서 계산)
+  totalPaidPoints: number; // 총지급포인트 누적 (출금완료된 금액의 누적)
 }
 
 // 사용자 정보 타입
@@ -55,6 +44,16 @@ interface User {
   bankName: string;
   bankAccount: string;
   accountHolder: string;
+}
+
+// 입금완료리스트 타입
+interface DepositRecord {
+  id: string;
+  pointAmount: number;
+  depositAmount: number;
+  depositDate: string;
+  processedBy: string | null;
+  memo: string | null;
 }
 
 const SettlementPage = () => {
@@ -70,10 +69,18 @@ const SettlementPage = () => {
     withdrawable: 0,
     scheduled: 0,
     totalPaid: 0,
+    contractBasedPoints: 0,
+    remainingPoints: 0,
+    totalPaidPoints: 0,
   });
-  const [settlementHistory, setSettlementHistory] = useState<SettlementData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [depositRecords, setDepositRecords] = useState<DepositRecord[]>([]);
+  
+  // 출금신청 모달 상태
+  const [isWithdrawalModalOpen, setIsWithdrawalModalOpen] = useState(false);
+  // 포인트추가 모달 상태
+  const [isPointAddModalOpen, setIsPointAddModalOpen] = useState(false);
 
   // 사용자 정보 조회
   useEffect(() => {
@@ -96,65 +103,65 @@ const SettlementPage = () => {
     fetchUser();
   }, [router]);
 
-  // 정산 요약 조회
-  useEffect(() => {
+  // 정산 요약 조회 함수
+  const fetchSettlementSummary = useCallback(async () => {
     if (!user) {
       setLoading(false);
       return;
     }
 
-    const fetchSettlementSummary = async () => {
-      try {
-        console.log('🔍 정산 요약 조회 시작:', user.name, user.phone);
+    try {
+      console.log('🔍 정산 요약 조회 시작:', user.name, user.phone);
+      
+      // SettlementRecord 데이터 조회
+      const response = await fetch(`/api/mypage/settlement-summary?userName=${encodeURIComponent(user.name)}&userPhone=${encodeURIComponent(user.phone)}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ 정산 요약 조회 성공:', data);
         
-        // SettlementRecord 데이터 조회
-        const response = await fetch(`/api/mypage/settlement-summary?userName=${encodeURIComponent(user.name)}&userPhone=${encodeURIComponent(user.phone)}`);
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('✅ 정산 요약 조회 성공:', data);
+        if (data.success && data.data) {
+          const { summary, settlements } = data.data;
           
-          if (data.success && data.data) {
-            const { summary, settlements } = data.data;
-            
-            // 포인트 요약 업데이트
-            setPointSummary({
-              basicSalary: summary.totalBasicCommission || 0,
-              recruitmentBonus: summary.totalRecruitmentCommission || 0,
-              indirectBonus: summary.totalIndirectCommission || 0,
-              dividendIncome: summary.totalDividendCommission || 0,
-              total: summary.totalCommission || 0,
-              withdrawable: summary.withdrawableAmount || 0,
-              scheduled: summary.scheduledAmount || 0,
-              totalPaid: summary.totalPaid || 0,
-            });
-            
-            // 정산 이력 업데이트
-            setSettlementHistory(settlements || []);
-            
-            console.log('📊 정산 데이터 업데이트 완료:', {
-              total: summary.totalCommission,
-              withdrawable: summary.withdrawableAmount,
-              scheduled: summary.scheduledAmount,
-              historyCount: settlements?.length || 0
-            });
-          } else {
-            console.log('⚠️ API 응답에서 데이터를 찾을 수 없음');
-            // 기본값 설정
-            setPointSummary({
-              basicSalary: 0,
-              recruitmentBonus: 0,
-              indirectBonus: 0,
-              dividendIncome: 0,
-              total: 0,
-              withdrawable: 0,
-              scheduled: 0,
-              totalPaid: 0,
-            });
-            setSettlementHistory([]);
-          }
+          // 포인트 요약 업데이트
+          const basicSalary = summary.totalBasicCommission || 0;
+          const recruitmentBonus = summary.totalRecruitmentCommission || 0;
+          const indirectBonus = summary.totalIndirectCommission || 0;
+          const dividendIncome = summary.totalDividendCommission || 0;
+          
+          // 🔥 출금가능포인트 = API에서 계산된 정확한 값 사용 (잔여포인트 + 수당현황)
+          const calculatedWithdrawable = summary.withdrawableAmount || 0;
+          
+          setPointSummary({
+            basicSalary: basicSalary,
+            recruitmentBonus: recruitmentBonus,
+            indirectBonus: indirectBonus,
+            dividendIncome: dividendIncome,
+            total: summary.totalCommission || 0,
+            withdrawable: calculatedWithdrawable, // API에서 계산된 정확한 출금가능포인트 사용
+            scheduled: summary.scheduledAmount || 0,
+            totalPaid: summary.totalPaid || 0,
+            contractBasedPoints: summary.contractBasedPoints || 0,
+            remainingPoints: summary.remainingPoints || 0,
+            totalPaidPoints: summary.totalPaidPoints || 0, // 총지급포인트 누적
+          });
+          
+          // 정산 이력 업데이트 (정산내역박스 삭제로 제거됨)
+          
+          console.log('📊 정산 데이터 업데이트 완료:', {
+            total: summary.totalCommission,
+            withdrawable: calculatedWithdrawable,
+            scheduled: summary.scheduledAmount,
+            historyCount: settlements?.length || 0,
+            breakdown: {
+              basicSalary,
+              recruitmentBonus,
+              indirectBonus,
+              dividendIncome
+            }
+          });
         } else {
-          console.log('⚠️ API 호출 실패, 기본값으로 진행');
+          console.log('⚠️ API 응답에서 데이터를 찾을 수 없음');
           // 기본값 설정
           setPointSummary({
             basicSalary: 0,
@@ -162,15 +169,18 @@ const SettlementPage = () => {
             indirectBonus: 0,
             dividendIncome: 0,
             total: 0,
-            withdrawable: 0,
+            withdrawable: 0, // 0 + 0 + 0 + 0 = 0
             scheduled: 0,
             totalPaid: 0,
+            contractBasedPoints: 0,
+            remainingPoints: 0,
+            totalPaidPoints: 0,
           });
-          setSettlementHistory([]);
+          // setSettlementHistory([]); // 정산내역박스 삭제로 제거됨
         }
-      } catch (error) {
-        console.error('정산 요약 조회 실패:', error);
-        // 네트워크 에러 등이 발생해도 기본값으로 계속 진행
+      } else {
+        console.log('⚠️ API 호출 실패, 기본값으로 진행');
+        // 기본값 설정
         setPointSummary({
           basicSalary: 0,
           recruitmentBonus: 0,
@@ -180,15 +190,54 @@ const SettlementPage = () => {
           withdrawable: 0,
           scheduled: 0,
           totalPaid: 0,
+          contractBasedPoints: 0,
+          remainingPoints: 0,
+          totalPaidPoints: 0,
         });
         setSettlementHistory([]);
-      } finally {
-        setLoading(false);
       }
-    };
-
-    fetchSettlementSummary();
+    } catch (error) {
+      console.error('정산 요약 조회 실패:', error);
+      // 네트워크 에러 등이 발생해도 기본값으로 계속 진행
+      setPointSummary({
+        basicSalary: 0,
+        recruitmentBonus: 0,
+        indirectBonus: 0,
+        dividendIncome: 0,
+        total: 0,
+        withdrawable: 0,
+        scheduled: 0,
+        totalPaid: 0,
+        contractBasedPoints: 0,
+        remainingPoints: 0,
+        totalPaidPoints: 0,
+      });
+      setSettlementHistory([]);
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
+
+  // 입금완료리스트 조회
+  const fetchDepositRecords = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      const response = await fetch(`/api/mypage/deposit-records?userName=${encodeURIComponent(user.name)}&userPhone=${encodeURIComponent(user.phone)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setDepositRecords(data.data);
+      }
+    } catch (error) {
+      console.error('입금완료리스트 조회 오류:', error);
+    }
+  }, [user]);
+
+  // 정산 요약 조회
+  useEffect(() => {
+    fetchSettlementSummary();
+    fetchDepositRecords();
+  }, [fetchSettlementSummary, fetchDepositRecords]);
 
 
   // 하단 탭 변경 핸들러
@@ -226,34 +275,6 @@ const SettlementPage = () => {
     }
   };
 
-  // 정산 상태 배지
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'PENDING':
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-            <Clock className="h-3 w-3 mr-1" />
-            대기중
-          </span>
-        );
-      case 'PAID':
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            <CheckCircle className="h-3 w-3 mr-1" />
-            지급완료
-          </span>
-        );
-      case 'CANCELLED':
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-            <AlertCircle className="h-3 w-3 mr-1" />
-            취소
-          </span>
-        );
-      default:
-        return null;
-    }
-  };
 
   // 정산 신청 핸들러
   const handleSettlementRequest = () => {
@@ -366,7 +387,7 @@ const SettlementPage = () => {
               수당 현황
             </h2>
             <button
-              onClick={handleSettlementRequest}
+              onClick={() => setIsWithdrawalModalOpen(true)}
               className="px-3 py-1.5 text-sm bg-blue-500 text-white font-medium rounded-md hover:bg-blue-600 transition-colors duration-200"
             >
               출금신청하기
@@ -399,86 +420,40 @@ const SettlementPage = () => {
             </div>
           </div>
           
-          {/* 출금 안내 텍스트 */}
-          <div className="mt-4 pt-3 border-t border-gray-200">
-            <p className="text-xs text-gray-500 text-center flex items-center justify-center">
-              <span className="w-1 h-1 bg-gray-500 rounded-full mr-2"></span>
-              출금신청시 소득세 3.3%골제후 익일11시지급합니다.
-            </p>
-            <p className="text-xs text-gray-500 text-center flex items-center justify-center mt-1">
-              <span className="w-1 h-1 bg-gray-500 rounded-full mr-2"></span>
-              출금요청은 월 1회가능합니다. 5일~30일까지
-            </p>
-          </div>
         </div>
 
-        {/* 정산 신청 버튼 - 항상 표시 */}
-        {user.role === 'MEMBER' && (
-          <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
-            <div className="text-center">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                정산 신청
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                출금 가능한 포인트를 정산 신청하세요
-              </p>
-              <button
-                onClick={handleSettlementRequest}
-                className="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
-              >
-                <DollarSign className="h-5 w-5 inline mr-2" />
-                정산 신청하기
-              </button>
-            </div>
-          </div>
-        )}
-
-
-        {/* 정산 내역 */}
+        {/* MY 포인트관리 */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <Calendar className="h-5 w-5 mr-2 text-purple-600" />
-            정산 내역
-          </h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+              <Gift className="h-5 w-5 mr-2 text-orange-600" />
+              MY 포인트관리
+            </h2>
+            <button
+              onClick={() => setIsPointAddModalOpen(true)}
+              className="px-3 py-1.5 text-sm bg-orange-500 text-white font-medium rounded-md hover:bg-orange-600 transition-colors duration-200"
+            >
+              포인트추가
+            </button>
+          </div>
           
-          {!settlementHistory || settlementHistory.length === 0 ? (
-            <div className="text-center py-8">
-              <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 font-medium mb-2">
-                정산 내역이 없습니다
-              </p>
-              <p className="text-gray-500 text-sm">
-                정산 신청 후 내역이 여기에 표시됩니다
+          <div className="space-y-1">
+            <div className="flex justify-between items-center py-1 px-3 bg-white rounded-lg">
+              <p className="text-gray-600 text-sm font-medium">총지급포인트 누적</p>
+              <p className="text-lg font-bold text-gray-700">
+                {formatNumber(pointSummary?.totalPaidPoints || 0)}P
               </p>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {settlementHistory.map((settlement) => (
-                <div key={settlement.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">
-                        {settlement.month} 정산
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        {new Date(settlement.requestDate).toLocaleDateString('ko-KR')}
-                      </p>
-                    </div>
-                    {getStatusBadge(settlement.status)}
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-bold text-green-600">
-                      ₩{formatNumber(settlement.totalAmount)}
-                    </span>
-                    <button className="text-blue-600 text-sm font-medium hover:underline">
-                      상세보기
-                    </button>
-                  </div>
-                </div>
-              ))}
+            
+            <div className="flex justify-between items-center py-1 px-3 bg-white rounded-lg">
+              <p className="text-gray-600 text-sm font-medium">잔여포인트 (지급가능)</p>
+              <p className="text-lg font-bold text-gray-700">
+                {formatNumber(pointSummary?.remainingPoints || 0)}P
+              </p>
             </div>
-          )}
+          </div>
         </div>
+
 
         {/* 정산 안내 */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -487,18 +462,94 @@ const SettlementPage = () => {
             정산 안내
           </h3>
           <ul className="text-sm text-blue-800 space-y-1">
-            <li>• 정산 신청은 매월 1일부터 25일까지 가능합니다</li>
-            <li>• 정산 처리 기간은 신청 후 3-5 영업일 소요됩니다</li>
-            <li>• 최소 출금 금액은 10,000원입니다</li>
-            <li>• 정산 관련 문의는 고객센터로 연락해주세요</li>
+            <li>• 출금신청은 매월 5일부터 말일까지 가능합니다</li>
+            <li>• 입금시간 익일 11시~16시사이 지급함.</li>
+            <li>• 최소 출금 금액은 10,000원 이상 입니다</li>
+            <li>• 정산 관련 문의는 "홈" 고객센터로 연락해주세요</li>
           </ul>
         </div>
+
+        {/* 입금완료리스트 */}
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+            <Banknote className="h-4 w-4 mr-2 text-green-600" />
+            입금완료리스트
+          </h3>
+          
+          {depositRecords.length === 0 ? (
+            <div className="text-center py-8">
+              <Banknote className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500 text-sm">입금완료 내역이 없습니다</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {depositRecords.map((record) => (
+                <div key={record.id} className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-900">
+                          {formatNumber(record.pointAmount)}P
+                        </span>
+                        <span className="text-sm text-gray-600">
+                          {new Date(record.depositDate).toLocaleDateString('ko-KR', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-xs text-gray-500">
+                          입금액: {formatNumber(record.depositAmount)}원
+                        </span>
+                        {record.processedBy && (
+                          <span className="text-xs text-gray-500">
+                            처리자: {record.processedBy}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </main>
+
 
       {/* 하단 탭 */}
       <BottomTab
         activeTab={activeTab}
         onTabChange={handleTabChange}
+      />
+
+      {/* 출금신청 모달 */}
+        <WithdrawalRequestModal
+          isOpen={isWithdrawalModalOpen}
+          onClose={() => setIsWithdrawalModalOpen(false)}
+          userId={user?.id || ''}
+          userName={user?.name || ''}
+          userPhone={user?.phone || ''}
+          withdrawableAmount={pointSummary.withdrawable}
+          onSuccess={() => {
+            // 출금신청 성공 후 정산 정보 및 입금완료리스트 새로고침
+            fetchSettlementSummary();
+            fetchDepositRecords();
+            console.log('✅ 출금신청 완료 후 정산 정보 및 입금완료리스트 새로고침');
+          }}
+        />
+
+      {/* 포인트추가 모달 */}
+      <PointAddModal
+        isOpen={isPointAddModalOpen}
+        onClose={() => setIsPointAddModalOpen(false)}
+        userId={user?.id || ''}
+        userName={user?.name || ''}
+        userPhone={user?.phone || ''}
       />
     </div>
   );

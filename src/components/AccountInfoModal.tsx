@@ -18,6 +18,8 @@ interface AccountInfoModalProps {
   accountInfo: AccountInfo | null;
   loading: boolean;
   onSaveAccountInfo?: (accountInfo: AccountInfo) => void;
+  uploadedFiles?: { [key: string]: File }; // 회원별 업로드된 파일들
+  onFileUpload?: (userKey: string, file: File) => void; // 파일 업로드 핸들러
 }
 
 export default function AccountInfoModal({
@@ -27,10 +29,15 @@ export default function AccountInfoModal({
   userPhone,
   accountInfo,
   loading,
-  onSaveAccountInfo
+  onSaveAccountInfo,
+  uploadedFiles = {},
+  onFileUpload
 }: AccountInfoModalProps) {
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
+  
+  // 현재 회원의 고유 키 생성
+  const userKey = `${userName}_${userPhone}`;
+  const currentUserFile = uploadedFiles[userKey] || null;
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -47,13 +54,16 @@ export default function AccountInfoModal({
         return;
       }
       
-      setUploadedFile(file);
+      // 회원별로 파일 저장
+      if (onFileUpload) {
+        onFileUpload(userKey, file);
+      }
       setUploadStatus('idle');
     }
   };
 
   const handleUpload = async () => {
-    if (!uploadedFile || !accountInfo) return;
+    if (!currentUserFile || !accountInfo) return;
     
     setUploadStatus('uploading');
     
@@ -70,7 +80,6 @@ export default function AccountInfoModal({
       // 2초 후 성공 상태 초기화
       setTimeout(() => {
         setUploadStatus('idle');
-        setUploadedFile(null);
       }, 2000);
       
     } catch (error) {
@@ -198,22 +207,39 @@ export default function AccountInfoModal({
                       htmlFor="idCardUpload"
                       className="cursor-pointer flex flex-col items-center gap-3"
                     >
-                      <div className="p-3 bg-blue-100 rounded-full">
-                        <Upload className="w-6 h-6 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          {uploadedFile ? uploadedFile.name : '신분증 이미지를 선택하세요'}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          JPG, PNG 파일만 가능 (최대 5MB)
-                        </p>
-                      </div>
+                      {currentUserFile ? (
+                        // 업로드된 이미지 미리보기
+                        <div className="relative w-full max-w-md">
+                          <img
+                            src={URL.createObjectURL(currentUserFile)}
+                            alt="신분증 이미지"
+                            className="w-full h-48 object-cover rounded-lg border border-gray-200"
+                          />
+                          <div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
+                            {currentUserFile.name}
+                          </div>
+                        </div>
+                      ) : (
+                        // 파일 선택 안내
+                        <>
+                          <div className="p-3 bg-blue-100 rounded-full">
+                            <Upload className="w-6 h-6 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              신분증 이미지를 선택하세요
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              JPG, PNG 파일만 가능 (최대 5MB)
+                            </p>
+                          </div>
+                        </>
+                      )}
                     </label>
                   </div>
 
                   {/* 업로드 버튼 */}
-                  {uploadedFile && (
+                  {currentUserFile && (
                     <button
                       onClick={handleUpload}
                       disabled={uploadStatus === 'uploading'}
@@ -244,20 +270,6 @@ export default function AccountInfoModal({
                     </button>
                   )}
 
-                  {/* 업로드된 파일 미리보기 */}
-                  {uploadedFile && uploadStatus === 'idle' && (
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-5 h-5 text-gray-500" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900">{uploadedFile.name}</p>
-                          <p className="text-xs text-gray-500">
-                            {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>

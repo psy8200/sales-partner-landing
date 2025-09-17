@@ -2,6 +2,19 @@
 
 import React, { useEffect, useState } from 'react';
 import { Calendar, User, TrendingUp, BarChart3, PieChart, Download } from 'lucide-react';
+import styled from 'styled-components';
+
+// styled-components로 프로그레스 바 정의
+const ProgressBar = styled.div<{ width: number; color: string }>`
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 8px;
+  border-radius: 9999px;
+  transition: all 0.3s ease;
+  width: ${props => props.width}%;
+  background-color: ${props => props.color};
+`;
 
 // 상담이력 데이터 타입 정의
 interface ConsultationData {
@@ -263,6 +276,7 @@ export default function ConsultationStatsPage() {
               value={selectedPeriod}
               onChange={(e) => setSelectedPeriod(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              title="통계 기간을 선택하세요"
             >
               <option value="month">월별</option>
               <option value="quarter">분기별</option>
@@ -272,6 +286,7 @@ export default function ConsultationStatsPage() {
             <select
               value={selectedManager}
               onChange={(e) => setSelectedManager(e.target.value)}
+              title="담당 매니저를 선택하세요"
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="all">전체 담당자</option>
@@ -368,10 +383,12 @@ export default function ConsultationStatsPage() {
                       </span>
                     </div>
                     <div className="mt-1 w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-blue-600 h-2 rounded-full" 
-                        style={{ width: `${month.completionRate}%` }}
-                      ></div>
+                      <div className="relative w-full h-2 overflow-hidden">
+                        <ProgressBar 
+                          width={month.completionRate} 
+                          color="#2563eb"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -395,10 +412,12 @@ export default function ConsultationStatsPage() {
                       <span className="text-gray-500">{area.count}건 ({area.percentage.toFixed(1)}%)</span>
                     </div>
                     <div className="mt-1 w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-green-600 h-2 rounded-full" 
-                        style={{ width: `${area.percentage}%` }}
-                      ></div>
+                      <div className="relative w-full h-2 overflow-hidden">
+                        <ProgressBar 
+                          width={area.percentage} 
+                          color="#16a34a"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -458,10 +477,12 @@ export default function ConsultationStatsPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-1 bg-gray-200 rounded-full h-2 mr-2">
-                          <div 
-                            className="bg-blue-600 h-2 rounded-full" 
-                            style={{ width: `${manager.completionRate}%` }}
-                          ></div>
+                          <div className="relative w-full h-2 overflow-hidden">
+                            <ProgressBar 
+                              width={manager.completionRate} 
+                              color="#2563eb"
+                            />
+                          </div>
                         </div>
                         <span className="text-sm text-gray-900">
                           {manager.completionRate.toFixed(1)}%

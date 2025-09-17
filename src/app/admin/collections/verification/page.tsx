@@ -483,15 +483,7 @@ export default function VerificationPage() {
                     console.log('👆 포인터 다운 이벤트 발생!');
                     handleDownloadExample(e);
                   }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm cursor-pointer"
-                  style={{
-                    zIndex: 9999,
-                    position: 'relative',
-                    pointerEvents: 'auto',
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                    touchAction: 'manipulation'
-                  }}
+                  className="relative cursor-pointer select-none [z-index:9999] [pointer-events:auto] [touch-action:manipulation] px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm"
                   title="검증에 필요한 형식의 예시 파일을 다운로드합니다"
                 >
                   <Download className="h-4 w-4" />

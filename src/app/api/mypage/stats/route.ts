@@ -3,10 +3,35 @@ import { prisma } from '@/lib/db';
 
 export const runtime = 'nodejs';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    // 기존 인증 방식 사용 (임시로 모든 사용자의 데이터 반환)
-    // 실제로는 사용자별 필터링이 필요합니다
+    // 사용자 인증 확인
+    const authToken = request.headers.get('cookie')?.match(/authToken=([^;]+)/)?.[1];
+    if (!authToken) {
+      return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
+    }
+
+    // 사용자 정보 조회
+    const user = await prisma.user.findUnique({
+      where: { id: authToken },
+      select: { 
+        id: true, 
+        name: true, 
+        phone: true,
+        totalPaidPoints: true,
+        remainingPoints: true
+      }
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: '사용자를 찾을 수 없습니다.' }, { status: 404 });
+    }
+
+    console.log('🔍 회원홈 통계 API - 사용자 정보:', {
+      userId: user.id,
+      userName: user.name,
+      totalPaidPoints: user.totalPaidPoints
+    });
     
     // 현재 월의 시작일과 종료일 계산
     const now = new Date();
@@ -125,8 +150,15 @@ export async function GET() {
         value: directReferralIncome._sum.commissionAmount || 0,
         change: '+5.8%', // 임시값
         changeType: 'positive'
-      }
+      },
+      // 정산 페이지의 총지급포인트 누적과 동일한 값
+      totalPaidPoints: user.totalPaidPoints || 0
     };
+
+    console.log('✅ 회원홈 통계 API 응답:', {
+      totalPaidPoints: stats.totalPaidPoints,
+      userTotalPaidPoints: user.totalPaidPoints
+    });
 
     return NextResponse.json({ success: true, stats });
   } catch (error) {

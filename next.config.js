@@ -3,6 +3,11 @@ const nextConfig = {
   // Next.js 15 호환 설정
   serverExternalPackages: ['@nodelib/fs.scandir', '@nodelib/fs.walk', 'fast-glob'],
   
+  // styled-components 컴파일러 설정
+  compiler: {
+    styledComponents: true,
+  },
+  
   // 폰트 최적화 설정 - preload 경고 해결
   experimental: {
     optimizeCss: true,

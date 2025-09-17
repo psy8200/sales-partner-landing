@@ -52,13 +52,13 @@ export async function POST(request: NextRequest) {
           await prisma.settlementRecord.update({
             where: { id: existingRecord.id },
             data: {
-              paymentStatus: 'PAID', // 지급완료로 변경
-              requestStatus: '지급완료',
+              paymentStatus: 'PENDING', // 정산내역 전송시에만 지급대기중으로 설정
+              requestStatus: '지급대기중',
               updatedAt: new Date()
             }
           });
           
-          console.log(`✅ 회원 정산 상태 업데이트: ${user.name} (${user.phone}) - 금액 변경 없이 상태만 변경`);
+          console.log(`✅ 회원 정산 상태 업데이트: ${user.name} (${user.phone}) - 지급대기중 상태로 설정`);
         } else {
           console.log(`⚠️ 해당 회원의 정산 기록을 찾을 수 없음: ${user.name} (${user.phone})`);
           // 정산 기록이 없으면 건너뛰기

@@ -526,12 +526,7 @@ const MemberEditPage = ({ params }: { params: Promise<{ id: string }> }) => {
                   console.log('✅ 파트너승인 버튼 클릭됨');
                   handlePartnerApproval();
                 }}
-                className="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors"
-                style={{
-                  zIndex: 9999,
-                  position: 'relative',
-                  pointerEvents: 'auto'
-                }}
+                className="relative [z-index:9999] [pointer-events:auto] flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors"
               >
                 파트너 승인처리
               </button>

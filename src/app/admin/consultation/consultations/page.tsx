@@ -41,6 +41,7 @@ type RequestRow = {
 export default function ContractRequestsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [status, setStatus] = useState('');
+  const [selectedManager, setSelectedManager] = useState('');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [loading, setLoading] = useState(false);
@@ -64,6 +65,7 @@ export default function ContractRequestsPage() {
       params.set('limit', String(limit));
       if (searchTerm) params.set('q', searchTerm);
       if (status) params.set('status', status);
+      if (selectedManager) params.set('manager', selectedManager);
       const res = await fetch(`/api/admin/consultation/consultations?${params.toString()}`);
       if (!res.ok) {
         const t = await res.text();
@@ -93,16 +95,40 @@ export default function ContractRequestsPage() {
 
   const fetchManagers = async () => {
     try {
-      const res = await fetch('/api/admin/managers');
+      // 상담이력에서 담당자 목록을 직접 가져오기
+      const res = await fetch('/api/admin/consultation/consultations?limit=1000');
       if (!res.ok) {
         throw new Error('담당자 목록을 불러오는데 실패했습니다.');
       }
       const data = await res.json();
-      if (data.success && data.data) {
-        setManagers(data.data);
+      if (data.success && data.items) {
+        // 상담이력에서 고유한 담당자 목록 추출
+        const uniqueManagers = Array.from(
+          new Set(
+            data.items
+              .filter((item: any) => item.assignedTo)
+              .map((item: any) => item.assignedTo)
+          )
+        ).map((name: string) => ({
+          id: name,
+          name: name,
+          department: '담당자',
+          joinDate: new Date().toISOString(),
+          isActive: true
+        }));
+        
+        setManagers(uniqueManagers);
+        console.log('✅ 담당자 목록 로드 완료:', uniqueManagers.length, '명');
       }
     } catch (e: unknown) {
       console.error('담당자 목록 조회 오류:', e);
+      // 오류 시 기본 담당자 목록 설정
+      setManagers([
+        { id: '황지민', name: '황지민', department: '스마트금융서비스', joinDate: new Date().toISOString(), isActive: true },
+        { id: '박정미', name: '박정미', department: '스마트금융서비스', joinDate: new Date().toISOString(), isActive: true },
+        { id: '박재용', name: '박재용', department: '세일즈파트너스', joinDate: new Date().toISOString(), isActive: true },
+        { id: '오세원', name: '오세원', department: '세일즈파트너스', joinDate: new Date().toISOString(), isActive: true }
+      ]);
     }
   };
 
@@ -116,7 +142,7 @@ export default function ContractRequestsPage() {
     fetchRequests();
     fetchManagers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit, status, searchTerm]);
+  }, [page, limit, status, searchTerm, selectedManager]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -147,26 +173,38 @@ export default function ContractRequestsPage() {
                     />
                   </div>
                   
-                  {/* 필터 및 버튼 그룹 */}
+                  {/* 필터 및 버튼 그룹 - 순서: 검색버튼 > 드롭다운바 > 다운로드버튼 */}
                   <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                    {/* 검색 버튼 */}
+                    <button
+                      onClick={() => { setPage(1); fetchRequests(); }}
+                      className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-xs sm:text-sm font-medium shadow-sm hover:shadow-md whitespace-nowrap"
+                    >
+                      🔍 검색
+                    </button>
+                    
+                    {/* 드롭다운바들 */}
                     <div className="flex flex-col sm:flex-row gap-2">
                       <select
-                        value={status}
-                        onChange={(e) => setStatus(e.target.value)}
+                        value={selectedManager}
+                        onChange={(e) => setSelectedManager(e.target.value)}
                         className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white min-w-0 flex-1 sm:flex-none"
-                        aria-label="상태 필터"
+                        aria-label="담당자 필터"
+                        title="담당자를 선택하세요"
                       >
-                        <option value="">전체 상태</option>
-                        <option value="PENDING">상담신청</option>
-                        <option value="ASSIGNED">배정완료</option>
-                        <option value="COMPLETED">상담완료</option>
-                        <option value="CANCELLED">대기중</option>
+                        <option value="">전체 담당자</option>
+                        {managers.map((manager) => (
+                          <option key={manager.id} value={manager.name}>
+                            {manager.name}
+                          </option>
+                        ))}
                       </select>
                       <select
                         value={limit}
                         onChange={(e) => setLimit(Number(e.target.value))}
                         className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white min-w-0 flex-1 sm:flex-none"
                         aria-label="표시 행 수"
+                        title="표시할 항목 수를 선택하세요"
                       >
                         <option value={10}>10줄</option>
                         <option value={20}>20줄</option>
@@ -174,39 +212,32 @@ export default function ContractRequestsPage() {
                       </select>
                     </div>
                     
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <button
-                        onClick={() => { setPage(1); fetchRequests(); }}
-                        className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-xs sm:text-sm font-medium shadow-sm hover:shadow-md whitespace-nowrap"
-                      >
-                        🔍 검색
-                      </button>
-                      <button
-                        onClick={async () => {
-                          try {
-                            const params = new URLSearchParams();
-                            if (selectedIds.length > 0) params.set('ids', selectedIds.join(','));
-                            const res = await fetch(`/api/admin/consultation/consultations/export?${params.toString()}`);
-                            if (!res.ok) { const t = await res.text(); throw new Error(t || '다운로드 실패'); }
-                            const blob = await res.blob();
-                            const url = window.URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = selectedIds.length > 0 ? 'consultation-history-selected.xlsx' : 'consultation-history.xlsx';
-                            document.body.appendChild(a);
-                            a.click();
-                            a.remove();
-                            window.URL.revokeObjectURL(url);
-                          } catch (e: unknown) {
-                            alert(e instanceof Error ? e.message : '알 수 없는 오류');
-                          }
-                        }}
-                        className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 text-xs sm:text-sm font-medium shadow-sm hover:shadow-md whitespace-nowrap"
-                      >
-                        📥 <span className="hidden sm:inline">{selectedIds.length > 0 ? '선택 다운로드' : '다운로드'}</span>
-                        <span className="sm:hidden">다운로드</span>
-                      </button>
-                    </div>
+                    {/* 다운로드 버튼 */}
+                    <button
+                      onClick={async () => {
+                        try {
+                          const params = new URLSearchParams();
+                          if (selectedIds.length > 0) params.set('ids', selectedIds.join(','));
+                          const res = await fetch(`/api/admin/consultation/consultations/export?${params.toString()}`);
+                          if (!res.ok) { const t = await res.text(); throw new Error(t || '다운로드 실패'); }
+                          const blob = await res.blob();
+                          const url = window.URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = selectedIds.length > 0 ? 'consultation-history-selected.xlsx' : 'consultation-history.xlsx';
+                          document.body.appendChild(a);
+                          a.click();
+                          a.remove();
+                          window.URL.revokeObjectURL(url);
+                        } catch (e: unknown) {
+                          alert(e instanceof Error ? e.message : '알 수 없는 오류');
+                        }
+                      }}
+                      className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 text-xs sm:text-sm font-medium shadow-sm hover:shadow-md whitespace-nowrap"
+                    >
+                      📥 <span className="hidden sm:inline">{selectedIds.length > 0 ? '선택 다운로드' : '다운로드'}</span>
+                      <span className="sm:hidden">다운로드</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -462,7 +493,7 @@ export default function ContractRequestsPage() {
                         </td>
                         <td className="px-2 py-2 whitespace-nowrap text-xs">
                           <button
-                            className="px-1 py-1 bg-orange-600 text-white rounded hover:bg-orange-700 text-xs whitespace-nowrap"
+                            className="relative cursor-pointer [z-index:9999] [pointer-events:auto] px-1 py-1 bg-orange-600 text-white rounded hover:bg-orange-700 text-xs whitespace-nowrap"
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
@@ -494,12 +525,6 @@ export default function ContractRequestsPage() {
                                 console.error('되돌리기 오류:', e);
                                 alert(`되돌리기 실패: ${e.message}`);
                               });
-                            }}
-                            style={{
-                              zIndex: 9999,
-                              position: 'relative',
-                              pointerEvents: 'auto',
-                              cursor: 'pointer'
                             }}
                           >
                             되돌리기

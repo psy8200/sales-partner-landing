@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import ProfitCalculatorModal from './ProfitCalculatorModal';
 
 const HeroSection = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showInstallButton, setShowInstallButton] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   const handleSignup = () => {
     window.open('/signup', '_blank', 'width=520,height=800,scrollbars=yes,resizable=yes');
@@ -11,6 +13,55 @@ const HeroSection = () => {
   
   const handleOpenCalc = () => {
     setIsModalOpen(true);
+  };
+
+  // PWA 설치 가능 여부 감지
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallButton(true);
+    };
+
+    const handleAppInstalled = () => {
+      setShowInstallButton(false);
+      setDeferredPrompt(null);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      // PWA 설치 가능한 경우
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      
+      if (outcome === 'accepted') {
+        console.log('PWA 설치됨');
+      }
+      
+      setDeferredPrompt(null);
+      setShowInstallButton(false);
+    } else {
+      // PWA 설치 불가능한 경우 - 모바일 앱 스토어로 안내
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isAndroid = /Android/.test(navigator.userAgent);
+      
+      if (isIOS) {
+        alert('iOS에서는 Safari 브라우저에서 "공유" 버튼을 눌러 "홈 화면에 추가"를 선택하세요!');
+      } else if (isAndroid) {
+        alert('Android에서는 Chrome 브라우저에서 "메뉴" 버튼을 눌러 "홈 화면에 추가"를 선택하세요!');
+      } else {
+        alert('모바일 브라우저에서 접속하시면 앱을 설치할 수 있습니다!');
+      }
+    }
   };
 
   return (
@@ -76,7 +127,7 @@ const HeroSection = () => {
            initial={{ opacity: 0, y: 20 }}
            animate={{ opacity: 1, y: 0 }}
            transition={{ duration: 0.8, delay: 0.6 }}
-           className="flex flex-row gap-2 sm:gap-3 md:gap-4 lg:gap-6 justify-center mb-12 sm:mb-16"
+           className="flex flex-col sm:flex-row gap-2 sm:gap-3 md:gap-4 lg:gap-6 justify-center mb-12 sm:mb-16"
          >
            {/* 지금 시작하기 버튼 - 반응형 패딩 및 텍스트 크기 */}
            <button
@@ -93,6 +144,15 @@ const HeroSection = () => {
              className="group px-4 py-3.5 sm:px-6 sm:py-3 md:px-8 md:py-4 lg:px-10 lg:py-5 bg-blue-600 text-white rounded-lg sm:rounded-xl text-sm sm:text-base md:text-lg lg:text-xl font-semibold hover:bg-blue-500 transition-all duration-300 shadow-lg inline-flex items-center justify-center border border-blue-500/50 flex-1 sm:flex-none"
            >
              💰 수익 계산해보기
+           </button>
+
+           {/* PWA 앱 다운로드 버튼 - 항상 표시 */}
+           <button
+             onClick={handleInstallClick}
+             className="group px-4 py-3.5 sm:px-6 sm:py-3 md:px-8 md:py-4 lg:px-10 lg:py-5 bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg sm:rounded-xl text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white hover:from-green-500 hover:to-emerald-500 transition-all duration-300 shadow-xl hover:shadow-green-500/20 transform hover:scale-105 border border-green-500/40 flex-1 sm:flex-none"
+           >
+             <span className="relative z-10">📱 앱 다운로드</span>
+             <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl opacity-0 group-hover:opacity-15 transition-opacity duration-300"></div>
            </button>
          </motion.div>
 

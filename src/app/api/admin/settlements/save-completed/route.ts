@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
               dividendLevelCommission: item.dividendLevelCommission || 0,
               totalCommission: item.totalCommission || 0,
               paymentStatus: item.paymentStatus || 'PENDING',
-              requestStatus: '정산가능', // 확인저장시 정산가능으로 변경
+              requestStatus: '정산가능', // 확인저장시 정산가능으로 설정
               processedBy: processedBy || 'admin',
               processedAt: new Date(),
               updatedAt: new Date()
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
               totalCommission: item.totalCommission || 0,
               settlementYearMonth: item.settlementYearMonth || new Date().toISOString().slice(0, 7),
               paymentStatus: item.paymentStatus || 'PENDING',
-              requestStatus: '정산가능', // 확인저장시 정산가능으로 변경
+              requestStatus: '정산가능', // 확인저장시 정산가능으로 설정
               processedBy: processedBy || 'admin',
               processedAt: new Date()
             }

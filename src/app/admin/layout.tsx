@@ -90,7 +90,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
       { name: '출금요청리스트', href: '/admin/settlements/withdrawal-requests' },
       { name: '정산완료리스트', href: '/admin/settlements/completed' },
       { name: '파트너트리정보', href: '/admin/settlements/partner-tree' },
-      { name: '파트너트리모형', href: '/admin/settlements/partner-tree-model', icon: '🌳' },
+      { name: '출금요청백업정보', href: '/admin/settlements/withdrawal-backup-info', icon: '💾' },
     ],
     '아이템관리': [
       { name: '아이템관리홈', href: '/admin/items', icon: '🧩' },

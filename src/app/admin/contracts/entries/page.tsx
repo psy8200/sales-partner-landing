@@ -221,7 +221,7 @@ export default function ContractEntriesPage() {
   };
 
   // 입력 처리
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => {
       const newFormData = { ...prev, [name]: value };
@@ -261,6 +261,38 @@ export default function ContractEntriesPage() {
       
       return newFormData;
     });
+
+    // 고객명과 연락처가 모두 입력되었을 때 담당자 정보 자동 검색
+    if (name === 'customerName' || name === 'customerPhone') {
+      const currentFormData = { ...formData, [name]: value };
+      
+      // 고객명과 연락처가 모두 있고, 담당자가 비어있을 때만 검색
+      if (currentFormData.customerName && currentFormData.customerPhone && !currentFormData.manager) {
+        try {
+          console.log('🔍 고객명/연락처 입력으로 담당자 검색 중...');
+          const response = await fetch(`/api/admin/consultation/find-manager?customerName=${encodeURIComponent(currentFormData.customerName)}&customerPhone=${encodeURIComponent(currentFormData.customerPhone)}`);
+          
+          if (response.ok) {
+            const result = await response.json();
+            console.log('📋 담당자 검색 결과:', result);
+            
+            if (result.success && result.manager) {
+              console.log('✅ 담당자 정보 자동 입력:', result.manager);
+              setFormData(prev => ({
+                ...prev,
+                manager: result.manager
+              }));
+            } else {
+              console.log('⚠️ 담당자 정보 없음:', result.message);
+            }
+          } else {
+            console.error('❌ 담당자 검색 API 오류:', response.status);
+          }
+        } catch (error) {
+          console.error('❌ 담당자 검색 중 오류:', error);
+        }
+      }
+    }
   };
 
   // 동적 필드 처리
@@ -272,8 +304,10 @@ export default function ContractEntriesPage() {
   };
 
   // 회원 선택 처리
-  const handleMemberSelect = (member: { name: string; phone: string; address: string; manager?: string }) => {
+  const handleMemberSelect = async (member: { name: string; phone: string; address: string; manager?: string }) => {
     console.log('✅ 회원 선택됨:', member);
+    
+    // 기본 정보 설정
     setFormData(prev => ({
       ...prev,
       customerName: member.name,
@@ -281,6 +315,32 @@ export default function ContractEntriesPage() {
       customerAddress: member.address || '',
       manager: member.manager || '',
     }));
+
+    // 상담이력에서 담당자 정보 찾기
+    try {
+      console.log('🔍 상담이력에서 담당자 정보 검색 중...');
+      const response = await fetch(`/api/admin/consultation/find-manager?customerName=${encodeURIComponent(member.name)}&customerPhone=${encodeURIComponent(member.phone)}`);
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('📋 담당자 검색 결과:', result);
+        
+        if (result.success && result.manager) {
+          console.log('✅ 담당자 정보 찾음:', result.manager);
+          setFormData(prev => ({
+            ...prev,
+            manager: result.manager
+          }));
+        } else {
+          console.log('⚠️ 담당자 정보 없음:', result.message);
+        }
+      } else {
+        console.error('❌ 담당자 검색 API 오류:', response.status);
+      }
+    } catch (error) {
+      console.error('❌ 담당자 검색 중 오류:', error);
+    }
+
     console.log('📝 폼 데이터 업데이트 완료');
     setIsMemberSearchOpen(false);
   };
@@ -500,6 +560,11 @@ export default function ContractEntriesPage() {
             let categoryValue = '';
             let categoryLabel = item.name.replace(' 설정', ''); // "설정" 제거
             
+            // 특별한 라벨 처리
+            if (categoryPath === 'immediate-join') {
+              categoryLabel = '즉시가입';
+            }
+            
             switch (categoryPath) {
               case 'insurance':
                 categoryValue = 'INSURANCE';
@@ -522,9 +587,19 @@ export default function ContractEntriesPage() {
               case 'shopping-mall':
                 categoryValue = 'SHOPPING_MALL';
                 break;
+              case 'immediate-join':
+                categoryValue = 'IMMEDIATE_JOIN';
+                break;
               default:
-                // 동적 생성된 아이템의 경우
-                categoryValue = categoryPath.toUpperCase().replace(/-/g, '_');
+                // 동적 생성된 아이템의 경우 - 유효한 ItemCategory만 허용
+                const validCategories = ['INSURANCE', 'RENTAL', 'INTERNET_TV', 'FUNERAL', 'RENTAL_MALL', 'SHOPPING_MALL', 'INSTANT_PARTNER', 'IMMEDIATE_JOIN', 'CUSTOM'];
+                const convertedValue = categoryPath.toUpperCase().replace(/-/g, '_');
+                if (validCategories.includes(convertedValue)) {
+                  categoryValue = convertedValue;
+                } else {
+                  // 유효하지 않은 카테고리는 건너뛰기
+                  return null;
+                }
             }
             
             return {
@@ -532,7 +607,7 @@ export default function ContractEntriesPage() {
               label: categoryLabel
             };
           })
-          .filter((cat: any) => cat.value); // 유효한 카테고리만
+          .filter((cat: any) => cat && cat.value); // 유효한 카테고리만
             
         setItemCategories(categories);
       }
@@ -1313,6 +1388,7 @@ export default function ContractEntriesPage() {
                           contract.itemCategory === 'RENTAL_MALL' ? 'bg-orange-100 text-orange-800' :
                           contract.itemCategory === 'INSTANT_PARTNER' ? 'bg-pink-100 text-pink-800' :
                           contract.itemCategory === 'SHOPPING_MALL' ? 'bg-indigo-100 text-indigo-800' :
+                          contract.itemCategory === 'IMMEDIATE_JOIN' ? 'bg-cyan-100 text-cyan-800' :
                           'bg-yellow-100 text-yellow-800'
                         }`}>
                           {contract.itemCategory === 'INSURANCE' ? '보험' :
@@ -1322,6 +1398,7 @@ export default function ContractEntriesPage() {
                            contract.itemCategory === 'RENTAL_MALL' ? '렌탈몰' :
                            contract.itemCategory === 'INSTANT_PARTNER' ? '즉시파트너' :
                            contract.itemCategory === 'SHOPPING_MALL' ? '쇼핑몰' :
+                           contract.itemCategory === 'IMMEDIATE_JOIN' ? '즉시가입' :
                            contract.itemCategory}
                         </span>
                       </td>

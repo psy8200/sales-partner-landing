@@ -11,6 +11,7 @@ interface PartnerApplicationItem {
   area: string;
   referrer: string; // 추천인코드 추가
   availableTime: string;
+  consultationType?: string; // 상담종류
   additionalNote: string;
   backendStatus: string;
   manager?: string;
@@ -33,6 +34,7 @@ type RequestRow = {
   area: string; // 지역
   referrer: string; // 추천인코드 추가
   availableTime?: string; // 상담가능시간
+  consultationType?: string; // 상담종류
   additionalNote?: string; // 파트너신청 메모
   status: 'NEW' | 'ASSIGNED' | 'IN_PROGRESS' | 'DONE' | 'CANCELED';
   manager?: string; // 담당자
@@ -52,6 +54,8 @@ export default function ContractRequestsPage() {
   const [managers, setManagers] = useState<Manager[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showMemberSearch, setShowMemberSearch] = useState(false);
+  const [showMemoModal, setShowMemoModal] = useState(false);
+  const [selectedMemo, setSelectedMemo] = useState<string>('');
 
   // 페이지 제목 설정
   const [pageTitle, setPageTitle] = useState('상담신청관리');
@@ -130,6 +134,7 @@ export default function ContractRequestsPage() {
         area: r.area,
         referrer: r.referrer,
         availableTime: r.availableTime,
+        consultationType: r.consultationType,
         additionalNote: r.additionalNote,
         status: r.backendStatus as 'NEW' | 'ASSIGNED' | 'IN_PROGRESS' | 'DONE' | 'CANCELED',
         manager: r.manager,
@@ -198,6 +203,7 @@ export default function ContractRequestsPage() {
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                title="상태 필터를 선택하세요"
               >
                 <option value="">전체 상태</option>
                 <option value="PENDING">상담신청</option>
@@ -210,6 +216,7 @@ export default function ContractRequestsPage() {
                 value={limit}
                 onChange={(e) => setLimit(Number(e.target.value))}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                title="표시할 항목 수를 선택하세요"
               >
                 <option value={10}>10줄</option>
                 <option value={20}>20줄</option>
@@ -225,15 +232,7 @@ export default function ContractRequestsPage() {
                   setPage(1); 
                   fetchRequests(); 
                 }}
-                style={{
-                  zIndex: 9999,
-                  position: 'relative',
-                  pointerEvents: 'auto',
-                  cursor: 'pointer',
-                  userSelect: 'none',
-                  touchAction: 'manipulation'
-                }}
-                className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-xs sm:text-sm font-medium shadow-sm hover:shadow-md whitespace-nowrap"
+                className="relative cursor-pointer select-none [z-index:9999] [pointer-events:auto] [touch-action:manipulation] px-3 sm:px-4 lg:px-6 py-2 sm:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-xs sm:text-sm font-medium shadow-sm hover:shadow-md whitespace-nowrap"
               >
                 🔍 검색
               </button>
@@ -303,13 +302,7 @@ export default function ContractRequestsPage() {
                     alert(`이동 실패: ${error.message}`);
                   }
                 }}
-                className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 text-xs sm:text-sm font-medium shadow-sm hover:shadow-md whitespace-nowrap"
-                style={{
-                  zIndex: 9999,
-                  position: 'relative',
-                  pointerEvents: 'auto',
-                  cursor: 'pointer'
-                }}
+                className="relative cursor-pointer [z-index:9999] [pointer-events:auto] px-3 sm:px-4 lg:px-6 py-2 sm:py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 text-xs sm:text-sm font-medium shadow-sm hover:shadow-md whitespace-nowrap"
               >
                 💾 <span className="hidden sm:inline">저장하기</span>
                 <span className="sm:hidden">저장</span>
@@ -329,6 +322,7 @@ export default function ContractRequestsPage() {
                     checked={selectedIds.length === rows.length && rows.length > 0}
                     onChange={(e) => handleSelectAll(e.target.checked)}
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    title="전체 선택"
                   />
                 </th>
                 <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
@@ -336,6 +330,7 @@ export default function ContractRequestsPage() {
                 <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">지역</th>
                 <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">추천인코드</th>
                 <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상담가능시간</th>
+                <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상담종류</th>
                 <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">메모</th>
                 <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
                 <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">담당자</th>
@@ -373,6 +368,7 @@ export default function ContractRequestsPage() {
                         checked={selectedIds.includes(r.id)}
                         onChange={(e) => handleSelectRow(r.id, e.target.checked)}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        title={`${r.name} 선택`}
                       />
                     </td>
                     <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-900 font-medium">
@@ -392,14 +388,29 @@ export default function ContractRequestsPage() {
                     <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-900">
                       {r.availableTime}
                     </td>
+                    <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-900">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        r.consultationType === '포인트추가' 
+                          ? 'bg-purple-100 text-purple-800' 
+                          : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {r.consultationType || '파트너신청'}
+                      </span>
+                    </td>
                     <td className="px-2 py-2 text-xs text-gray-900">
                       {r.additionalNote ? (
-                        <div 
-                          className="max-w-[150px] truncate cursor-help" 
-                          title={r.additionalNote}
+                        <button
+                          onClick={() => {
+                            setSelectedMemo(r.additionalNote);
+                            setShowMemoModal(true);
+                          }}
+                          className="max-w-[300px] text-left cursor-pointer hover:bg-blue-50 p-1 rounded transition-colors"
+                          title="클릭하여 전체 메모 보기"
                         >
-                          {r.additionalNote.length > 50 ? `${r.additionalNote.substring(0, 50)}...` : r.additionalNote}
-                        </div>
+                          <div className="truncate text-blue-600 hover:text-blue-800">
+                            {r.additionalNote.length > 60 ? `${r.additionalNote.substring(0, 60)}...` : r.additionalNote}
+                          </div>
+                        </button>
                       ) : '-'}
                     </td>
                     <td className="px-2 py-2 whitespace-nowrap">
@@ -442,15 +453,7 @@ export default function ContractRequestsPage() {
                     <td className="px-2 py-2 whitespace-nowrap text-xs">
                       {(r.status as any) === 'PENDING' ? (
                         <button
-                          className="px-1 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                          style={{
-                            zIndex: 9999,
-                            position: 'relative',
-                            pointerEvents: 'auto',
-                            cursor: 'pointer',
-                            userSelect: 'none',
-                            touchAction: 'manipulation'
-                          }}
+                          className="relative cursor-pointer select-none [z-index:9999] [pointer-events:auto] [touch-action:manipulation] px-1 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                           disabled={!r.manager || r.manager.trim() === ''}
                           onClick={(e) => {
                             e.preventDefault();
@@ -499,15 +502,7 @@ export default function ContractRequestsPage() {
                     </td>
                     <td className="px-2 py-2 whitespace-nowrap text-xs">
                       <button
-                        className="px-1 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs whitespace-nowrap"
-                        style={{
-                          zIndex: 9999,
-                          position: 'relative',
-                          pointerEvents: 'auto',
-                          cursor: 'pointer',
-                          userSelect: 'none',
-                          touchAction: 'manipulation'
-                        }}
+                        className="relative cursor-pointer select-none [z-index:9999] [pointer-events:auto] [touch-action:manipulation] px-1 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs whitespace-nowrap"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -537,15 +532,7 @@ export default function ContractRequestsPage() {
                     </td>
                     <td className="px-2 py-2 whitespace-nowrap text-xs">
                       <button
-                        className="px-1 py-1 bg-orange-600 text-white rounded hover:bg-orange-700 text-xs whitespace-nowrap"
-                        style={{
-                          zIndex: 9999,
-                          position: 'relative',
-                          pointerEvents: 'auto',
-                          cursor: 'pointer',
-                          userSelect: 'none',
-                          touchAction: 'manipulation'
-                        }}
+                        className="relative cursor-pointer select-none [z-index:9999] [pointer-events:auto] [touch-action:manipulation] px-1 py-1 bg-orange-600 text-white rounded hover:bg-orange-700 text-xs whitespace-nowrap"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -622,6 +609,40 @@ export default function ContractRequestsPage() {
             setShowMemberSearch(false);
           }}
         />
+      )}
+
+      {/* 메모 상세보기 모달 */}
+      {showMemoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowMemoModal(false)} />
+          <div className="relative bg-white rounded-2xl p-6 mx-4 max-w-2xl w-full shadow-2xl transform animate-in zoom-in-95 duration-300">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-800">📝 신청 상세 내용</h3>
+              <button
+                onClick={() => setShowMemoModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                title="모달 닫기"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
+              <div className="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed">
+                {selectedMemo}
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => setShowMemoModal(false)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

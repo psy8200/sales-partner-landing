@@ -50,6 +50,10 @@ export default function CompletedSettlementsPage() {
   const [loading, setLoading] = useState(false);
   const [commissionData, setCommissionData] = useState<CommissionCalculation[]>([]);
   
+  // 정산월 필터링 상태
+  const [selectedSettlementMonth, setSelectedSettlementMonth] = useState<string>('');
+  const [availableMonths, setAvailableMonths] = useState<string[]>([]);
+  
   // 계좌정보 모달 관련 상태
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<{name: string, phone: string} | null>(null);
@@ -58,91 +62,43 @@ export default function CompletedSettlementsPage() {
   
   // 저장된 계좌정보 상태
   const [savedAccountInfo, setSavedAccountInfo] = useState<{[key: string]: {bankName: string, accountNumber: string, accountHolder: string}}>({});
+  
+  // 회원별 업로드된 파일 상태
+  const [uploadedFiles, setUploadedFiles] = useState<{[key: string]: File}>({});
 
   // 목업 데이터
-  const mockCommissionData: CommissionCalculation[] = [
-    {
-      id: '1',
-      userName: '김철수',
-      userPhone: '010-1111-1234',
-      finalPoints: 100000,
-      sumPoints: 500000,
-      currentLevel: 3,
-      basicCommission: 30000,
-      recruitmentCommission: 60000,
-      indirectCommission: 30000,
-      dividendBasicCommission: 10000,
-      dividendLevelCommission: 20000,
-      totalCommission: 150000,
-      settlementYearMonth: '2025-01',
-      paymentStatus: 'PAID',
-      requestStatus: '정산대기',
-      createdAt: '2025-01-15T09:00:00Z',
-      updatedAt: '2025-01-15T09:00:00Z'
-    },
-    {
-      id: '2',
-      userName: '이영희',
-      userPhone: '010-2222-5678',
-      finalPoints: 150000,
-      sumPoints: 800000,
-      currentLevel: 4,
-      basicCommission: 45000,
-      recruitmentCommission: 90000,
-      indirectCommission: 45000,
-      dividendBasicCommission: 15000,
-      dividendLevelCommission: 30000,
-      totalCommission: 225000,
-      settlementYearMonth: '2025-01',
-      paymentStatus: 'PAID',
-      requestStatus: '정산대기',
-      createdAt: '2025-01-15T09:00:00Z',
-      updatedAt: '2025-01-15T09:00:00Z'
-    },
-    {
-      id: '3',
-      userName: '박민수',
-      userPhone: '010-3333-9012',
-      finalPoints: 200000,
-      sumPoints: 1200000,
-      currentLevel: 5,
-      basicCommission: 60000,
-      recruitmentCommission: 120000,
-      indirectCommission: 60000,
-      dividendBasicCommission: 20000,
-      dividendLevelCommission: 40000,
-      totalCommission: 300000,
-      settlementYearMonth: '2025-01',
-      paymentStatus: 'PAID',
-      requestStatus: '정산대기',
-      createdAt: '2025-01-15T09:00:00Z',
-      updatedAt: '2025-01-15T09:00:00Z'
-    }
-  ];
+  // 더미 데이터 제거 - 실제 API 데이터만 사용
 
   // 데이터 로드
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       try {
-        // localStorage에서 정산완료 데이터 로드
-        const completedData = localStorage.getItem('completedSettlements');
-        
-        if (completedData) {
-          const parsedData = JSON.parse(completedData);
-          setCommissionData(parsedData);
-          console.log('✅ 정산완료 데이터 로드 완료:', parsedData.length, '건');
+        // 데이터베이스에서 정산완료 데이터 조회
+        const response = await fetch('/api/admin/settlements/completed');
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data) {
+            setCommissionData(result.data);
+            
+            // 정산월 목록 추출 및 정렬
+            const months = [...new Set(result.data.map((item: CommissionCalculation) => item.settlementYearMonth))];
+            months.sort((a, b) => (b as string).localeCompare(a as string)); // 최신순 정렬
+            setAvailableMonths(months as string[]);
+            
+            console.log('✅ 정산완료 데이터 로드 완료:', result.data.length, '건');
+            console.log('📅 사용 가능한 정산월:', months);
+          } else {
+            setCommissionData([]);
+            setAvailableMonths([]);
+            console.log('✅ 정산완료 데이터 없음 - 빈 상태로 초기화');
+          }
         } else {
-          // 데이터가 없으면 빈 배열로 초기화
+          console.error('API 호출 실패:', response.status);
           setCommissionData([]);
-          console.log('✅ 정산완료 데이터 없음 - 빈 상태로 초기화');
         }
 
-        // 저장된 계좌정보 로드
-        const savedAccountData = localStorage.getItem('savedAccountInfo');
-        if (savedAccountData) {
-          setSavedAccountInfo(JSON.parse(savedAccountData));
-        }
+        // 계좌정보는 별도 관리 (필요시 데이터베이스에서 조회)
       } catch (error) {
         console.error('데이터 로드 오류:', error);
         setCommissionData([]);
@@ -160,7 +116,10 @@ export default function CompletedSettlementsPage() {
       item.userName.toLowerCase().includes(filteredSearchTerm.toLowerCase()) ||
       item.userPhone.includes(filteredSearchTerm);
     
-    return matchesSearch;
+    const matchesMonth = !selectedSettlementMonth || 
+      item.settlementYearMonth === selectedSettlementMonth;
+    
+    return matchesSearch && matchesMonth;
   });
 
   // 선택 관련 함수들
@@ -188,14 +147,120 @@ export default function CompletedSettlementsPage() {
     setFilteredSearchTerm(searchTerm);
   };
 
-  // 정산완료내역보내기 핸들러
+  // 엑셀 다운로드 핸들러
+  const handleExcelDownload = async () => {
+    try {
+      setLoading(true);
+      
+      // 엑셀 라이브러리 동적 import
+      const ExcelJS = (await import('exceljs')).default;
+      
+      // 새 워크북 생성
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('정산완료내역');
+      
+      // 헤더 스타일 정의
+      const headerStyle = {
+        font: { bold: true, color: { argb: 'FFFFFF' } },
+        fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: '366092' } },
+        alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
+        border: {
+          top: { style: 'thin' as const },
+          left: { style: 'thin' as const },
+          bottom: { style: 'thin' as const },
+          right: { style: 'thin' as const }
+        }
+      };
+      
+      // 컬럼 헤더 정의
+      const headers = [
+        '회원명', '연락처', '결정포인트', '합산포인트', '현재등급',
+        '기본수당', '모집수당', '간접수당', '기본배당', '배당등급별',
+        '총지급액', '정산년월', '지급상태', '요청정보', '생성일시'
+      ];
+      
+      // 헤더 행 추가
+      const headerRow = worksheet.addRow(headers);
+      headerRow.eachCell((cell) => {
+        cell.style = headerStyle;
+      });
+      
+      // 데이터 행 추가
+      filteredData.forEach((item) => {
+        const row = worksheet.addRow([
+          item.userName,
+          item.userPhone,
+          item.finalPoints,
+          item.sumPoints,
+          item.currentLevel,
+          item.basicCommission,
+          item.recruitmentCommission,
+          item.indirectCommission,
+          item.dividendBasicCommission,
+          item.dividendLevelCommission,
+          item.totalCommission,
+          item.settlementYearMonth,
+          item.paymentStatus,
+          item.requestStatus,
+          new Date(item.createdAt).toLocaleString('ko-KR')
+        ]);
+        
+        // 데이터 행 스타일
+        row.eachCell((cell) => {
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+        });
+      });
+      
+      // 컬럼 너비 자동 조정
+      worksheet.columns.forEach((column) => {
+        column.width = 15;
+      });
+      
+      // 파일명 생성 (현재 날짜 포함)
+      const now = new Date();
+      const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+      const fileName = `정산완료내역_${dateStr}.xlsx`;
+      
+      // 엑셀 파일 생성 및 다운로드
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
+      
+      // 다운로드 링크 생성
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      console.log('✅ 엑셀 다운로드 완료:', fileName);
+      alert(`엑셀 파일이 다운로드되었습니다.\n파일명: ${fileName}\n데이터 건수: ${filteredData.length}건`);
+      
+    } catch (error) {
+      console.error('❌ 엑셀 다운로드 오류:', error);
+      alert('엑셀 다운로드 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 정산완료내역보내기 핸들러 (새로운 안전한 방식)
   const handleSendCompleted = async () => {
-    if (commissionData.length === 0) {
-      alert('전송할 정산완료 데이터가 없습니다.');
+    if (selectedItems.length === 0) {
+      alert('전송할 항목을 선택해주세요.');
       return;
     }
 
-    const confirmSend = confirm(`현재 테이블의 ${commissionData.length}명의 정산완료내역을 회원 페이지로 보내시겠습니까?`);
+    const confirmSend = confirm(`선택된 ${selectedItems.length}명의 정산완료내역을 회원 페이지로 보내시겠습니까?\n\n이 작업은 안전하게 회원별 데이터 테이블에 복사됩니다.`);
     if (!confirmSend) {
       return;
     }
@@ -203,24 +268,29 @@ export default function CompletedSettlementsPage() {
     try {
       setLoading(true);
       
-      const response = await fetch('/api/admin/settlements/send-completed', {
+      // 새로운 API 사용: SettlementRecord → UserSettlementRecord 복사
+      const response = await fetch('/api/admin/settlements/send-to-users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          completedData: commissionData, // 현재 테이블에 표시된 모든 데이터 전송
+          selectedIds: selectedItems
         }),
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        alert(`정산완료내역이 성공적으로 전송되었습니다. (${result.sentCount}명)`);
+      const result = await response.json();
+
+      if (result.success) {
+        alert(`정산완료내역 전송 완료!\n\n전송된 건수: ${result.data.sentCount}건\n중복으로 건너뛴 건수: ${result.data.skippedCount}건\n\n이제 회원들이 자신의 정산 데이터를 확인할 수 있습니다.`);
+        
+        // 선택 항목 초기화
+        setSelectedItems([]);
+        
         // 데이터 새로고침
         window.location.reload();
       } else {
-        const error = await response.json();
-        alert(`오류가 발생했습니다: ${error.message || error.error}`);
+        alert(`전송 실패: ${result.message}`);
       }
     } catch (error) {
       console.error('정산완료내역 전송 오류:', error);
@@ -282,8 +352,7 @@ export default function CompletedSettlementsPage() {
 
         setCommissionData(updatedData);
         
-        // localStorage에도 저장 (백업용)
-        localStorage.setItem('completedSettlements', JSON.stringify(updatedData));
+        // 데이터베이스에만 저장 (localStorage 제거)
         
         // 선택 항목 초기화
         setSelectedItems([]);
@@ -305,7 +374,7 @@ export default function CompletedSettlementsPage() {
   };
 
   // 선택된 데이터 삭제 핸들러
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = async () => {
     if (selectedItems.length === 0) {
       alert('삭제할 항목을 선택해주세요.');
       return;
@@ -316,17 +385,42 @@ export default function CompletedSettlementsPage() {
       return;
     }
 
-    // 선택된 항목들을 제외한 데이터로 업데이트
-    const updatedData = commissionData.filter(item => !selectedItems.includes(item.id));
-    setCommissionData(updatedData);
-    
-    // localStorage 업데이트
-    localStorage.setItem('completedSettlements', JSON.stringify(updatedData));
-    
-    // 선택 항목 초기화
-    setSelectedItems([]);
-    
-    alert(`${selectedItems.length}개 항목이 삭제되었습니다.`);
+    try {
+      console.log('🔄 선택된 항목 삭제 시작:', selectedItems);
+
+      // 🔥 데이터베이스에서 실제로 삭제하는 API 호출
+      const response = await fetch('/api/admin/settlements/completed', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          idsToDelete: selectedItems
+        })
+      });
+
+      const result = await response.json();
+      console.log('🔍 삭제 API 응답:', result);
+
+      if (result.success && result.data.deletedCount > 0) {
+        // 서버 삭제 성공시 로컬 데이터도 업데이트
+        const updatedData = commissionData.filter(item => !selectedItems.includes(item.id));
+        setCommissionData(updatedData);
+        
+        // 선택 항목 초기화
+        setSelectedItems([]);
+        
+        alert(`✅ ${result.data.deletedCount}개 항목이 성공적으로 삭제되었습니다.`);
+        console.log('✅ 삭제 완료:', result.data.deletedCount, '건');
+      } else {
+        const errorMessage = result.message || result.error || '삭제에 실패했습니다.';
+        alert(`❌ 삭제 실패: ${errorMessage}`);
+        console.error('❌ 삭제 실패:', result);
+      }
+    } catch (error) {
+      console.error('❌ 삭제 처리 오류:', error);
+      alert('삭제 처리 중 오류가 발생했습니다.');
+    }
   };
 
   // 계좌정보 조회 함수
@@ -337,19 +431,38 @@ export default function CompletedSettlementsPage() {
     setAccountInfo(null);
 
     try {
+      console.log('🔍 계좌정보 조회 시작:', { userName, userPhone });
+      
       // 새로운 계좌정보 API 호출
       const response = await fetch(`/api/admin/members/account-info?name=${encodeURIComponent(userName)}&phone=${encodeURIComponent(userPhone)}`);
       const data = await response.json();
       
+      console.log('📊 계좌정보 API 응답:', data);
+      
       if (data.success && data.data) {
+        const accountData = {
+          bankName: data.data.bankName || '정보 없음',
+          accountNumber: data.data.bankAccount || '정보 없음',
+          accountHolder: data.data.accountHolder || '정보 없음'
+        };
+        
+        setAccountInfo(accountData);
+        console.log('✅ 계좌정보 설정 완료:', accountData);
+      } else {
+        console.log('❌ 계좌정보 조회 실패:', data.message);
         setAccountInfo({
-          bankName: data.data.bankName,
-          accountNumber: data.data.accountNumber,
-          accountHolder: data.data.accountHolder
+          bankName: '조회 실패',
+          accountNumber: '조회 실패',
+          accountHolder: '조회 실패'
         });
       }
     } catch (error) {
-      console.error('계좌정보 조회 오류:', error);
+      console.error('❌ 계좌정보 조회 오류:', error);
+      setAccountInfo({
+        bankName: '오류 발생',
+        accountNumber: '오류 발생',
+        accountHolder: '오류 발생'
+      });
     } finally {
       setAccountLoading(false);
     }
@@ -366,9 +479,71 @@ export default function CompletedSettlementsPage() {
     };
     
     setSavedAccountInfo(updatedSavedInfo);
-    localStorage.setItem('savedAccountInfo', JSON.stringify(updatedSavedInfo));
+    // 계좌정보는 별도 관리 (필요시 데이터베이스에서 저장)
     
     console.log('✅ 계좌정보 저장 완료:', userKey, accountInfo);
+  };
+
+  // 파일 업로드 핸들러
+  const handleFileUpload = (userKey: string, file: File) => {
+    setUploadedFiles(prev => ({
+      ...prev,
+      [userKey]: file
+    }));
+    console.log('✅ 파일 업로드 완료:', userKey, file.name);
+  };
+
+  // 지급 처리 함수
+  const handlePayment = async (itemId: string, userName: string, userPhone: string) => {
+    const confirmPayment = confirm(`${userName}(${userPhone})님의 정산을 지급완료로 처리하시겠습니까?`);
+    if (!confirmPayment) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // 해당 항목의 requestStatus를 '지급완료'로 업데이트
+      const updatedData = commissionData.map(item => {
+        if (item.id === itemId) {
+          return {
+            ...item,
+            requestStatus: '지급완료' as const,
+            paymentStatus: 'PAID' as const,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return item;
+      });
+
+      setCommissionData(updatedData);
+      
+      // 서버에 상태값 업데이트 저장
+      const response = await fetch('/api/admin/settlements/save-completed', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          selectedItems: updatedData.filter(item => item.id === itemId),
+          processedBy: 'admin'
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        alert(`${userName}님의 정산이 지급완료로 처리되었습니다.`);
+      } else {
+        alert(`지급 처리 중 오류가 발생했습니다: ${result.message || result.error}`);
+      }
+      
+    } catch (error) {
+      console.error('지급 처리 오류:', error);
+      alert('지급 처리 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
   };
 
 
@@ -471,6 +646,25 @@ export default function CompletedSettlementsPage() {
                 <Search className="w-4 h-4 mr-1" />
                 검색
               </button>
+              
+              {/* 정산월 필터 드롭다운 */}
+              <div className="relative">
+                <select
+                  value={selectedSettlementMonth}
+                  onChange={(e) => setSelectedSettlementMonth(e.target.value)}
+                  className="appearance-none bg-white border border-gray-300 rounded-md px-3 py-2 pr-8 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  title="정산월 필터 선택"
+                  aria-label="정산월 필터"
+                >
+                  <option value="">전체 정산월</option>
+                  {availableMonths.map((month) => (
+                    <option key={month} value={month}>
+                      {month}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              </div>
               <button
                 onClick={handleRefresh}
                 className="inline-flex items-center px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors text-sm"
@@ -493,7 +687,7 @@ export default function CompletedSettlementsPage() {
                 삭제하기
               </button>
               <button
-                onClick={() => {}}
+                onClick={handleExcelDownload}
                 className="inline-flex items-center px-3 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors text-sm"
               >
                 <Download className="w-4 h-4 mr-1" />
@@ -529,76 +723,40 @@ export default function CompletedSettlementsPage() {
                     </div>
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      회원명
-                    </div>
+                    회원명
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4" />
-                      연락처
-                    </div>
+                    연락처
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      결정포인트
-                    </div>
+                    결정포인트
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      기본수당
-                    </div>
+                    기본수당
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      모집수당
-                    </div>
+                    모집수당
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      간접수당
-                    </div>
+                    간접수당
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      기본배당
-                    </div>
+                    기본배당
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      배당등급별
-                    </div>
+                    배당등급별
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      총지급액
-                    </div>
+                    총지급액
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      정산월
-                    </div>
+                    정산월
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      요청정보
-                    </div>
+                    요청정보
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <MoreHorizontal className="h-4 w-4" />
-                      정산관리
-                    </div>
+                    지급관리
                   </th>
                 </tr>
               </thead>
@@ -684,11 +842,18 @@ export default function CompletedSettlementsPage() {
                           >
                             계좌정보
                           </button>
-                          <button className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600">
+                          <button 
+                            disabled
+                            className="px-3 py-1 text-xs bg-gray-400 text-white rounded cursor-not-allowed"
+                            title="서버 데이터는 변경할 수 없습니다"
+                          >
                             수정
                           </button>
-                          <button className="px-3 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600">
-                            지급
+                          <button 
+                            onClick={() => handlePayment(item.id, item.userName, item.userPhone)}
+                            className="px-3 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
+                          >
+                            송금완료
                           </button>
                         </div>
                       </td>
@@ -738,6 +903,8 @@ export default function CompletedSettlementsPage() {
           accountInfo={accountInfo}
           loading={accountLoading}
           onSaveAccountInfo={handleSaveAccountInfo}
+          uploadedFiles={uploadedFiles}
+          onFileUpload={handleFileUpload}
         />
       </div>
     </div>

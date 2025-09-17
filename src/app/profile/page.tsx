@@ -32,6 +32,7 @@ const ProfilePage = () => {
     createdAt: string;
   }>>([]);
   const [showShoppingModal, setShowShoppingModal] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // 날짜 형식 변환 함수 (날짜만)
   const formatDate = (dateString: string) => {
@@ -116,10 +117,6 @@ const ProfilePage = () => {
 
   // 로그아웃 함수
   const handleLogout = async () => {
-    if (!confirm('정말 로그아웃하시겠습니까?')) {
-      return;
-    }
-
     setLogoutLoading(true);
     try {
       const response = await fetch('/api/auth/logout', {
@@ -246,7 +243,7 @@ const ProfilePage = () => {
                   프로필정보
                 </h1>
                 <button
-                  onClick={handleLogout}
+                  onClick={() => setShowLogoutModal(true)}
                   disabled={logoutLoading}
                   className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
                 >
@@ -533,6 +530,74 @@ const ProfilePage = () => {
 
       {/* 하단 메뉴바 공간 확보 */}
       <div className="h-20"></div>
+
+      {/* 로그아웃 확인 모달 */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 20 }}
+            transition={{ type: "spring", duration: 0.5 }}
+            className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl border border-gray-100"
+          >
+            {/* 귀여운 아이콘 */}
+            <div className="relative mb-6">
+              <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-pink-100 rounded-full mx-auto flex items-center justify-center shadow-lg">
+                <span className="text-4xl">👋</span>
+              </div>
+              {/* 떠다니는 하트들 */}
+              <div className="absolute -top-2 -right-2 text-2xl animate-bounce [animation-delay:0.1s]">💕</div>
+              <div className="absolute -bottom-1 -left-2 text-xl animate-bounce [animation-delay:0.3s]">✨</div>
+            </div>
+            
+            {/* 제목 */}
+            <h3 className="text-2xl font-bold text-gray-800 mb-3">
+              정말 로그아웃하시나요?
+            </h3>
+            
+            {/* 설명 */}
+            <p className="text-gray-600 mb-8 leading-relaxed">
+              다시 만나요! 😊<br />
+              <span className="text-sm text-gray-500">언제든지 돌아오세요~</span>
+            </p>
+            
+            {/* 버튼들 */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-2xl font-semibold hover:bg-gray-200 transition-all duration-200 transform hover:scale-105 shadow-sm"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => {
+                  setShowLogoutModal(false);
+                  handleLogout();
+                }}
+                disabled={logoutLoading}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-2xl font-semibold hover:from-red-600 hover:to-pink-600 transition-all duration-200 transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              >
+                {logoutLoading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    로그아웃 중...
+                  </div>
+                ) : (
+                  '로그아웃'
+                )}
+              </button>
+            </div>
+            
+            {/* 귀여운 장식 */}
+            <div className="mt-6 flex justify-center space-x-2">
+              <span className="text-lg animate-pulse">🌟</span>
+              <span className="text-lg animate-pulse [animation-delay:0.2s]">💫</span>
+              <span className="text-lg animate-pulse [animation-delay:0.4s]">⭐</span>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* 쇼핑몰 모달 */}
       {showShoppingModal && (

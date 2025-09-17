@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Search, 
@@ -15,7 +15,10 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  MoreHorizontal
+  MoreHorizontal,
+  Trash2,
+  FileSpreadsheet,
+  Archive
 } from 'lucide-react';
 
 // 출금 요청 데이터 타입 정의
@@ -24,30 +27,121 @@ interface WithdrawalRequest {
   userName: string;
   userPhone: string;
   finalPoints: number; // 결정포인트
-  basicSalary: number; // 기본수당
-  recruitmentBonus: number; // 모집수당
-  indirectBonus: number; // 간접수당
-  basicDividend: number; // 기본배당
-  gradeDividend: number; // 배당등급별
-  totalAmount: number; // 총지급액
-  settlementMonth: string; // 정산월
+  withdrawablePoints: number; // 출금가능포인트 (신청 시점의 정확한 값)
+  totalAmount: number; // 출금요청금액
   requestInfo: string; // 요청정보
-  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'REJECTED';
+  settlementMonth: string; // 정산월
+  bankName: string; // 은행명
+  accountNumber: string; // 계좌번호
+  idCardFile: string; // 신분증정보 첨부파일
+  status: 'REQUESTED' | 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'REJECTED' | 'PAID';
 }
 
-// 목업 데이터 (실제 데이터로 교체 예정)
-const mockWithdrawalRequests: WithdrawalRequest[] = [];
+// 정산완료 데이터 타입 정의
+interface SettlementRecord {
+  id: string;
+  userName: string;
+  userPhone: string;
+  totalCommission: number; // 총지급액
+  settlementYearMonth: string;
+  paymentStatus: string;
+  requestStatus: string;
+}
+
+// 실제 데이터를 가져오는 함수
+const fetchWithdrawalRequests = async (): Promise<WithdrawalRequest[]> => {
+  try {
+    const response = await fetch('/api/admin/withdrawal-requests');
+    if (response.ok) {
+      const result = await response.json();
+      return result.data?.requests || [];
+    }
+    return [];
+  } catch (error) {
+    console.error('출금신청 목록 조회 오류:', error);
+    return [];
+  }
+};
+
+// 정산완료 데이터를 가져오는 함수
+const fetchSettlementRecords = async (): Promise<SettlementRecord[]> => {
+  try {
+    const response = await fetch('/api/admin/settlements/completed');
+    if (response.ok) {
+      const result = await response.json();
+      return result.data || [];
+    }
+    return [];
+  } catch (error) {
+    console.error('정산완료 데이터 조회 오류:', error);
+    return [];
+  }
+};
 
 export default function WithdrawalRequestsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
+  const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>([]);
+  const [settlementRecords, setSettlementRecords] = useState<SettlementRecord[]>([]);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [selectedIdCard, setSelectedIdCard] = useState<string | null>(null);
+
+  // 초기 데이터 로드
+  useEffect(() => {
+    const loadData = async () => {
+      setInitialLoading(true);
+      try {
+        // 출금신청 데이터와 정산완료 데이터를 병렬로 로드
+        const [withdrawalData, settlementData] = await Promise.all([
+          fetchWithdrawalRequests(),
+          fetchSettlementRecords()
+        ]);
+        
+        setWithdrawalRequests(withdrawalData);
+        setSettlementRecords(settlementData);
+        
+        console.log('출금신청 목록 로드 완료:', withdrawalData.length, '건');
+        console.log('정산완료 데이터 로드 완료:', settlementData.length, '건');
+      } catch (error) {
+        console.error('데이터 로드 오류:', error);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  // 정산완료 데이터를 기반으로 테이블 데이터 구성 (11건 모두 표시)
+  const tableData = settlementRecords.map(settlement => {
+    // 해당 회원의 출금신청 데이터 찾기
+    const withdrawalRequest = withdrawalRequests.find(wr => 
+      wr.userName === settlement.userName && wr.userPhone === settlement.userPhone
+    );
+
+    return {
+      id: withdrawalRequest?.id || settlement.id, // WithdrawalRequest ID가 있으면 사용, 없으면 SettlementRecord ID 사용
+      userName: settlement.userName,
+      userPhone: settlement.userPhone,
+      finalPoints: withdrawalRequest?.finalPoints || 0,
+      withdrawablePoints: settlement.totalCommission, // 총지급액을 출금가능포인트로 표시
+      totalAmount: withdrawalRequest?.totalAmount || 0,
+      requestInfo: withdrawalRequest ? '출금신청' : '정산완료',
+      settlementMonth: settlement.settlementYearMonth,
+      bankName: withdrawalRequest?.bankName || '',
+      accountNumber: withdrawalRequest?.accountNumber || '',
+      idCardFile: withdrawalRequest?.idCardFile || '',
+      status: withdrawalRequest?.status || 'COMPLETED' as const,
+      totalCommission: settlement.totalCommission
+    };
+  });
 
   // 검색 필터링
-  const filteredRequests = mockWithdrawalRequests.filter(request =>
-    request.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    request.userPhone.includes(searchTerm) ||
-    request.settlementMonth.includes(searchTerm)
+  const filteredRequests = tableData.filter(item =>
+    item.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.userPhone.includes(searchTerm) ||
+    item.settlementMonth.includes(searchTerm)
   );
 
   // 선택 관련 함수들
@@ -72,9 +166,123 @@ export default function WithdrawalRequestsPage() {
   const isAllSelected = filteredRequests.length > 0 && filteredRequests.every(request => selectedItems.has(request.id));
   const isIndeterminate = selectedItems.size > 0 && selectedItems.size < filteredRequests.length;
 
+  // 새로고침 함수
+  const handleRefresh = async () => {
+    setLoading(true);
+    try {
+      // 출금신청 데이터와 정산완료 데이터를 병렬로 로드
+      const [withdrawalData, settlementData] = await Promise.all([
+        fetchWithdrawalRequests(),
+        fetchSettlementRecords()
+      ]);
+      
+      setWithdrawalRequests(withdrawalData);
+      setSettlementRecords(settlementData);
+      
+      console.log('출금신청 목록 새로고침 완료:', withdrawalData.length, '건');
+      console.log('정산완료 데이터 새로고침 완료:', settlementData.length, '건');
+    } catch (error) {
+      console.error('새로고침 오류:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 삭제하기 함수
+  const handleDeleteSelected = async () => {
+    if (selectedItems.size === 0) {
+      alert('삭제할 항목을 선택해주세요.');
+      return;
+    }
+
+    const confirmDelete = confirm(`선택된 ${selectedItems.size}개의 출금신청을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`);
+    if (!confirmDelete) return;
+
+    setLoading(true);
+    try {
+      const deletePromises = Array.from(selectedItems).map(id => 
+        fetch(`/api/admin/withdrawal-requests/${id}`, {
+          method: 'DELETE'
+        })
+      );
+
+      const results = await Promise.all(deletePromises);
+      const failed = results.filter(result => !result.ok);
+
+      if (failed.length === 0) {
+        alert(`${selectedItems.size}개의 출금신청이 삭제되었습니다.`);
+        setSelectedItems(new Set());
+        await handleRefresh();
+      } else {
+        alert(`${failed.length}개의 출금신청 삭제에 실패했습니다.`);
+      }
+    } catch (error) {
+      console.error('삭제 오류:', error);
+      alert('삭제 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 엑셀 다운로드 함수
+  const handleExcelDownload = async () => {
+    try {
+      const response = await fetch('/api/admin/withdrawal-requests/export');
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `출금신청목록_${new Date().toISOString().split('T')[0]}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        console.log('엑셀 다운로드 완료');
+      } else {
+        alert('엑셀 다운로드에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('엑셀 다운로드 오류:', error);
+      alert('엑셀 다운로드 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 백업하기 함수
+  const handleBackup = async () => {
+    try {
+      const response = await fetch('/api/admin/withdrawal-requests/backup');
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `출금신청백업_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        console.log('백업 완료');
+        alert('출금신청 데이터 백업이 완료되었습니다.');
+      } else {
+        alert('백업에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('백업 오류:', error);
+      alert('백업 중 오류가 발생했습니다.');
+    }
+  };
+
   // 금액 포맷팅
   const formatAmount = (amount: number) => {
     return new Intl.NumberFormat('ko-KR').format(amount);
+  };
+
+  // 첨부파일 보기 함수
+  const handleViewIdCard = (idCardFile: string) => {
+    if (idCardFile) {
+      setSelectedIdCard(idCardFile);
+    }
   };
 
   // 날짜 포맷팅
@@ -82,75 +290,220 @@ export default function WithdrawalRequestsPage() {
     return new Date(dateString).toLocaleDateString('ko-KR');
   };
 
-  // 상태 배지
+
+  // 출금신청 상태 변경 함수
+  const handleStatusChange = async (requestId: string, newStatus: string, rejectionReason?: string) => {
+    try {
+      setLoading(true);
+      
+      // WithdrawalRequest ID인지 확인 (SettlementRecord ID가 아닌지)
+      const isWithdrawalRequestId = withdrawalRequests.some(wr => wr.id === requestId);
+      
+      if (!isWithdrawalRequestId) {
+        alert('출금신청 데이터가 아닙니다. 정산완료 데이터는 승인/거절할 수 없습니다.');
+        return;
+      }
+      
+      const response = await fetch(`/api/admin/withdrawal-requests/${requestId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: newStatus,
+          processedBy: 'admin', // TODO: 실제 관리자 ID로 교체
+          rejectionReason
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || '상태 변경에 실패했습니다.');
+      }
+
+      console.log('출금신청 상태 변경 완료:', result);
+      
+      // 성공 메시지 표시
+      const statusMessages = {
+        'PAID': '출금신청이 승인되었습니다.',
+        'REJECTED': '출금신청이 거절되었습니다.'
+      };
+      
+      alert(statusMessages[newStatus as keyof typeof statusMessages] || '상태가 변경되었습니다.');
+      
+      // 목록 새로고침
+      await handleRefresh();
+      
+    } catch (error) {
+      console.error('출금신청 상태 변경 오류:', error);
+      alert(`상태 변경 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 상태 배지 표시 함수
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'PENDING':
+      case 'REQUESTED':
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-            <Clock className="h-3 w-3 mr-1" />
-            대기
+            <Clock className="w-3 h-3 mr-1" />
+            신청됨
+          </span>
+        );
+      case 'PENDING':
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+            <Clock className="w-3 h-3 mr-1" />
+            대기중
           </span>
         );
       case 'PROCESSING':
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-            <AlertCircle className="h-3 w-3 mr-1" />
-            진행중
+            <Clock className="w-3 h-3 mr-1" />
+            처리중
           </span>
         );
-      case 'COMPLETED':
+      case 'PAID':
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            <CheckCircle className="h-3 w-3 mr-1" />
-            완료
+            <CheckCircle className="w-3 h-3 mr-1" />
+            지급완료
           </span>
         );
       case 'REJECTED':
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-            <XCircle className="h-3 w-3 mr-1" />
-            거절
+            <XCircle className="w-3 h-3 mr-1" />
+            거절됨
+          </span>
+        );
+      case 'COMPLETED':
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            <CheckCircle className="w-3 h-3 mr-1" />
+            완료됨
           </span>
         );
       default:
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-            {status}
+            <AlertCircle className="w-3 h-3 mr-1" />
+            알 수 없음
           </span>
         );
     }
   };
 
-  // 액션 버튼들
-  const getActionButtons = (status: string) => {
-    switch (status) {
-      case 'PENDING':
+  // 액션 버튼들 (승인/거절만)
+  const getActionButtons = (request: WithdrawalRequest) => {
+    switch (request.status) {
+      case 'REQUESTED':
         return (
-          <div className="flex gap-2">
-            <button className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700">
+          <div className="flex gap-1">
+            <button 
+              onClick={() => handleStatusChange(request.id, 'PAID')}
+              disabled={loading}
+              className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-50"
+            >
               승인
             </button>
-            <button className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700">
+            <button 
+              onClick={() => {
+                const reason = prompt('거절 사유를 입력해주세요:');
+                if (reason) {
+                  handleStatusChange(request.id, 'REJECTED', reason);
+                }
+              }}
+              disabled={loading}
+              className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 disabled:opacity-50"
+            >
+              거절
+            </button>
+          </div>
+        );
+      case 'PENDING':
+        return (
+          <div className="flex gap-1">
+            <button 
+              onClick={() => handleStatusChange(request.id, 'PAID')}
+              disabled={loading}
+              className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-50"
+            >
+              승인
+            </button>
+            <button 
+              onClick={() => {
+                const reason = prompt('거절 사유를 입력해주세요:');
+                if (reason) {
+                  handleStatusChange(request.id, 'REJECTED', reason);
+                }
+              }}
+              disabled={loading}
+              className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 disabled:opacity-50"
+            >
               거절
             </button>
           </div>
         );
       case 'PROCESSING':
         return (
-          <button className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">
-            입금완료
-          </button>
+          <div className="flex gap-1">
+            <button 
+              onClick={() => handleStatusChange(request.id, 'PAID')}
+              disabled={loading}
+              className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-50"
+            >
+              승인
+            </button>
+            <button 
+              onClick={() => {
+                const reason = prompt('거절 사유를 입력해주세요:');
+                if (reason) {
+                  handleStatusChange(request.id, 'REJECTED', reason);
+                }
+              }}
+              disabled={loading}
+              className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 disabled:opacity-50"
+            >
+              거절
+            </button>
+          </div>
         );
-      case 'COMPLETED':
+      case 'PAID':
         return (
-          <span className="text-xs text-gray-500">완료</span>
+          <span className="text-xs text-green-600 font-medium">승인완료</span>
         );
       case 'REJECTED':
         return (
-          <button className="px-3 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700">
-            재검토
-          </button>
+          <span className="text-xs text-red-600 font-medium">거절됨</span>
+        );
+      case 'COMPLETED':
+        return (
+          <div className="flex gap-1">
+            <button 
+              onClick={() => handleStatusChange(request.id, 'PAID')}
+              disabled={loading}
+              className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-50"
+            >
+              승인
+            </button>
+            <button 
+              onClick={() => {
+                const reason = prompt('거절 사유를 입력해주세요:');
+                if (reason) {
+                  handleStatusChange(request.id, 'REJECTED', reason);
+                }
+              }}
+              disabled={loading}
+              className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 disabled:opacity-50"
+            >
+              거절
+            </button>
+          </div>
         );
       default:
         return null;
@@ -205,9 +558,43 @@ export default function WithdrawalRequestsPage() {
                 <Filter className="h-4 w-4 mr-2" />
                 필터
               </button>
-              <button className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                새로고침
+              <button 
+                onClick={handleRefresh}
+                disabled={loading}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                {loading ? '새로고침 중...' : '새로고침'}
+              </button>
+              
+              {/* 삭제하기 버튼 */}
+              <button 
+                onClick={handleDeleteSelected}
+                disabled={selectedItems.size === 0 || loading}
+                className="inline-flex items-center px-4 py-2 border border-red-300 rounded-lg text-sm font-medium text-red-700 bg-white hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                삭제하기
+              </button>
+              
+              {/* 엑셀 다운로드 버튼 */}
+              <button 
+                onClick={handleExcelDownload}
+                disabled={loading}
+                className="inline-flex items-center px-4 py-2 border border-green-300 rounded-lg text-sm font-medium text-green-700 bg-white hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                엑셀다운로드
+              </button>
+              
+              {/* 백업하기 버튼 */}
+              <button 
+                onClick={handleBackup}
+                disabled={loading}
+                className="inline-flex items-center px-4 py-2 border border-blue-300 rounded-lg text-sm font-medium text-blue-700 bg-white hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Archive className="h-4 w-4 mr-2" />
+                백업하기
               </button>
             </div>
           </div>
@@ -239,86 +626,56 @@ export default function WithdrawalRequestsPage() {
                     </div>
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      회원명
-                    </div>
+                    회원명
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4" />
-                      연락처
-                    </div>
+                    연락처
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      결정포인트
-                    </div>
+                    총지급액
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      기본수당
-                    </div>
+                    출금요청금액
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      모집수당
-                    </div>
+                    요청정보
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      간접수당
-                    </div>
+                    정산월
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      기본배당
-                    </div>
+                    은행명
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      배당등급별
-                    </div>
+                    계좌번호
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      총지급액
-                    </div>
+                    신분증정보
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      정산월
-                    </div>
+                    상태
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4" />
-                      요청정보
-                    </div>
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <MoreHorizontal className="h-4 w-4" />
-                      정산관리
-                    </div>
+                    정산관리
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredRequests.length === 0 ? (
+                {initialLoading ? (
                   <tr>
-                    <td colSpan={13} className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan={11} className="px-6 py-12 text-center text-gray-500">
+                      <div className="flex flex-col items-center gap-2">
+                        <RefreshCw className="h-8 w-8 text-gray-400 animate-spin" />
+                        <span>데이터를 불러오는 중...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : filteredRequests.length === 0 ? (
+                  <tr>
+                    <td colSpan={11} className="px-6 py-12 text-center text-gray-500">
                       <div className="flex flex-col items-center gap-2">
                         <DollarSign className="h-8 w-8 text-gray-400" />
-                        <span>검색 결과가 없습니다.</span>
+                        <span>출금신청 내역이 없습니다.</span>
                       </div>
                     </td>
                   </tr>
@@ -341,34 +698,44 @@ export default function WithdrawalRequestsPage() {
                         <div className="text-sm text-gray-900">{request.userPhone}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-blue-600">{formatAmount(request.finalPoints)}P</div>
+                        <div className="text-sm font-medium text-purple-600">{formatAmount(request.totalCommission)}P</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">₩{formatAmount(request.basicSalary)}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">₩{formatAmount(request.recruitmentBonus)}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">₩{formatAmount(request.indirectBonus)}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">₩{formatAmount(request.basicDividend)}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">₩{formatAmount(request.gradeDividend)}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-bold text-green-600">₩{formatAmount(request.totalAmount)}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{request.settlementMonth}</div>
+                        <div className="text-sm font-bold text-green-600">{request.totalAmount > 0 ? `₩${formatAmount(request.totalAmount)}` : '-'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{request.requestInfo}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {getActionButtons(request.status)}
+                        <div className="text-sm text-gray-900">{request.settlementMonth}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{request.bankName}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{request.accountNumber}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {request.idCardFile ? (
+                            <button
+                              onClick={() => handleViewIdCard(request.idCardFile)}
+                              className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                            >
+                              첨부파일 보기
+                            </button>
+                          ) : (
+                            <span className="text-gray-400">없음</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {getStatusBadge(request.status)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getActionButtons(request)}
                       </td>
                     </tr>
                   ))
@@ -405,6 +772,43 @@ export default function WithdrawalRequestsPage() {
               </div>
             </div>
           </motion.div>
+        )}
+
+        {/* 신분증 이미지 모달 */}
+        {selectedIdCard && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-4xl max-h-[90vh] overflow-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">신분증 이미지</h3>
+                <button
+                  onClick={() => setSelectedIdCard(null)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="flex justify-center">
+                <img
+                  src={selectedIdCard}
+                  alt="신분증 이미지"
+                  className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = '/placeholder-image.png';
+                    target.alt = '이미지를 불러올 수 없습니다';
+                  }}
+                />
+              </div>
+              <div className="mt-4 text-center">
+                <button
+                  onClick={() => setSelectedIdCard(null)}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

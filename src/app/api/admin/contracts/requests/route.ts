@@ -53,6 +53,7 @@ export async function GET(req: NextRequest) {
         availableDate: it.availableDate,
         availableTime: it.availableTime,
         additionalNote: it.additionalNote,
+        consultationType: it.consultationType || '파트너신청', // 상담종류 필드 추가
         backendStatus: it.status, // PENDING/APPROVED/REJECTED/CANCELLED
         manager: it.processedBy || undefined,
         assignedAt: it.processedAt?.toISOString(),
@@ -107,6 +108,7 @@ export async function PUT(req: NextRequest) {
         area: updatedApplication.user?.address || '-',
         availableTime: updatedApplication.availableTime,
         additionalNote: updatedApplication.additionalNote,
+        consultationType: updatedApplication.consultationType || '파트너신청', // 상담종류 필드 추가
         backendStatus: updatedApplication.status,
         manager: updatedApplication.processedBy || undefined,
         assignedAt: updatedApplication.processedAt?.toISOString(),
