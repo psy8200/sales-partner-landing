@@ -8,23 +8,21 @@ datasource db {
 }
 
 model User {
-  id                    String                 @id @default(cuid())
-  email                 String                 @unique
-  phone                 String                 @unique
+  id                    String               @id @default(cuid())
+  email                 String               @unique
+  phone                 String               @unique
   name                  String
   passwordHash          String
-  status                UserStatus             @default(PENDING)
-  role                  UserRole               @default(GENERAL)
-  partnerStatus         PartnerStatus          @default(NOT_APPLIED)
-  points                Float                  @default(0)
-  level                 Int                    @default(0)
+  status                UserStatus           @default(PENDING)
+  role                  UserRole             @default(GENERAL)
+  partnerStatus         PartnerStatus        @default(NOT_APPLIED)
+  points                Float                @default(0)
+  level                 Int                  @default(0)
   referralCode          String?
-  referralCodeConfirmed Boolean                @default(false)
-  finalPoints           Float                  @default(0)
-  totalPaidPoints       Float                  @default(0)  // 총지급포인트 누적
-  remainingPoints       Float                  @default(0)  // 잔여포인트
-  monthlyReferrals      Int                    @default(0)
-  totalReferrals        Int                    @default(0)
+  referralCodeConfirmed Boolean              @default(false)
+  finalPoints           Float                @default(0)
+  monthlyReferrals      Int                  @default(0)
+  totalReferrals        Int                  @default(0)
   bankName              String?
   bankAccount           String?
   accountHolder         String?
@@ -35,19 +33,19 @@ model User {
   address               String?
   addressDetail         String?
   zipCode               String?
-  marketingAgreed       Boolean                @default(false)
+  marketingAgreed       Boolean              @default(false)
   marketingAgreedAt     DateTime?
-  agreeTerms            Boolean                @default(false)
+  agreeTerms            Boolean              @default(false)
   agreeTermsAt          DateTime?
   lastLoginAt           DateTime?
   lastLogoutAt          DateTime?
-  loginCount            Int                    @default(0)
-  isActive              Boolean                @default(true)
-  isOnline              Boolean                @default(false)
+  loginCount            Int                  @default(0)
+  isActive              Boolean              @default(true)
+  isOnline              Boolean              @default(false)
   currentSessionId      String?
   lastActivityAt        DateTime?
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
   deletedAt             DateTime?
   activityLogs          ActivityLog[]
   applications          Application[]
@@ -56,11 +54,11 @@ model User {
   partnerApplications   PartnerApplication[]
   payments              Payment[]
   pointLedgers          PointLedger[]
-  profileChangeRequests ProfileChangeRequest[]
   questions             Question[]
   settlements           Settlement[]
   userLogs              UserLog[]
   withdrawalRequests    WithdrawalRequest[]
+  profileChangeRequests ProfileChangeRequest[]
 
   @@index([email])
   @@index([phone])
@@ -72,35 +70,38 @@ model User {
 }
 
 model Consultation {
-  id              String             @id @default(cuid())
-  userId          String?
-  type            ConsultationType
-  status          ConsultationStatus @default(PENDING)
-  priority        Priority           @default(NORMAL)
-  title           String
-  description     String
-  category        String
-  tags            Json
-  contactName     String
-  contactPhone    String
-  contactEmail    String?
-  requestedDate   DateTime?
-  scheduledDate   DateTime?
-  completedDate   DateTime?
-  assignedTo      String?
-  assignedAt      DateTime?
-  memo            String?
-  result          String?
-  rating          Int?
-  expectedAmount  Int?
-  followUpDate    DateTime?
-  contractCreated Boolean            @default(false)
-  contractId      String?
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-  applications    Application[]
-  contract        Contract?          @relation(fields: [contractId], references: [id])
-  user            User?              @relation(fields: [userId], references: [id])
+  id            String             @id @default(cuid())
+  userId        String?
+  type          ConsultationType
+  status        ConsultationStatus @default(PENDING)
+  priority      Priority           @default(NORMAL)
+  title         String
+  description   String
+  category      String
+  tags          Json
+  contactName   String
+  contactPhone  String
+  contactEmail  String?
+  requestedDate DateTime?
+  scheduledDate DateTime?
+  completedDate DateTime?
+  assignedTo    String?
+  assignedAt    DateTime?
+  memo          String?
+  result        String?
+  rating        Int?
+  
+  // 상담 관리용 추가 필드들
+  expectedAmount    Int?              // 예상 계약 금액
+  followUpDate      DateTime?         // 후속 상담 예정일
+  contractCreated   Boolean           @default(false) // 계약 생성 여부
+  contractId        String?           // 연결된 계약 ID
+  
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  applications  Application[]
+  user          User?              @relation(fields: [userId], references: [id])
+  contract      Contract?          @relation(fields: [contractId], references: [id])
 
   @@index([userId])
   @@index([status])
@@ -232,122 +233,34 @@ model Settlement {
 }
 
 model PointLedger {
-  id            String          @id @default(cuid())
-  userId        String
-  kind          PointLedgerKind
-  amount        Float
-  periodMonth   DateTime?
-  availableAt   DateTime
-  memo          String?
-  description   String?         // 포인트 변동 설명
-  referenceId   String?         // 참조 ID (출금신청 ID 등)
-  referenceType String?         // 참조 타입 (WITHDRAWAL, SETTLEMENT 등)
-  createdAt     DateTime        @default(now())
-  user          User            @relation(fields: [userId], references: [id])
+  id          String          @id @default(cuid())
+  userId      String
+  kind        PointLedgerKind
+  amount      Float
+  periodMonth DateTime?
+  availableAt DateTime
+  memo        String?
+  createdAt   DateTime        @default(now())
+  user        User            @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([availableAt])
-  @@index([referenceId])
-  @@index([referenceType])
-}
-
-// 출금요청 백업 데이터 모델 (영구 저장용)
-model WithdrawalBackup {
-  id                String   @id @default(cuid())
-  backupDate        DateTime @default(now())
-  backupType        String   // 'MANUAL', 'AUTO', 'EXTERNAL'
-  totalRecords      Int      // 백업된 총 레코드 수
-  backupSize        Int      // 백업 파일 크기 (bytes)
-  backupPath        String?  // 백업 파일 경로
-  backupStatus      String   @default("COMPLETED") // 'COMPLETED', 'FAILED', 'PROCESSING'
-  backupDescription String?  // 백업 설명
-  createdBy         String?  // 백업 생성자
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  // 백업된 출금요청 데이터들
-  withdrawalBackupItems WithdrawalBackupItem[]
-
-  @@index([backupDate])
-  @@index([backupType])
-  @@index([backupStatus])
-  @@index([createdBy])
-  @@index([createdAt])
-}
-
-// 백업된 개별 출금요청 데이터
-model WithdrawalBackupItem {
-  id                String           @id @default(cuid())
-  backupId          String
-  originalId        String           // 원본 출금요청 ID
-  userId            String
-  userName          String
-  userPhone         String
-  userEmail         String?
-  finalPoints       Float
-  withdrawablePoints Float
-  totalAmount       Float
-  requestInfo       String
-  settlementMonth   String
-  bankName          String
-  accountNumber     String
-  idCardFile        String?
-  status            String
-  processedBy       String?
-  processedAt       DateTime?
-  rejectionReason   String?
-  requestedAt       DateTime?
-  paidAt            DateTime?
-  memo              String?
-  originalCreatedAt DateTime
-  originalUpdatedAt DateTime
-  backupCreatedAt   DateTime         @default(now())
-
-  // 관계
-  backup            WithdrawalBackup @relation(fields: [backupId], references: [id], onDelete: Cascade)
-
-  @@index([backupId])
-  @@index([originalId])
-  @@index([userId])
-  @@index([userName])
-  @@index([userPhone])
-  @@index([status])
-  @@index([settlementMonth])
-  @@index([backupCreatedAt])
 }
 
 model WithdrawalRequest {
-  id                String            @id @default(cuid())
-  userId            String            // 회원 ID
-  userName          String            // 회원명
-  userPhone         String            // 연락처
-  finalPoints       Float             @default(0) // 결정포인트 (출금가능포인트)
-  withdrawablePoints Float            @default(0) // 출금가능포인트 (신청 시점의 정확한 값)
-  totalAmount       Float             @default(0) // 출금요청금액
-  requestInfo       String            @default("출금신청") // 요청정보
-  settlementMonth   String            // 정산월 (예: 2025-01)
-  bankName          String?           // 은행명
-  accountNumber     String?           // 계좌번호
-  idCardFile        String?           // 신분증 파일 경로
-  status            WithdrawalStatus  @default(REQUESTED) // 출금 상태
-  processedBy       String?           // 처리자
-  processedAt       DateTime?         // 처리일시
-  rejectionReason   String?           // 거절 사유
-  requestedAt       DateTime          @default(now())
-  paidAt            DateTime?
-  memo              String?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  user              User              @relation(fields: [userId], references: [id])
+  id          String           @id @default(cuid())
+  userId      String
+  amount      Float
+  status      WithdrawalStatus @default(REQUESTED)
+  requestedAt DateTime         @default(now())
+  paidAt      DateTime?
+  memo        String?
+  createdAt   DateTime         @default(now())
+  user        User             @relation(fields: [userId], references: [id])
 
   @@index([userId])
-  @@index([userName])
-  @@index([userPhone])
-  @@index([settlementMonth])
   @@index([status])
-  @@index([processedBy])
   @@index([requestedAt])
-  @@index([createdAt])
 }
 
 model UserLog {
@@ -424,28 +337,27 @@ model ExportLog {
 }
 
 model PartnerApplication {
-  id               String                   @id @default(cuid())
-  userId           String
-  availableDate    String
-  availableTime    String
-  preferredTime    String?
-  area             String
-  referrer         String
-  additionalNote   String?
-  consultationType String                   @default("파트너신청")
-  status           PartnerApplicationStatus @default(PENDING)
-  processedBy      String?
-  processedAt      DateTime?
-  approvedBy       String?
-  approvedAt       DateTime?
-  completedAt      DateTime?
-  cancelledAt      DateTime?
-  cancelledBy      String?
-  cancelReason     String?
-  adminMemo        String?
-  createdAt        DateTime                 @default(now())
-  updatedAt        DateTime                 @updatedAt
-  user             User                     @relation(fields: [userId], references: [id])
+  id             String                   @id @default(cuid())
+  userId         String
+  availableDate  String
+  availableTime  String
+  preferredTime  String?
+  area           String
+  referrer       String
+  additionalNote String?
+  status         PartnerApplicationStatus @default(PENDING)
+  processedBy    String?
+  processedAt    DateTime?
+  approvedBy     String?
+  approvedAt     DateTime?
+  completedAt    DateTime?
+  cancelledAt    DateTime?
+  cancelledBy    String?
+  cancelReason   String?
+  adminMemo      String?
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  user           User                     @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([status])
@@ -570,10 +482,10 @@ model Contract {
   decisionPoints   Int?
   insuredName      String?
   insuredPhone     String?
-  referralCode     String?
-  consultations    Consultation[]
+  referralCode     String?        // 추천인코드 필드 추가
   itemSetting      ItemSetting?   @relation(fields: [itemSettingId], references: [id])
   payments         Payment[]
+  consultations    Consultation[] // 상담 관계 추가
 
   @@index([contractNumber])
   @@index([customerName])
@@ -603,18 +515,18 @@ model CompanyInfo {
 }
 
 model AdminLoginLog {
-  id        String      @id @default(cuid())
-  adminId   String
-  email     String
-  name      String
-  action    LoginAction
-  ipAddress String?
-  userAgent String?
-  sessionId String?
-  loginAt   DateTime    @default(now())
-  logoutAt  DateTime?
-  duration  Int?
-  admin     Admin       @relation(fields: [adminId], references: [id])
+  id          String   @id @default(cuid())
+  adminId     String   // Admin 테이블의 ID를 참조
+  email       String
+  name        String
+  action      LoginAction
+  ipAddress   String?
+  userAgent   String?
+  sessionId   String?
+  loginAt     DateTime @default(now())
+  logoutAt    DateTime?
+  duration    Int?     // 로그인 지속 시간 (초)
+  admin       Admin    @relation(fields: [adminId], references: [id])
 
   @@index([adminId])
   @@index([email])
@@ -624,24 +536,25 @@ model AdminLoginLog {
   @@index([sessionId])
 }
 
+// 관리자 전용 테이블
 model Admin {
-  id               String          @id @default(cuid())
-  name             String
-  email            String          @unique
-  phone            String          @unique
-  passwordHash     String
-  role             AdminRole       @default(ADMIN)
-  status           AdminStatus     @default(ACTIVE)
-  joinDate         DateTime
-  lastLoginAt      DateTime?
-  lastLogoutAt     DateTime?
-  isOnline         Boolean         @default(false)
-  currentSessionId String?
-  lastActivityAt   DateTime?
-  loginCount       Int             @default(0)
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  adminLoginLogs   AdminLoginLog[]
+  id                String    @id @default(cuid())
+  name              String
+  email             String    @unique
+  phone             String    @unique
+  passwordHash      String
+  role              AdminRole @default(ADMIN)
+  status            AdminStatus @default(ACTIVE)
+  joinDate          DateTime
+  lastLoginAt       DateTime?
+  lastLogoutAt      DateTime?
+  isOnline          Boolean   @default(false)
+  currentSessionId  String?
+  lastActivityAt    DateTime?
+  loginCount        Int       @default(0)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  adminLoginLogs    AdminLoginLog[]
 
   @@index([email])
   @@index([phone])
@@ -651,115 +564,14 @@ model Admin {
   @@index([isOnline])
 }
 
-model Manager {
-  id         String   @id @default(cuid())
-  department String
-  name       String
-  joinDate   DateTime
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-}
-
-model SidebarItem {
-  id        String   @id @default(cuid())
-  name      String
-  href      String   @unique
-  icon      String   @default("📦")
-  isCustom  Boolean  @default(false)
-  customId  String?
-  order     Int      @default(0)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model ProfileChangeRequest {
-  id          String                     @id @default(cuid())
-  userId      String
-  userName    String
-  userPhone   String
-  content     String
-  status      ProfileChangeRequestStatus @default(PENDING)
-  processedBy String?
-  processedAt DateTime?
-  memo        String?
-  createdAt   DateTime                   @default(now())
-  updatedAt   DateTime                   @updatedAt
-  user        User                       @relation(fields: [userId], references: [id])
-
-  @@index([userId])
-  @@index([status])
-  @@index([createdAt])
-  @@index([processedBy])
-}
-
-model PromotionMember {
-  id                String        @id @default(cuid())
-  userId            String
-  userName          String
-  userPhone         String
-  myCode            String
-  referralCode      String?
-  previousLevel     Int
-  currentLevel      Int
-  totalReferrals    Int
-  directReferrals   Int
-  indirectReferrals Int
-  promotionDate     DateTime
-  giftContent       String
-  giftAmount        Float?
-  giftType          GiftType
-  paymentStatus     PaymentStatus @default(PENDING)
-  paymentDate       DateTime?
-  processedBy       String?
-  memo              String?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-}
-
-model PaymentHistory {
-  id                String   @id @default(cuid())
-  userId            String
-  userName          String
-  userPhone         String
-  myCode            String
-  referralCode      String?
-  previousLevel     Int
-  currentLevel      Int
-  totalReferrals    Int
-  directReferrals   Int
-  indirectReferrals Int
-  promotionDate     DateTime
-  giftContent       String
-  giftAmount        Float?
-  giftType          GiftType
-  paymentDate       DateTime
-  processedBy       String
-  memo              String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  @@index([userId])
-  @@index([userPhone])
-  @@index([myCode])
-  @@index([paymentDate])
-  @@index([processedBy])
-  @@index([currentLevel])
-}
-
 enum PointLedgerKind {
   ACCRUAL
   ADJUSTMENT
-  WITHDRAWAL
-  WITHDRAWAL_REJECT
 }
 
 enum WithdrawalStatus {
   REQUESTED
-  PROCESSING
   PAID
-  REJECTED
   CANCELLED
 }
 
@@ -771,7 +583,6 @@ enum ItemCategory {
   RENTAL_MALL
   SHOPPING_MALL
   INSTANT_PARTNER
-  IMMEDIATE_JOIN
   CUSTOM
 }
 
@@ -853,7 +664,7 @@ enum PaymentType {
 
 enum PaymentStatus {
   PENDING
-  PAYMENT_REQUESTED
+  PAYMENT_REQUESTED  // 지급요청 상태 추가
   PAID
   OVERDUE
   CANCELLED
@@ -964,6 +775,7 @@ enum ContractStatus {
   SUSPENDED
 }
 
+
 enum LoginAction {
   LOGIN
   LOGOUT
@@ -989,105 +801,126 @@ enum ProfileChangeRequestStatus {
   REJECTED
 }
 
+model Manager {
+  id          String   @id @default(cuid())
+  department  String   // 담당자소속
+  name        String   // 담당자이름
+  joinDate    DateTime // 가입일
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SidebarItem {
+  id        String   @id @default(cuid())
+  name      String   // 사이드바 아이템 이름
+  href      String   @unique // 경로
+  icon      String   @default("📦") // 아이콘
+  isCustom  Boolean  @default(false) // 커스텀 아이템 여부
+  customId  String?  // 커스텀 아이템 ID
+  order     Int      @default(0) // 정렬 순서
+  isActive  Boolean  @default(true) // 활성화 여부
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProfileChangeRequest {
+  id          String                      @id @default(cuid())
+  userId      String
+  userName    String                      // 요청자 이름
+  userPhone   String                      // 요청자 연락처
+  content     String                      // 요청내용
+  status      ProfileChangeRequestStatus  @default(PENDING)
+  processedBy String?                     // 처리자
+  processedAt DateTime?                   // 처리일시
+  memo        String?                     // 관리자 메모
+  createdAt   DateTime                    @default(now())
+  updatedAt   DateTime                    @updatedAt
+  user        User                        @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([processedBy])
+}
+
+// 승급 회원 테이블
+model PromotionMember {
+  id                String           @id @default(cuid())
+  userId            String
+  userName          String
+  userPhone         String
+  myCode            String           // 내코드 (연락처 뒤 8자리)
+  referralCode      String?
+  
+  // 승급 정보
+  previousLevel     Int
+  currentLevel      Int
+  totalReferrals    Int              // 총 추천인원 (직접+간접)
+  directReferrals   Int              // 직접 추천인원
+  indirectReferrals Int              // 간접 추천인원
+  promotionDate     DateTime
+  
+  // 선물 정보
+  giftContent       String           // 선물 내용
+  giftAmount        Float?           // 선물 금액 (상품권/여행경비)
+  giftType          GiftType         // 선물 타입
+  
+  // 지급 관리
+  paymentStatus     PaymentStatus    @default(PENDING)
+  paymentDate       DateTime?
+  processedBy       String?
+  memo              String?
+  
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+}
+
+// 선물 타입 열거형
 enum GiftType {
-  GIFT_CARD
-  TRAVEL
-  CAR
-  LEGEND
+  GIFT_CARD  // 상품권 (4-6단계)
+  TRAVEL     // 여행권 (7-8단계)
+  CAR        // 차량 (9-10단계)
+  LEGEND     // LEGEND (드림카 + 기타)
 }
 
-// 정산완료 데이터 저장용 모델
-model SettlementRecord {
-  id                        String    @id @default(cuid())
-  userId                    String?   // 회원 ID (선택사항)
-  userName                  String    // 회원명
-  userPhone                 String    // 연락처
-  finalPoints               Float     @default(0) // 결정포인트
-  sumPoints                 Float     @default(0) // 합산포인트
-  currentLevel              Int       @default(1) // 현재등급
-  basicCommission           Float     @default(0) // 기본수당
-  recruitmentCommission     Float     @default(0) // 모집수당
-  indirectCommission        Float     @default(0) // 간접수당
-  dividendBasicCommission   Float     @default(0) // 기본배당
-  dividendLevelCommission   Float     @default(0) // 배당등급별
-  totalCommission           Float     @default(0) // 총지급액
-  settlementYearMonth       String    // 정산년월 (예: 2025-01)
-  paymentStatus             PaymentStatus @default(PENDING) // 지급상태
-  requestStatus             String    @default("정산대기") // 요청상태
-  processedBy               String?   // 처리자
-  processedAt               DateTime? // 처리일시
-  withdrawalRequestId       String?   // 출금신청 ID (참조용)
-  createdAt                 DateTime  @default(now())
-  updatedAt                 DateTime  @updatedAt
+// 지급 상태는 기존 PaymentStatus 열거형 사용
+// PENDING, PAID, OVERDUE, CANCELLED, REFUNDED
+
+// 승급회원 지급완료 내역 테이블
+model PaymentHistory {
+  id                String           @id @default(cuid())
+  userId            String
+  userName          String
+  userPhone         String
+  myCode            String           // 내코드 (연락처 뒤 8자리)
+  referralCode      String?
+  
+  // 승급 정보 (지급 당시 스냅샷)
+  previousLevel     Int
+  currentLevel      Int
+  totalReferrals    Int              // 총 추천인원 (직접+간접)
+  directReferrals   Int              // 직접 추천인원
+  indirectReferrals Int              // 간접 추천인원
+  promotionDate     DateTime
+  
+  // 선물 정보
+  giftContent       String           // 지급한 선물 내용
+  giftAmount        Float?           // 지급한 선물 금액
+  giftType          GiftType         // 선물 타입
+  
+  // 지급 정보
+  paymentDate       DateTime         // 실제 지급일시
+  processedBy       String           // 처리자
+  memo              String?          // 메모
+  
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
   @@index([userId])
-  @@index([userName])
   @@index([userPhone])
-  @@index([settlementYearMonth])
-  @@index([paymentStatus])
-  @@index([requestStatus])
+  @@index([myCode])
+  @@index([paymentDate])
   @@index([processedBy])
-  @@index([withdrawalRequestId])
-  @@index([createdAt])
+  @@index([currentLevel])
 }
-
-// 회원용 정산 데이터 (어드민에서 "정산완료내역보내기" 시에만 생성)
-model UserSettlementRecord {
-  id                        String    @id @default(cuid())
-  userId                    String?   // 회원 ID (선택사항)
-  userName                  String    // 회원명
-  userPhone                 String    // 연락처
-  finalPoints               Float     @default(0) // 결정포인트
-  sumPoints                 Float     @default(0) // 합산포인트
-  currentLevel              Int       @default(1) // 현재등급
-  basicCommission           Float     @default(0) // 기본수당
-  recruitmentCommission     Float     @default(0) // 모집수당
-  indirectCommission        Float     @default(0) // 간접수당
-  dividendBasicCommission   Float     @default(0) // 기본배당
-  dividendLevelCommission   Float     @default(0) // 배당등급별
-  totalCommission           Float     @default(0) // 총지급액
-  remainingPoints           Float     @default(0) // 잔여포인트
-  settlementYearMonth       String    // 정산년월 (예: 2025-01)
-  paymentStatus             PaymentStatus @default(PAID) // 지급상태 (회원용은 항상 PAID)
-  requestStatus             String    @default("지급완료") // 요청상태 (회원용은 항상 지급완료)
-  processedBy               String?   // 처리자
-  processedAt               DateTime? // 처리일시
-  sentAt                    DateTime  @default(now()) // 회원에게 전송된 일시
-  createdAt                 DateTime  @default(now())
-  updatedAt                 DateTime  @updatedAt
-
-  @@index([userId])
-  @@index([userName])
-  @@index([userPhone])
-  @@index([settlementYearMonth])
-  @@index([paymentStatus])
-  @@index([requestStatus])
-  @@index([processedBy])
-  @@index([sentAt])
-  @@index([createdAt])
-}
-
-// 입금완료리스트 (회원용)
-model DepositRecord {
-  id                String    @id @default(cuid())
-  userId            String    // 회원 ID
-  userName          String    // 회원명
-  userPhone         String    // 연락처
-  withdrawalRequestId String  // 출금신청 ID (참조용)
-  pointAmount       Float     // 포인트출금액
-  depositAmount     Float     // 입금액 (실제 입금된 금액)
-  depositDate       DateTime  // 입금일시
-  processedBy       String?   // 처리자 (관리자)
-  memo              String?   // 메모
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-
-  @@index([userId])
-  @@index([userName])
-  @@index([userPhone])
-  @@index([withdrawalRequestId])
-  @@index([depositDate])
-  @@index([processedBy])
-  @@index([createdAt])
-}
-

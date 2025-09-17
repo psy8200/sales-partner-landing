@@ -1,10 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  experimental: {
-    // TailwindCSS가 클라이언트에서 fs 모듈을 사용하지 않도록 설정
-    serverComponentsExternalPackages: ['@nodelib/fs.scandir', '@nodelib/fs.walk', 'fast-glob'],
-  },
+  // TailwindCSS가 클라이언트에서 fs 모듈을 사용하지 않도록 설정
+  serverExternalPackages: ['@nodelib/fs.scandir', '@nodelib/fs.walk', 'fast-glob'],
   webpack: (config, { isServer }) => {
     if (!isServer) {
       // 클라이언트에서 Node.js 모듈을 사용하지 않도록 설정

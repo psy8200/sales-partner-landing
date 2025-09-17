@@ -151,7 +151,7 @@ const HeroSection = () => {
              onClick={handleInstallClick}
              className="group px-4 py-3.5 sm:px-6 sm:py-3 md:px-8 md:py-4 lg:px-10 lg:py-5 bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg sm:rounded-xl text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white hover:from-green-500 hover:to-emerald-500 transition-all duration-300 shadow-xl hover:shadow-green-500/20 transform hover:scale-105 border border-green-500/40 flex-1 sm:flex-none"
            >
-             <span className="relative z-10">📱 앱 다운로드</span>
+             <span className="relative z-10">📱 파트너스앱</span>
              <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl opacity-0 group-hover:opacity-15 transition-opacity duration-300"></div>
            </button>
          </motion.div>

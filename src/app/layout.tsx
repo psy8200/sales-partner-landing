@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "세일즈 파트너 랜딩 - 프리미엄 파트너십",
+  title: "국내최초 수익 자동화 플랫폼 - 세일즈파트너스",
   description: "보험료 • 통신료 • 렌탈료 • 상조 • 쇼핑몰 - 이미 내는 돈으로 매월 수익 창출. 전국 800+ 성공 파트너와 함께하는 안전한 네트워크",
   keywords: ["세일즈 파트너", "수익 창출", "부수입", "파트너십", "통신비", "보험료"],
   authors: [{ name: "세일즈 파트너" }],
